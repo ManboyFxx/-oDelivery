@@ -1,0 +1,83 @@
+<?php
+
+namespace App\Models;
+
+use App\Traits\HasUuid;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+
+use Laravel\Sanctum\HasApiTokens;
+
+class User extends Authenticatable
+{
+    use HasApiTokens, HasFactory, Notifiable, HasUuid, SoftDeletes;
+
+    protected $keyType = 'string';
+    public $incrementing = false;
+
+    protected $fillable = [
+        'tenant_id',
+        'name',
+        'email',
+        'phone',
+        'password',
+        'avatar_url',
+        'role',
+        'is_available',
+        'is_active',
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+            'is_available' => 'boolean',
+            'is_active' => 'boolean',
+        ];
+    }
+
+    // Relationships
+    public function tenant()
+    {
+        return $this->belongsTo(Tenant::class);
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class, 'motoboy_id');
+    }
+
+    public function createdOrders()
+    {
+        return $this->hasMany(Order::class, 'created_by');
+    }
+
+    // Helpers
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'super_admin';
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isMotoboy(): bool
+    {
+        return $this->role === 'motoboy';
+    }
+
+    public function isEmployee(): bool
+    {
+        return $this->role === 'employee';
+    }
+}

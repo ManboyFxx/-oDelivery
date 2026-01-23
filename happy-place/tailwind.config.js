@@ -1,0 +1,31 @@
+import defaultTheme from 'tailwindcss/defaultTheme';
+import forms from '@tailwindcss/forms';
+
+/** @type {import('tailwindcss').Config} */
+export default {
+    content: [
+        './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
+        './storage/framework/views/*.php',
+        './resources/views/**/*.blade.php',
+        './resources/js/**/*.tsx',
+    ],
+
+    theme: {
+        extend: {
+            indigo: {
+                ...defaultTheme.colors.indigo,
+                500: '#ff3d03', // Primary brand color
+                600: '#e53703', // Hover
+                700: '#cc3102', // Active
+            },
+            primary: {
+                DEFAULT: '#ff3d03',
+                500: '#ff3d03',
+                600: '#e53703',
+                700: '#cc3102',
+            },
+        },
+    },
+
+    plugins: [forms],
+};
