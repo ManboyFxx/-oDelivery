@@ -6,28 +6,35 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
-class DeliveryZone extends Model
+class PaymentMethod extends Model
 {
     use HasFactory, HasUuids;
 
     protected $fillable = [
         'tenant_id',
-        'neighborhood',
-        'delivery_fee',
-        'estimated_time_min',
+        'name',
+        'type',
+        'fee_percentage',
+        'fee_fixed',
         'is_active',
         'display_order',
     ];
 
     protected $casts = [
-        'delivery_fee' => 'decimal:2',
+        'fee_percentage' => 'decimal:2',
+        'fee_fixed' => 'decimal:2',
         'is_active' => 'boolean',
-        'estimated_time_min' => 'integer',
         'display_order' => 'integer',
     ];
 
     public function tenant()
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    public function calculateFee(float $orderTotal): float
+    {
+        $percentageFee = ($orderTotal * $this->fee_percentage) / 100;
+        return $percentageFee + $this->fee_fixed;
     }
 }

@@ -21,6 +21,19 @@ class TenantMenuController extends Controller
             $customer = \App\Models\Customer::find(session('customer_id'));
         }
 
+        $tenantId = $settings->tenant_id ?? \App\Models\Tenant::first()->id;
+
+        $deliveryZones = \App\Models\DeliveryZone::where('tenant_id', $tenantId)
+            ->where('is_active', true)
+            ->orderBy('display_order')
+            ->orderBy('neighborhood')
+            ->get();
+
+        $paymentMethods = \App\Models\PaymentMethod::where('tenant_id', $tenantId)
+            ->where('is_active', true)
+            ->orderBy('display_order')
+            ->get();
+
         $categories = Category::with([
             'products' => function ($query) {
                 $query->where('is_available', true)
@@ -42,14 +55,17 @@ class TenantMenuController extends Controller
             'authCustomer' => $customer, // Pass logged in customer
             'store' => [
                 'name' => $settings->store_name ?? 'ÓoDelivery Demo',
-                'logo_url' => $settings->logo_url,
-                'banner_url' => $settings->banner_url,
+                'logo_url' => $settings->logo_path ? "/storage/{$settings->logo_path}" : $settings->logo_url,
+                'banner_url' => $settings->banner_path ? "/storage/{$settings->banner_path}" : $settings->banner_url,
                 'phone' => $settings->phone,
                 'whatsapp' => $settings->whatsapp,
                 'address' => $settings->address,
                 'theme_color' => $settings->pwa_theme_color ?? '#ff3d03',
                 'theme_mode' => $settings->menu_theme ?? 'modern-clean',
                 'loyalty_enabled' => $settings->loyalty_enabled ?? true,
+                'delivery_zones' => $deliveryZones,
+                'payment_methods' => $paymentMethods,
+                'settings' => $settings, // Pass all settings for fee calculations
             ]
         ]);
     }

@@ -18,6 +18,8 @@ class StoreSetting extends Model
         'store_name',
         'logo_url',
         'banner_url',
+        'logo_path',
+        'banner_path',
         'address',
         'phone',
         'whatsapp',

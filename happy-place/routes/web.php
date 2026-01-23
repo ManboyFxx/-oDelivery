@@ -102,6 +102,13 @@ Route::middleware('auth')->group(function () {
     // Store Settings
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
+    Route::post('/settings/upload-logo', [SettingsController::class, 'uploadLogo'])->name('settings.upload-logo');
+    Route::delete('/settings/remove-logo', [SettingsController::class, 'removeLogo'])->name('settings.remove-logo');
+    Route::post('/settings/upload-banner', [SettingsController::class, 'uploadBanner'])->name('settings.upload-banner');
+    Route::delete('/settings/remove-banner', [SettingsController::class, 'removeBanner'])->name('settings.remove-banner');
+
+    Route::resource('delivery-zones', \App\Http\Controllers\DeliveryZoneController::class);
+    Route::resource('payment-methods', \App\Http\Controllers\PaymentMethodController::class);
 
     Route::resource('customers', CustomerController::class);
     Route::resource('coupons', CouponController::class);
