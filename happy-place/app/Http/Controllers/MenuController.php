@@ -10,27 +10,56 @@ class MenuController extends Controller
 {
     public function index()
     {
-        // Admin view to organize menu
-        // Fetch categories with product counts
-        $categories = Category::withCount('products')
-            ->orderBy('sort_order', 'asc') // Assuming we add sort_order later or use name
+        $tenant = auth()->user()->tenant;
+
+        // Fetch categories with products, ordered by sort_order
+        $categories = Category::with([
+            'products' => function ($query) {
+                $query->orderBy('sort_order', 'asc');
+            }
+        ])
+            ->withCount('products')
+            ->orderBy('sort_order', 'asc')
             ->get();
 
+        // Calculate stats
+        $totalProducts = $categories->sum('products_count');
+        $activeCategories = $categories->where('is_active', true)->count();
+        $featuredProducts = $categories
+            ->flatMap(fn($cat) => $cat->products)
+            ->where('is_featured', true)
+            ->count();
+
         return Inertia::render('Menu/Index', [
-            'categories' => $categories
+            'categories' => $categories,
+            'tenantSlug' => $tenant->slug,
+            'stats' => [
+                'totalCategories' => $categories->count(),
+                'totalProducts' => $totalProducts,
+                'activeCategories' => $activeCategories,
+                'featuredProducts' => $featuredProducts,
+            ]
         ]);
     }
 
     public function reorder(Request $request)
     {
-        // Logic to reorder categories would go here
-        // For now just a placeholder for the logic
-        return back()->with('success', 'Ordem atualizada!');
+        $validated = $request->validate([
+            'items' => 'required|array',
+            'items.*.id' => 'required|exists:categories,id',
+            'items.*.sort_order' => 'required|integer',
+        ]);
+
+        foreach ($validated['items'] as $item) {
+            Category::where('id', $item['id'])->update(['sort_order' => $item['sort_order']]);
+        }
+
+        return back();
     }
 
     public function toggleVisibility(Request $request, Category $category)
     {
-        $category->is_visible = !$category->is_visible;
+        $category->is_active = !$category->is_active; // Using is_active based on model
         $category->save();
         return back();
     }

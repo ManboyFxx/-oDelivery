@@ -4,13 +4,14 @@ namespace App\Models;
 
 use App\Traits\HasUuid;
 use App\Traits\BelongsToTenant;
+use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Order extends Model
 {
-    use HasFactory, HasUuid, BelongsToTenant, SoftDeletes;
+    use HasFactory, HasUuid, BelongsToTenant, SoftDeletes, Auditable;
 
     protected $keyType = 'string';
     public $incrementing = false;
@@ -46,6 +47,9 @@ class Order extends Model
         'delivered_at',
         'cancelled_at',
         'cancellation_reason',
+        'preparation_started_at',
+        'estimated_ready_at',
+        'preparation_time_minutes',
     ];
 
     protected $casts = [
@@ -63,6 +67,9 @@ class Order extends Model
         'ready_at' => 'datetime',
         'delivered_at' => 'datetime',
         'cancelled_at' => 'datetime',
+        'preparation_started_at' => 'datetime',
+        'estimated_ready_at' => 'datetime',
+        'preparation_time_minutes' => 'integer',
     ];
 
     // Relationships
@@ -152,5 +159,61 @@ class Order extends Model
             'cancelled_at' => now(),
             'cancellation_reason' => $reason,
         ]);
+    }
+
+    // Timing Helpers
+    public function startPreparation(): void
+    {
+        $this->update([
+            'preparation_started_at' => now(),
+            'estimated_ready_at' => now()->addMinutes($this->preparation_time_minutes),
+            'status' => 'preparing',
+        ]);
+    }
+
+    public function getIsLateAttribute(): bool
+    {
+        if (!$this->preparation_started_at || !$this->estimated_ready_at) {
+            return false;
+        }
+
+        // Only consider late if still in preparation/ready status
+        if (!in_array($this->status, ['preparing', 'ready', 'waiting_motoboy'])) {
+            return false;
+        }
+
+        return now()->greaterThan($this->estimated_ready_at);
+    }
+
+    public function getElapsedMinutesAttribute(): int
+    {
+        return $this->created_at->diffInMinutes(now());
+    }
+
+    public function getPreparationElapsedMinutesAttribute(): ?int
+    {
+        if (!$this->preparation_started_at) {
+            return null;
+        }
+
+        return $this->preparation_started_at->diffInMinutes(now());
+    }
+
+    public function getTimeStatusAttribute(): string
+    {
+        if (!$this->preparation_started_at || !$this->estimated_ready_at) {
+            return 'pending';
+        }
+
+        $elapsed = $this->preparation_elapsed_minutes;
+        $estimated = $this->preparation_time_minutes;
+
+        if ($elapsed >= $estimated) {
+            return 'late';
+        } elseif ($elapsed >= $estimated * 0.8) {
+            return 'warning';
+        }
+
+        return 'on_time';
     }
 }

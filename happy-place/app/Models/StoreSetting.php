@@ -65,6 +65,7 @@ class StoreSetting extends Model
         'status_override',
         'is_delivery_paused',
         'paused_until',
+        'default_motoboy_id',
     ];
 
     protected $casts = [
@@ -91,6 +92,7 @@ class StoreSetting extends Model
         'store_longitude' => 'float',
         'is_delivery_paused' => 'boolean',
         'paused_until' => 'datetime',
+        'default_motoboy_id' => 'integer',
     ];
 
     protected $hidden = [

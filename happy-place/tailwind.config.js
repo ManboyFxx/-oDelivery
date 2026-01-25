@@ -10,6 +10,8 @@ export default {
         './resources/js/**/*.tsx',
     ],
 
+    darkMode: 'class',
+
     theme: {
         extend: {
             indigo: {
@@ -23,6 +25,14 @@ export default {
                 500: '#ff3d03',
                 600: '#e53703',
                 700: '#cc3102',
+            },
+            colors: {
+                'premium-dark': '#0f1012',
+                'premium-card': '#1a1b1e',
+                'light-card': '#0B1228',
+            },
+            fontFamily: {
+                sans: ['Inter', ...defaultTheme.fontFamily.sans],
             },
         },
     },

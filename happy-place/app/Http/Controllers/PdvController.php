@@ -82,10 +82,22 @@ class PdvController extends Controller
                 }
             }
 
+            // Fetch settings to check for default motoboy
+            $settings = \App\Models\StoreSetting::where('tenant_id', $tenantId)->first();
+
+            $motoboyId = null;
+            $status = 'new'; // Default status
+
+            // Auto-assign motoboy if delivery mode and setting exists
+            if ($validated['order_mode'] === 'delivery' && $settings && $settings->default_motoboy_id) {
+                $motoboyId = $settings->default_motoboy_id;
+                $status = 'waiting_motoboy'; // Set status to waiting for pickup/delivery start
+            }
+
             $order = Order::create([
                 'tenant_id' => $tenantId,
                 'order_number' => $orderNumber,
-                'status' => 'new',
+                'status' => $status,
                 'customer_name' => $customerName,
                 'customer_id' => $customerId, // Save link
                 'total' => $validated['total'],
@@ -93,6 +105,7 @@ class PdvController extends Controller
                 'mode' => $validated['order_mode'],
                 'payment_status' => 'paid', // PDV usually assumes immediate payment or promise of payment
                 'created_at' => now(),
+                'motoboy_id' => $motoboyId,
             ]);
 
             // 2. Create Order Items
@@ -119,7 +132,6 @@ class PdvController extends Controller
             // 4. Loyalty Points Integration
             if ($customerId) {
                 // Calculate points based on settings
-                $settings = \App\Models\StoreSetting::where('tenant_id', $tenantId)->first();
                 if ($settings && $settings->loyalty_enabled) {
                     $points = floor($validated['total'] * $settings->points_per_currency);
                     if ($points > 0) {

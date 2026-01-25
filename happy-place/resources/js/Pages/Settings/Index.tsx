@@ -59,7 +59,7 @@ interface BusinessHours {
     };
 }
 
-export default function SettingsIndex({ auth, settings, success, paymentMethods = [], deliveryZones = [] }: any) {
+export default function SettingsIndex({ auth, settings, success, paymentMethods = [], deliveryZones = [], motoboys = [] }: any) {
     const [activeTab, setActiveTab] = useState('general');
     const [logoPreview, setLogoPreview] = useState<string | null>(
         settings.logo_path ? `/storage/${settings.logo_path}` : (settings.logo_url || null)
@@ -120,6 +120,7 @@ export default function SettingsIndex({ auth, settings, success, paymentMethods 
         fixed_delivery_fee: settings.fixed_delivery_fee || 5,
         free_delivery_min: settings.free_delivery_min || '',
         estimated_delivery_time: settings.estimated_delivery_time || 30,
+        default_motoboy_id: settings.default_motoboy_id || '',
 
         // System
         theme_color: settings.theme_color || '#ff3d03',
@@ -313,9 +314,12 @@ export default function SettingsIndex({ auth, settings, success, paymentMethods 
         // We need to check if it has a real database ID. 
         // We can check if `created_at` property exists (assuming standard model).
 
-        const isUpdate = !!method.created_at;
+        // Check if this is a real database record (has created_at and numeric/UUID id)
+        // FIXED_PAYMENT_METHODS have string IDs like 'cash', 'debit_card', etc.
+        // Database records will have UUID or numeric IDs
+        const isExistingRecord = method.created_at && method.id && method.id.length > 20; // UUIDs are longer than type strings
 
-        if (isUpdate) {
+        if (isExistingRecord) {
             router.put(route('payment-methods.update', method.id), payload, {
                 preserveScroll: true,
                 onSuccess: () => router.reload({ only: ['paymentMethods', 'success'] }),
@@ -336,10 +340,10 @@ export default function SettingsIndex({ auth, settings, success, paymentMethods 
     };
 
     const savePaymentMethod = (method: any) => {
-        const isUpdate = !!method.created_at;
+        const isExistingRecord = method.created_at && method.id && method.id.length > 20;
         const payload = { ...method };
 
-        if (isUpdate) {
+        if (isExistingRecord) {
             router.put(route('payment-methods.update', method.id), payload, {
                 preserveScroll: true,
                 onSuccess: () => router.reload({ only: ['paymentMethods', 'success'] }), // Reload will overwrite local state with DB state
@@ -886,6 +890,24 @@ export default function SettingsIndex({ auth, settings, success, paymentMethods 
                                             onChange={(e) => setData('estimated_delivery_time', e.target.value)}
                                             className="w-full px-4 py-3 border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent bg-white dark:bg-premium-dark text-gray-900 dark:text-white"
                                         />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Motoboy Padrão
+                                        </label>
+                                        <select
+                                            value={data.default_motoboy_id}
+                                            onChange={(e) => setData('default_motoboy_id', e.target.value)}
+                                            className="w-full px-4 py-3 border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent bg-white dark:bg-premium-dark text-gray-900 dark:text-white"
+                                        >
+                                            <option value="">Selecione um motoboy (Opcional)</option>
+                                            {motoboys.map((motoboy: any) => (
+                                                <option key={motoboy.id} value={motoboy.id}>
+                                                    {motoboy.name}
+                                                </option>
+                                            ))}
+                                        </select>
                                     </div>
                                 </div>
                             </div>

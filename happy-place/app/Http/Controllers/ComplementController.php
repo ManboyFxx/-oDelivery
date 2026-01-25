@@ -13,7 +13,7 @@ class ComplementController extends Controller
 {
     public function index(Request $request)
     {
-        $tenant = Tenant::first();
+        $tenant = auth()->user()->tenant;
 
         $query = ComplementGroup::where('tenant_id', $tenant->id)
             ->with([
@@ -50,7 +50,7 @@ class ComplementController extends Controller
 
     public function store(Request $request)
     {
-        $tenant = Tenant::first();
+        $tenant = auth()->user()->tenant;
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -59,10 +59,9 @@ class ComplementController extends Controller
             'max_selections' => 'required|integer|min:1',
             'options' => 'required|array|min:1',
             'options.*.name' => 'required|string|max:255',
-            'options.*.price' => 'required|numeric|min:0',
-            'options.*.max_quantity' => 'required|integer|min:1',
+            'options.*.price' => 'nullable|numeric|min:0',
+            'options.*.max_quantity' => 'nullable|integer|min:0',
             'options.*.is_available' => 'boolean',
-            'options.*.ingredient_id' => 'nullable|exists:ingredients,id',
         ]);
 
         // Validate min <= max
@@ -89,10 +88,9 @@ class ComplementController extends Controller
             ComplementOption::create([
                 'group_id' => $group->id,
                 'name' => $optionData['name'],
-                'price' => $optionData['price'],
-                'max_quantity' => $optionData['max_quantity'] ?? 1,
+                'price' => $optionData['price'] ?? 0,
+                'max_quantity' => (!empty($optionData['max_quantity']) && $optionData['max_quantity'] > 0) ? $optionData['max_quantity'] : 0,
                 'is_available' => $optionData['is_available'] ?? true,
-                'ingredient_id' => $optionData['ingredient_id'] ?? null,
                 'sort_order' => $index,
             ]);
         }
@@ -102,7 +100,7 @@ class ComplementController extends Controller
 
     public function update(Request $request, $id)
     {
-        $tenant = Tenant::first();
+        $tenant = auth()->user()->tenant;
 
         $group = ComplementGroup::where('tenant_id', $tenant->id)
             ->findOrFail($id);
@@ -115,10 +113,9 @@ class ComplementController extends Controller
             'options' => 'required|array|min:1',
             'options.*.id' => 'nullable|exists:complement_options,id',
             'options.*.name' => 'required|string|max:255',
-            'options.*.price' => 'required|numeric|min:0',
-            'options.*.max_quantity' => 'required|integer|min:1',
+            'options.*.price' => 'nullable|numeric|min:0',
+            'options.*.max_quantity' => 'nullable|integer|min:0',
             'options.*.is_available' => 'boolean',
-            'options.*.ingredient_id' => 'nullable|exists:ingredients,id',
         ]);
 
         // Validate min <= max
@@ -153,10 +150,9 @@ class ComplementController extends Controller
                 ComplementOption::where('id', $optionData['id'])
                     ->update([
                         'name' => $optionData['name'],
-                        'price' => $optionData['price'],
-                        'max_quantity' => $optionData['max_quantity'] ?? 1,
+                        'price' => $optionData['price'] ?? 0,
+                        'max_quantity' => (!empty($optionData['max_quantity']) && $optionData['max_quantity'] > 0) ? $optionData['max_quantity'] : 0,
                         'is_available' => $optionData['is_available'] ?? true,
-                        'ingredient_id' => $optionData['ingredient_id'] ?? null,
                         'sort_order' => $index,
                     ]);
             } else {
@@ -164,10 +160,9 @@ class ComplementController extends Controller
                 ComplementOption::create([
                     'group_id' => $group->id,
                     'name' => $optionData['name'],
-                    'price' => $optionData['price'],
-                    'max_quantity' => $optionData['max_quantity'] ?? 1,
+                    'price' => $optionData['price'] ?? 0,
+                    'max_quantity' => (!empty($optionData['max_quantity']) && $optionData['max_quantity'] > 0) ? $optionData['max_quantity'] : 0,
                     'is_available' => $optionData['is_available'] ?? true,
-                    'ingredient_id' => $optionData['ingredient_id'] ?? null,
                     'sort_order' => $index,
                 ]);
             }
@@ -178,7 +173,7 @@ class ComplementController extends Controller
 
     public function destroy($id)
     {
-        $tenant = Tenant::first();
+        $tenant = auth()->user()->tenant;
 
         $group = ComplementGroup::where('tenant_id', $tenant->id)
             ->findOrFail($id);
@@ -200,7 +195,7 @@ class ComplementController extends Controller
      */
     public function duplicate($id)
     {
-        $tenant = Tenant::first();
+        $tenant = auth()->user()->tenant;
 
         $originalGroup = ComplementGroup::where('tenant_id', $tenant->id)
             ->with('options')
@@ -236,7 +231,7 @@ class ComplementController extends Controller
      */
     public function toggleOption(Request $request, $groupId, $optionId)
     {
-        $tenant = Tenant::first();
+        $tenant = auth()->user()->tenant;
 
         $group = ComplementGroup::where('tenant_id', $tenant->id)->findOrFail($groupId);
         $option = ComplementOption::where('group_id', $group->id)->findOrFail($optionId);

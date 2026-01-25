@@ -1,0 +1,479 @@
+import { Link, router, useForm } from '@inertiajs/react'; // Added useForm
+import { Plus, Pencil, Trash2, Search, Image as ImageIcon, X, Upload, Check } from 'lucide-react';
+import { useState } from 'react';
+import Modal from '@/Components/Modal';
+import TextInput from '@/Components/TextInput';
+import InputLabel from '@/Components/InputLabel';
+import PrimaryButton from '@/Components/PrimaryButton';
+import SecondaryButton from '@/Components/SecondaryButton';
+import Checkbox from '@/Components/Checkbox';
+import InputError from '@/Components/InputError';
+import { Switch } from '@headlessui/react';
+
+interface Category {
+    id: string;
+    name: string;
+}
+
+interface ComplementGroup {
+    id: string;
+    name: string;
+}
+
+interface Product {
+    id: string;
+    name: string;
+    description: string;
+    price: number;
+    image_url?: string;
+    stock_quantity?: number;
+    is_available: boolean;
+    track_stock: boolean;
+    category_id?: string;
+    category?: Category;
+    complement_groups?: ComplementGroup[];
+    complementGroups?: ComplementGroup[];
+}
+
+interface Props {
+    products: {
+        data: Product[];
+        links: any[];
+    };
+    categories: Category[];
+    complement_groups: ComplementGroup[];
+}
+
+export default function ProductsTab({ products, categories, complement_groups }: Props) {
+    const [search, setSearch] = useState('');
+    const [showModal, setShowModal] = useState(false);
+    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+    const { data, setData, post, processing, errors, reset } = useForm({
+        name: '',
+        description: '',
+        price: '',
+        category_id: '',
+        is_available: true,
+        image: null as File | null,
+        complement_groups: [] as string[],
+        track_stock: false,
+        stock_quantity: '' as string | number
+    });
+
+    // Filter products locally for instant search (if pagination allows, otherwise server search is better but this matches previous behavior)
+    // Note: The products prop is paginated, so this filter only affects the current page.
+    const filteredProducts = products.data.filter(product =>
+        product.name.toLowerCase().includes(search.toLowerCase()) ||
+        product.description.toLowerCase().includes(search.toLowerCase())
+    );
+
+    const openCreateModal = () => {
+        setEditingProduct(null);
+        setImagePreview(null);
+        reset();
+        setData({
+            name: '',
+            description: '',
+            price: '',
+            category_id: '',
+            is_available: true,
+            image: null,
+            complement_groups: [],
+            track_stock: false,
+            stock_quantity: ''
+        });
+        setShowModal(true);
+    };
+
+    const openEditModal = (product: Product) => {
+        setEditingProduct(product);
+        setImagePreview(product.image_url || null);
+        setData({
+            name: product.name,
+            description: product.description || '',
+            price: product.price.toString(),
+            category_id: product.category_id || '',
+            is_available: product.is_available,
+            image: null,
+            complement_groups: product.complement_groups?.map(g => g.id) || [],
+            track_stock: product.track_stock,
+            stock_quantity: product.stock_quantity || ''
+        });
+        setShowModal(true);
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (editingProduct) {
+            router.post(route('products.update', editingProduct.id), {
+                _method: 'put',
+                ...data,
+            }, {
+                onSuccess: () => setShowModal(false)
+            });
+        } else {
+            post(route('products.store'), {
+                onSuccess: () => setShowModal(false)
+            });
+        }
+    };
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setData('image', file);
+            setImagePreview(URL.createObjectURL(file));
+        }
+    };
+
+    const handleDelete = (id: string) => {
+        if (confirm('Tem certeza que deseja excluir este produto?')) {
+            router.delete(route('products.destroy', id));
+        }
+    };
+
+    const handleToggleAvailability = (product: Product) => {
+        router.post(route('products.toggle', product.id), {}, {
+            preserveScroll: true,
+        });
+    };
+
+    const toggleComplementGroup = (id: string) => {
+        const groups = data.complement_groups.includes(id)
+            ? data.complement_groups.filter(g => g !== id)
+            : [...data.complement_groups, id];
+        setData('complement_groups', groups);
+    };
+
+    return (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Header / Actions Row */}
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white hidden md:block">
+                    Gerenciar Itens
+                </h3>
+
+                <div className="flex gap-4 w-full md:w-auto">
+                    {/* Search */}
+                    <div className="relative flex-1 md:w-72">
+                        <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                        <input
+                            type="text"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Buscar itens..."
+                            className="w-full h-11 rounded-2xl border border-gray-200 bg-white pl-11 shadow-sm focus:border-[#ff3d03] focus:ring-[#ff3d03]/20 dark:border-white/5 dark:bg-[#0f1012] transition-all"
+                        />
+                    </div>
+
+                    <button
+                        onClick={openCreateModal}
+                        className="flex items-center gap-2 rounded-2xl bg-[#ff3d03] px-6 py-3 text-sm font-bold text-white shadow-lg shadow-[#ff3d03]/20 hover:bg-[#e63700] hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
+                    >
+                        <Plus className="h-5 w-5" />
+                        Novo Produto
+                    </button>
+                </div>
+            </div>
+
+            {/* Product GRID View */}
+            {filteredProducts.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    {filteredProducts.map((product) => (
+                        <div key={product.id} className="group relative bg-white dark:bg-[#0f1012] rounded-[24px] shadow-lg shadow-gray-200/50 dark:shadow-none hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 dark:border-white/5 overflow-hidden flex flex-col">
+                            {/* Image Area */}
+                            <div className="relative aspect-[4/3] bg-gray-100 dark:bg-white/5 overflow-hidden">
+                                {product.image_url ? (
+                                    <img
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        src={product.image_url}
+                                        alt={product.name}
+                                    />
+                                ) : (
+                                    <div className="flex items-center justify-center h-full">
+                                        <ImageIcon className="h-10 w-10 text-gray-300 dark:text-gray-600" />
+                                    </div>
+                                )}
+                                {/* Action Overlay */}
+                                <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 translate-y-2 group-hover:translate-y-0">
+                                    <button
+                                        onClick={() => openEditModal(product)}
+                                        className="bg-white/90 dark:bg-black/80 text-gray-700 dark:text-gray-200 p-2 rounded-xl hover:text-[#ff3d03] shadow-lg backdrop-blur-sm transition-colors"
+                                        title="Editar"
+                                    >
+                                        <Pencil className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(product.id)}
+                                        className="bg-white/90 dark:bg-black/80 text-gray-700 dark:text-gray-200 p-2 rounded-xl hover:text-red-500 shadow-lg backdrop-blur-sm transition-colors"
+                                        title="Excluir"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
+                                </div>
+
+                                {/* Availability Toggle */}
+                                <div className="absolute top-3 left-3 z-10" onClick={(e) => e.stopPropagation()}>
+                                    <Switch
+                                        checked={product.is_available}
+                                        onChange={() => handleToggleAvailability(product)}
+                                        className={`${product.is_available ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
+                                            } relative inline-flex h-6 w-10 items-center rounded-full transition-colors focus:outline-none shadow-lg`}
+                                    >
+                                        <span
+                                            className={`${product.is_available ? 'translate-x-5' : 'translate-x-1'
+                                                } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                                        />
+                                    </Switch>
+                                </div>
+
+                                {!product.is_available && (
+                                    <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-[1px] flex items-center justify-center pointer-events-none">
+                                        <span className="bg-black/70 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-md">Indisponível</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Content */}
+                            <div className="p-5 flex flex-col flex-1">
+                                <div className="flex justify-between items-start mb-2">
+                                    <div>
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#ff3d03] mb-1">
+                                            {product.category?.name || 'Sem Categoria'}
+                                        </p>
+                                        <h3 className="text-lg font-black text-gray-900 dark:text-white line-clamp-1 leading-tight" title={product.name}>
+                                            {product.name}
+                                        </h3>
+                                    </div>
+                                </div>
+
+                                <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 min-h-[2.5rem] leading-relaxed mb-4">
+                                    {product.description || 'Sem descrição'}
+                                </p>
+
+                                <div className="mt-auto pt-4 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
+                                    <span className="text-xl font-black text-gray-900 dark:text-white tracking-tight">
+                                        R$ {Number(product.price).toFixed(2).replace('.', ',')}
+                                    </span>
+                                    <div className="flex gap-1.5">
+                                        {product.complementGroups && product.complementGroups.length > 0 && (
+                                            <span className="px-2 py-1 rounded-md bg-gray-100 dark:bg-white/10 text-xs font-bold text-gray-600 dark:text-gray-300" title="Possui complementos">
+                                                +Opções
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-[#0f1012] rounded-[32px] border border-dashed border-gray-200 dark:border-gray-800">
+                    <div className="h-16 w-16 bg-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center mb-4">
+                        <ImageIcon className="h-8 w-8 text-gray-300" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">Nenhum produto encontrado</h3>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Tente buscar por outro termo ou crie um novo item.</p>
+                    <div className="mt-6">
+                        <button
+                            onClick={openCreateModal}
+                            className="inline-flex items-center gap-2 rounded-xl bg-[#ff3d03] px-6 py-3 text-sm font-bold text-white shadow-lg shadow-[#ff3d03]/20 hover:bg-[#e63700] hover:scale-105 transition-all"
+                        >
+                            <Plus className="h-5 w-5" />
+                            Cadastrar Produto
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Create/Edit Modal */}
+            <Modal show={showModal} onClose={() => setShowModal(false)} maxWidth="2xl">
+                <form onSubmit={handleSubmit} className="p-6">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-black text-gray-900 dark:text-gray-100">
+                            {editingProduct ? 'Editar Produto' : 'Novo Produto'}
+                        </h2>
+                        <button type="button" onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-500">
+                            <X className="h-5 w-5" />
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Left Column */}
+                        <div className="space-y-4">
+                            {/* Image Upload */}
+                            <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-2xl p-4 hover:border-[#ff3d03] transition-colors cursor-pointer relative bg-gray-50 dark:bg-gray-800 h-48">
+                                <input
+                                    type="file"
+                                    id="image"
+                                    onChange={handleImageChange}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    accept="image/*"
+                                />
+                                {imagePreview ? (
+                                    <div className="relative w-full h-full">
+                                        <img src={imagePreview} alt="Preview" className="w-full h-full object-cover rounded-xl" />
+                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-xl">
+                                            <p className="text-white text-sm font-medium">Trocar Imagem</p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center p-4">
+                                        <Upload className="mx-auto h-8 w-8 text-gray-400" />
+                                        <p className="mt-2 text-sm text-gray-500">Clique para adicionar imagem</p>
+                                    </div>
+                                )}
+                            </div>
+                            <InputError message={errors.image} className="mt-2" />
+
+                            {/* Name */}
+                            <div>
+                                <InputLabel htmlFor="name" value="Nome do Produto *" />
+                                <TextInput
+                                    id="name"
+                                    value={data.name}
+                                    onChange={(e) => setData('name', e.target.value)}
+                                    className="mt-1 block w-full"
+                                    placeholder="Ex: X-Tudo"
+                                    required
+                                />
+                                <InputError message={errors.name} className="mt-2" />
+                            </div>
+
+                            {/* Price */}
+                            <div>
+                                <InputLabel htmlFor="price" value="Preço (R$) *" />
+                                <TextInput
+                                    id="price"
+                                    type="number"
+                                    step="0.01"
+                                    value={data.price}
+                                    onChange={(e) => setData('price', e.target.value)}
+                                    className="mt-1 block w-full"
+                                    placeholder="0.00"
+                                    required
+                                />
+                                <InputError message={errors.price} className="mt-2" />
+                            </div>
+
+                            {/* Category */}
+                            <div>
+                                <InputLabel htmlFor="category_id" value="Categoria" />
+                                <select
+                                    id="category_id"
+                                    value={data.category_id}
+                                    onChange={(e) => setData('category_id', e.target.value)}
+                                    className="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-[#ff3d03] focus:ring-[#ff3d03] rounded-xl shadow-sm h-11"
+                                >
+                                    <option value="">Selecione uma categoria...</option>
+                                    {categories.map((cat) => (
+                                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                    ))}
+                                </select>
+                                <InputError message={errors.category_id} className="mt-2" />
+                            </div>
+                        </div>
+
+                        {/* Right Column */}
+                        <div className="space-y-4">
+                            {/* Description */}
+                            <div>
+                                <InputLabel htmlFor="description" value="Descrição" />
+                                <textarea
+                                    id="description"
+                                    value={data.description}
+                                    onChange={(e) => setData('description', e.target.value)}
+                                    className="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-[#ff3d03] focus:ring-[#ff3d03] rounded-xl shadow-sm h-24 resize-none p-3"
+                                    placeholder="Detalhes do produto..."
+                                />
+                                <InputError message={errors.description} className="mt-2" />
+                            </div>
+
+                            {/* Availability & Stock Tracking */}
+                            <div className="flex gap-4">
+                                <div className="flex-1 flex items-center space-x-2 bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+                                    <Checkbox
+                                        id="is_available"
+                                        checked={data.is_available}
+                                        onChange={(e) => setData('is_available', e.target.checked)}
+                                    />
+                                    <label htmlFor="is_available" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                                        Disponível
+                                    </label>
+                                </div>
+                                <div className="flex-1 flex items-center space-x-2 bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+                                    <Checkbox
+                                        id="track_stock"
+                                        checked={data.track_stock}
+                                        onChange={(e) => setData('track_stock', e.target.checked)}
+                                    />
+                                    <label htmlFor="track_stock" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                                        Estoque
+                                    </label>
+                                </div>
+                            </div>
+
+                            {/* Stock Quantity - Only if tracking enabled */}
+                            {data.track_stock && (
+                                <div className="animate-in fade-in slide-in-from-top-1">
+                                    <InputLabel htmlFor="stock_quantity" value="Quantidade em Estoque" />
+                                    <TextInput
+                                        id="stock_quantity"
+                                        type="number"
+                                        value={data.stock_quantity ?? ''}
+                                        onChange={(e) => setData('stock_quantity', e.target.value)}
+                                        className="mt-1 block w-full bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-800 focus:border-orange-500 focus:ring-orange-500 font-bold text-orange-600"
+                                        placeholder="0"
+                                    />
+                                    <InputError message={errors.stock_quantity} className="mt-2" />
+                                </div>
+                            )}
+
+                            {/* Complement Groups */}
+                            <div className="flex-1 flex flex-col min-h-0">
+                                <InputLabel value="Grupos de Complementos" className="mb-2" />
+                                <div className="border border-gray-200 dark:border-gray-700 rounded-xl max-h-48 overflow-y-auto bg-gray-50 dark:bg-gray-800 p-2 space-y-1 custom-scrollbar">
+                                    {complement_groups.length > 0 ? (
+                                        complement_groups.map((group) => (
+                                            <div
+                                                key={group.id}
+                                                onClick={() => toggleComplementGroup(group.id)}
+                                                className={`flex items-center p-2 rounded-lg cursor-pointer transition-colors ${data.complement_groups.includes(group.id)
+                                                    ? 'bg-orange-100 border border-[#ff3d03]/30 dark:bg-orange-900/40'
+                                                    : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                                                    }`}
+                                            >
+                                                <Checkbox
+                                                    checked={data.complement_groups.includes(group.id)}
+                                                    onChange={() => { }}
+                                                    className="pointer-events-none mr-3 text-[#ff3d03]"
+                                                />
+                                                <span className={`text-sm ${data.complement_groups.includes(group.id) ? 'font-bold text-[#ff3d03]' : 'text-gray-700 dark:text-gray-300'}`}>
+                                                    {group.name}
+                                                </span>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-xs text-gray-500 text-center py-4">Nenhum grupo cadastrado.</p>
+                                    )}
+                                </div>
+                                <InputError message={errors.complement_groups} className="mt-2" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-white/5">
+                        <SecondaryButton onClick={() => setShowModal(false)} disabled={processing} className="rounded-xl py-3">
+                            Cancelar
+                        </SecondaryButton>
+                        <PrimaryButton disabled={processing} className="bg-[#ff3d03] hover:bg-[#e63700] border-transparent rounded-xl py-3 px-6 shadow-lg shadow-[#ff3d03]/20">
+                            {editingProduct ? 'Salvar Alterações' : 'Criar Produto'}
+                        </PrimaryButton>
+                    </div>
+                </form>
+            </Modal>
+        </div>
+    );
+}

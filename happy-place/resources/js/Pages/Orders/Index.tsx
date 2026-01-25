@@ -3,34 +3,53 @@ import { Head } from '@inertiajs/react';
 import OrderCard, { Order, OrderAction } from './Partials/OrderCard';
 import { useState } from 'react';
 import { CancelOrderModal, ChangeModeModal, ChangePaymentModal, EditOrderModal } from './Partials/ActionModals';
+import { Circle, Clock, CheckCircle, Truck, Package } from 'lucide-react';
 
-export default function OrdersIndex({ orders, motoboys = [] }: { orders: Order[], motoboys: any[] }) {
+export default function OrdersIndex({ orders, motoboys = [], products = [] }: { orders: Order[], motoboys: any[], products: any[] }) {
     const columns = [
         {
             id: 'new',
             title: 'Novos',
-            headerColor: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
-            containerColor: 'bg-blue-50/30 border-blue-100 dark:bg-blue-900/5 dark:border-blue-800/30'
+            statuses: ['new'],
+            icon: Circle,
+            iconColor: 'text-blue-500',
+            headerBg: 'bg-white',
+            borderColor: 'border-blue-100',
+            containerBg: 'bg-gray-50/50',
+            badgeColor: 'bg-blue-50 text-blue-700 ring-1 ring-blue-700/10'
         },
         {
             id: 'preparing',
             title: 'Preparando',
-            headerColor: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300',
-            containerColor: 'bg-orange-50/30 border-orange-100 dark:bg-orange-900/5 dark:border-orange-800/30'
+            statuses: ['preparing'],
+            icon: Clock,
+            iconColor: 'text-orange-500',
+            headerBg: 'bg-white',
+            borderColor: 'border-orange-100',
+            containerBg: 'bg-orange-50/30',
+            badgeColor: 'bg-orange-50 text-orange-700 ring-1 ring-orange-700/10'
         },
         {
             id: 'ready',
             title: 'Pronto / Aguardando',
             statuses: ['ready', 'waiting_motoboy'],
-            headerColor: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300',
-            containerColor: 'bg-green-50/30 border-green-100 dark:bg-green-900/5 dark:border-green-800/30'
+            icon: CheckCircle,
+            iconColor: 'text-green-500',
+            headerBg: 'bg-white',
+            borderColor: 'border-green-100',
+            containerBg: 'bg-green-50/30',
+            badgeColor: 'bg-green-50 text-green-700 ring-1 ring-green-700/10'
         },
         {
             id: 'out_for_delivery',
             title: 'Em Entrega',
             statuses: ['motoboy_accepted', 'out_for_delivery'],
-            headerColor: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300',
-            containerColor: 'bg-indigo-50/30 border-indigo-100 dark:bg-indigo-900/5 dark:border-indigo-800/30'
+            icon: Truck,
+            iconColor: 'text-indigo-500',
+            headerBg: 'bg-white',
+            borderColor: 'border-indigo-100',
+            containerBg: 'bg-indigo-50/30',
+            badgeColor: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-700/10'
         },
     ];
 
@@ -68,29 +87,57 @@ export default function OrdersIndex({ orders, motoboys = [] }: { orders: Order[]
         <AuthenticatedLayout>
             <Head title="Gerenciador de Pedidos" />
 
-            <div className="flex h-full flex-col space-y-4">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-                        Kanban de Pedidos
-                    </h2>
-                    <span className="text-sm text-gray-500">
-                        {orders.length} pedidos ativos
-                    </span>
+            {/* Premium Header */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-4">
+                <div>
+                    <div className="flex items-center gap-2 mb-1">
+                        <div className="p-2 bg-orange-100 dark:bg-orange-500/20 rounded-xl">
+                            <Package className="w-6 h-6 text-orange-600 dark:text-orange-500" />
+                        </div>
+                        <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight leading-none">
+                            Kanban de Pedidos
+                        </h2>
+                    </div>
+                    <p className="text-gray-500 dark:text-gray-400 mt-2 font-medium ml-1">
+                        Gerencie o fluxo da sua cozinha e entregas em tempo real
+                    </p>
                 </div>
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 bg-white dark:bg-[#1a1b1e] border border-gray-100 dark:border-white/5 px-4 py-2.5 rounded-2xl text-sm font-bold text-gray-700 dark:text-gray-300 shadow-sm">
+                        <span className="relative flex h-2.5 w-2.5 mr-1">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                        </span>
+                        {orders.length} pedidos ativos
+                    </div>
+                </div>
+            </div>
 
-                {/* Kanban Board */}
-                <div className="flex flex-1 gap-6 overflow-x-auto pb-4">
-                    {columns.map((column) => (
-                        <div key={column.id} className={`flex h-full w-96 flex-shrink-0 flex-col rounded-xl border p-3 transition-colors ${column.containerColor}`}>
-                            <div className={`mb-3 flex items-center justify-between rounded-lg px-3 py-2 font-semibold ${column.headerColor}`}>
-                                <span>{column.title}</span>
-                                <span className="rounded-full bg-white px-2 py-0.5 text-xs shadow-sm dark:bg-gray-800">
-                                    {getOrdersForColumn(column.id, column.statuses).length}
-                                </span>
+            {/* Modern Kanban Board - Responsive Grid/Scroll Layout */}
+            <div className="flex lg:grid lg:grid-cols-4 gap-4 flex-1 h-[calc(100vh-14rem)] overflow-x-auto lg:overflow-x-visible px-1 pb-2">
+                {columns.map((column) => {
+                    const columnOrders = getOrdersForColumn(column.id, column.statuses);
+                    const Icon = column.icon;
+
+                    return (
+                        <div key={column.id} className={`flex h-full flex-col rounded-[24px] bg-gray-50 dark:bg-[#1a1b1e] border border-gray-200 dark:border-white/5 shadow-xl shadow-gray-200/50 dark:shadow-none min-w-[280px] lg:min-w-0`}>
+                            {/* Column Header */}
+                            <div className="p-3 bg-gray-50 dark:bg-[#1a1b1e] z-10 rounded-t-[24px]">
+                                <div className={`flex items-center justify-between rounded-xl p-3 bg-white dark:bg-black/20 border border-gray-100 dark:border-white/5 shadow-sm`}>
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <div className={`p-2 rounded-lg bg-gray-50 dark:bg-white/5 flex-shrink-0 ${column.iconColor}`}>
+                                            <Icon className="h-4 w-4" />
+                                        </div>
+                                        <span className="font-extrabold text-gray-900 dark:text-white text-sm tracking-tight truncate">{column.title}</span>
+                                    </div>
+                                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-black flex-shrink-0 ${column.badgeColor}`}>
+                                        {columnOrders.length}
+                                    </span>
+                                </div>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto pr-1 scrollbar-thin">
-                                {getOrdersForColumn(column.id, column.statuses).map((order) => (
+                            <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-3">
+                                {columnOrders.map((order) => (
                                     <OrderCard
                                         key={order.id}
                                         order={order}
@@ -99,15 +146,18 @@ export default function OrdersIndex({ orders, motoboys = [] }: { orders: Order[]
                                     />
                                 ))}
 
-                                {getOrdersForColumn(column.id, column.statuses).length === 0 && (
-                                    <div className="flex h-24 items-center justify-center rounded-lg border-2 border-dashed border-gray-200 text-sm text-gray-400 dark:border-gray-700">
-                                        Vazio
+                                {columnOrders.length === 0 && (
+                                    <div className="flex flex-col items-center justify-center h-full max-h-48 rounded-[20px] border-2 border-dashed border-gray-200 dark:border-gray-800 text-gray-400 dark:text-gray-600 gap-2 mt-2 bg-gray-50/50 dark:bg-white/5 opacity-60">
+                                        <div className="p-3 bg-white dark:bg-black/20 rounded-full">
+                                            <Icon className="h-6 w-6 opacity-40" />
+                                        </div>
+                                        <span className="text-[10px] font-bold opacity-60 uppercase tracking-widest text-center leading-tight">Sem<br />pedidos</span>
                                     </div>
                                 )}
                             </div>
                         </div>
-                    ))}
-                </div>
+                    );
+                })}
             </div>
 
             {/* Modals */}
@@ -125,6 +175,7 @@ export default function OrdersIndex({ orders, motoboys = [] }: { orders: Order[]
                 show={modalType === 'edit'}
                 onClose={closeModal}
                 order={selectedOrder}
+                products={products}
             />
             <ChangeModeModal
                 show={modalType === 'mode'}

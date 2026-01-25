@@ -11,7 +11,7 @@ export default function Modal({
     show = false,
     maxWidth = '2xl',
     closeable = true,
-    onClose = () => {},
+    onClose = () => { },
 }: PropsWithChildren<{
     show: boolean;
     maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
@@ -60,7 +60,7 @@ export default function Modal({
                     leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                 >
                     <DialogPanel
-                        className={`mb-6 transform overflow-hidden rounded-lg bg-white shadow-xl transition-all sm:mx-auto sm:w-full dark:bg-gray-800 ${maxWidthClass}`}
+                        className={`mb-6 transform overflow-hidden rounded-2xl bg-white shadow-xl transition-all w-full mx-4 sm:mx-auto sm:w-full dark:bg-[#1a1b1e] text-gray-900 dark:text-white tracking-tight ${maxWidthClass}`}
                     >
                         {children}
                     </DialogPanel>

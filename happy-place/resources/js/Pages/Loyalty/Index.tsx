@@ -1,12 +1,15 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, usePage, useForm, router } from '@inertiajs/react';
-import { Gift, Save, Plus, History, Settings, Users, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { Gift, Save, Plus, History, Settings, Users, ArrowUpRight, ArrowDownLeft, Search } from 'lucide-react';
 import { useState } from 'react';
 import { clsx } from 'clsx';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import PrimaryButton from '@/Components/PrimaryButton';
+import SecondaryButton from '@/Components/SecondaryButton'; // Assuming we have this
 import Modal from '@/Components/Modal';
+import PageHeader from '@/Components/PageHeader';
+import { Switch } from '@headlessui/react';
 
 interface Settings {
     id: string;
@@ -69,37 +72,34 @@ export default function LoyaltyIndex({ settings, history, customers }: { setting
         <AuthenticatedLayout>
             <Head title="Fidelidade" />
 
-            <div className="space-y-6">
+            <div className="flex h-full flex-col space-y-8">
                 {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
-                            <Gift className="text-[#ff3d03]" />
-                            Fidelidade
-                        </h2>
-                        <p className="text-sm text-gray-500 mt-1">Gerencie pontos e recompensas</p>
-                    </div>
-                    {activeTab === 'dashboard' && (
-                        <button
-                            onClick={() => setIsAdjustModalOpen(true)}
-                            className="bg-[#ff3d03] hover:bg-[#e63700] text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-lg shadow-orange-500/20 transition-all"
-                        >
-                            <Plus className="h-4 w-4" />
-                            Ajuste Manual
-                        </button>
-                    )}
-                </div>
+                <PageHeader
+                    title="Programa de Fidelidade"
+                    subtitle="Gerencie pontos, recompensas e configurações."
+                    action={
+                        activeTab === 'dashboard' ? (
+                            <button
+                                onClick={() => setIsAdjustModalOpen(true)}
+                                className="flex items-center gap-2 rounded-2xl bg-[#ff3d03] px-6 py-3 text-sm font-bold text-white shadow-lg shadow-[#ff3d03]/20 hover:bg-[#e63700] hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
+                            >
+                                <Plus className="h-5 w-5" />
+                                Ajuste Manual
+                            </button>
+                        ) : undefined
+                    }
+                />
 
-                {/* Horizontal Tabs */}
-                <div className="border-b border-gray-200 dark:border-gray-800">
-                    <nav className="flex gap-8">
+                {/* Pill Tabs */}
+                <div className="flex justify-center md:justify-start">
+                    <nav className="flex items-center gap-1 bg-white dark:bg-[#1a1b1e] p-1.5 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
                         <button
                             onClick={() => setActiveTab('dashboard')}
                             className={clsx(
-                                "pb-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2",
+                                "px-6 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap flex items-center gap-2",
                                 activeTab === 'dashboard'
-                                    ? "border-[#ff3d03] text-[#ff3d03]"
-                                    : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                    ? "bg-[#ff3d03] text-white shadow-md shadow-[#ff3d03]/20"
+                                    : "text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-white/5"
                             )}
                         >
                             <History className="h-4 w-4" />
@@ -108,10 +108,10 @@ export default function LoyaltyIndex({ settings, history, customers }: { setting
                         <button
                             onClick={() => setActiveTab('settings')}
                             className={clsx(
-                                "pb-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2",
+                                "px-6 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap flex items-center gap-2",
                                 activeTab === 'settings'
-                                    ? "border-[#ff3d03] text-[#ff3d03]"
-                                    : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                    ? "bg-[#ff3d03] text-white shadow-md shadow-[#ff3d03]/20"
+                                    : "text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-white/5"
                             )}
                         >
                             <Settings className="h-4 w-4" />
@@ -123,52 +123,58 @@ export default function LoyaltyIndex({ settings, history, customers }: { setting
                 {/* Content Area */}
                 <div>
                     {activeTab === 'dashboard' && (
-                        <div className="space-y-6">
+                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             {/* Recent History Table */}
-                            <div className="bg-white dark:bg-[#1a1b1e] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+                            <div className="bg-white dark:bg-[#1a1b1e] rounded-[32px] shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-white/5 overflow-hidden">
+                                <div className="p-6 border-b border-gray-100 dark:border-white/5 flex justify-between items-center">
+                                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">Últimas Movimentações</h3>
+                                </div>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-sm text-left">
-                                        <thead className="bg-gray-50 dark:bg-[#2c2d30] text-gray-500 dark:text-gray-400 uppercase text-xs">
+                                        <thead className="bg-gray-50 dark:bg-[#0f1012] text-gray-500 dark:text-gray-400 uppercase text-xs font-bold">
                                             <tr>
-                                                <th className="px-6 py-3">Cliente</th>
-                                                <th className="px-6 py-3">Tipo</th>
-                                                <th className="px-6 py-3">Pontos</th>
-                                                <th className="px-6 py-3">Descrição</th>
-                                                <th className="px-6 py-3">Data</th>
+                                                <th className="px-6 py-4 rounded-tl-[32px]">Cliente</th>
+                                                <th className="px-6 py-4">Tipo</th>
+                                                <th className="px-6 py-4">Pontos</th>
+                                                <th className="px-6 py-4">Descrição</th>
+                                                <th className="px-6 py-4 rounded-tr-[32px]">Data</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                                        <tbody className="divide-y divide-gray-100 dark:divide-white/5">
                                             {history.map((item) => (
-                                                <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-[#2c2d30]/50 transition-colors">
-                                                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                                                <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                                    <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">
                                                         {item.customer.name}
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         {item.type === 'earn' ? (
-                                                            <span className="inline-flex items-center gap-1 text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full text-xs font-bold">
-                                                                <ArrowDownLeft className="h-3 w-3" /> Ganho
+                                                            <span className="inline-flex items-center gap-1.5 text-green-600 bg-green-50 dark:bg-green-500/10 px-3 py-1 rounded-lg text-xs font-bold border border-green-100 dark:border-green-500/20">
+                                                                <ArrowDownLeft className="h-3 w-3" /> Acúmulo
                                                             </span>
                                                         ) : (
-                                                            <span className="inline-flex items-center gap-1 text-red-600 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded-full text-xs font-bold">
+                                                            <span className="inline-flex items-center gap-1.5 text-red-600 bg-red-50 dark:bg-red-500/10 px-3 py-1 rounded-lg text-xs font-bold border border-red-100 dark:border-red-500/20">
                                                                 <ArrowUpRight className="h-3 w-3" /> Resgate
                                                             </span>
                                                         )}
                                                     </td>
-                                                    <td className={clsx("px-6 py-4 font-bold", item.type === 'earn' ? "text-green-600" : "text-red-600")}>
+                                                    <td className={clsx("px-6 py-4 font-black text-lg", item.type === 'earn' ? "text-green-600" : "text-red-500")}>
                                                         {item.type === 'earn' ? '+' : '-'}{item.points}
                                                     </td>
                                                     <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
                                                         {item.description}
                                                     </td>
-                                                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
-                                                        {new Date(item.created_at).toLocaleDateString('pt-BR')} {new Date(item.created_at).toLocaleTimeString('pt-BR')}
+                                                    <td className="px-6 py-4 text-gray-400 dark:text-gray-500 text-xs font-medium">
+                                                        {new Date(item.created_at).toLocaleDateString('pt-BR')} às {new Date(item.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                                     </td>
                                                 </tr>
                                             ))}
                                             {history.length === 0 && (
                                                 <tr>
-                                                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                                                        Nenhuma movimentação registrada.
+                                                    <td colSpan={5} className="px-6 py-20 text-center text-gray-500 dark:text-gray-400 flex flex-col items-center justify-center w-full">
+                                                        <div className="h-16 w-16 bg-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center mb-4">
+                                                            <History className="h-8 w-8 text-gray-300" />
+                                                        </div>
+                                                        <p className="font-bold text-gray-900 dark:text-white">Nenhuma movimentação registrada.</p>
                                                     </td>
                                                 </tr>
                                             )}
@@ -180,76 +186,88 @@ export default function LoyaltyIndex({ settings, history, customers }: { setting
                     )}
 
                     {activeTab === 'settings' && (
-                        <div className="max-w-2xl space-y-6">
-                            <div className="bg-white dark:bg-[#1a1b1e] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
-                                <form onSubmit={submitSettings} className="space-y-6">
-                                    <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-[#2c2d30] rounded-lg border border-gray-200 dark:border-gray-700">
-                                        <div className="flex items-center h-5">
-                                            <input
-                                                id="loyalty_enabled"
-                                                type="checkbox"
-                                                checked={settingsData.loyalty_enabled}
-                                                onChange={(e) => setSettingsData('loyalty_enabled', e.target.checked)}
-                                                className="w-5 h-5 text-[#ff3d03] border-gray-300 rounded focus:ring-[#ff3d03] dark:bg-gray-700 dark:border-gray-600"
-                                            />
+                        <div className="max-w-4xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <form onSubmit={submitSettings} className="space-y-6">
+                                {/* Main Toggle */}
+                                <div className="bg-white dark:bg-[#1a1b1e] rounded-[32px] shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-white/5 p-8">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-12 w-12 rounded-2xl bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center text-[#ff3d03]">
+                                                <Gift className="h-6 w-6" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Programa de Fidelidade</h3>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400">Ative para permitir que seus clientes acumulem pontos.</p>
+                                            </div>
                                         </div>
-                                        <div className="flex-1">
-                                            <label htmlFor="loyalty_enabled" className="font-medium text-gray-900 dark:text-white cursor-pointer select-none">
-                                                Ativar Programa de Fidelidade
-                                            </label>
-                                            <p className="text-xs text-gray-500">Se desativado, os clientes não ganharão novos pontos.</p>
-                                        </div>
-                                    </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <Switch
+                                            checked={settingsData.loyalty_enabled}
+                                            onChange={(checked) => setSettingsData('loyalty_enabled', checked)}
+                                            className={`${settingsData.loyalty_enabled ? 'bg-[#ff3d03]' : 'bg-gray-300 dark:bg-gray-600'
+                                                } relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none`}
+                                        >
+                                            <span
+                                                className={`${settingsData.loyalty_enabled ? 'translate-x-6' : 'translate-x-1'
+                                                    } inline-block h-5 w-5 transform rounded-full bg-white transition-transform`}
+                                            />
+                                        </Switch>
+                                    </div>
+                                </div>
+
+                                {/* Rules Card */}
+                                <div className="bg-white dark:bg-[#1a1b1e] rounded-[32px] shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-white/5 p-8">
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Regras de Pontuação</h3>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div>
-                                            <InputLabel value="Pontos por Real Gasto" />
-                                            <div className="relative mt-1">
+                                            <InputLabel value="Pontos por Real Gasto" className="mb-2" />
+                                            <div className="relative group">
                                                 <TextInput
                                                     type="number"
                                                     value={settingsData.points_per_currency}
                                                     onChange={(e) => setSettingsData('points_per_currency', parseFloat(e.target.value))}
-                                                    className="w-full pr-12"
+                                                    className="w-full pr-16 h-14 text-lg font-bold"
                                                     step="0.1"
                                                     min="0"
                                                 />
-                                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500 text-sm">
-                                                    pts/R$
+                                                <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400 font-bold bg-transparent">
+                                                    pts / R$
                                                 </div>
                                             </div>
-                                            <p className="text-xs text-gray-500 mt-1">Ex: 1 ponto a cada R$ 1,00 gasto.</p>
+                                            <p className="text-sm text-gray-500 mt-2 pl-1">Ex: O cliente ganha <strong className="text-gray-900 dark:text-white">1 ponto</strong> a cada R$ 1,00 gasto.</p>
                                         </div>
 
                                         <div>
-                                            <InputLabel value="Valor de Resgate (Cashback)" />
-                                            <div className="relative mt-1">
-                                                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500 text-sm">
+                                            <InputLabel value="Valor do CashBack (Resgate)" className="mb-2" />
+                                            <div className="relative group">
+                                                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-gray-400 font-bold">
                                                     R$
                                                 </div>
                                                 <TextInput
                                                     type="number"
                                                     value={settingsData.currency_per_point}
                                                     onChange={(e) => setSettingsData('currency_per_point', parseFloat(e.target.value))}
-                                                    className="w-full pl-8 pr-16"
+                                                    className="w-full pl-10 pr-16 h-14 text-lg font-bold"
                                                     step="0.01"
                                                     min="0"
                                                 />
-                                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500 text-sm">
-                                                    /ponto
+                                                <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400 font-bold">
+                                                    / ponto
                                                 </div>
                                             </div>
-                                            <p className="text-xs text-gray-500 mt-1">Ex: Cada ponto vale R$ 0,10 de desconto.</p>
+                                            <p className="text-sm text-gray-500 mt-2 pl-1">Ex: Cada ponto vale <strong className="text-gray-900 dark:text-white">R$ 0,10</strong> de desconto.</p>
                                         </div>
                                     </div>
+                                </div>
 
-                                    <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-800">
-                                        <PrimaryButton disabled={processingSettings} className="gap-2">
-                                            <Save className="h-4 w-4" />
-                                            Salvar Alterações
-                                        </PrimaryButton>
-                                    </div>
-                                </form>
-                            </div>
+                                <div className="flex justify-end pt-4">
+                                    <PrimaryButton disabled={processingSettings} className="h-12 px-8 rounded-xl bg-[#ff3d03] hover:bg-[#e63700] shadow-lg shadow-[#ff3d03]/20 border-transparent text-base font-bold">
+                                        <Save className="h-5 w-5 mr-2" />
+                                        Salvar Configurações
+                                    </PrimaryButton>
+                                </div>
+                            </form>
                         </div>
                     )}
                 </div>
@@ -258,20 +276,26 @@ export default function LoyaltyIndex({ settings, history, customers }: { setting
             {/* Adjust Points Modal */}
             <Modal show={isAdjustModalOpen} onClose={() => setIsAdjustModalOpen(false)}>
                 <div className="p-6">
-                    <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Ajuste Manual de Pontos</h2>
-                    <form onSubmit={submitAdjust} className="space-y-4">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-xl font-black text-gray-900 dark:text-white">Ajuste Manual de Pontos</h2>
+                        <button onClick={() => setIsAdjustModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                            {/* close icon */}
+                        </button>
+                    </div>
+
+                    <form onSubmit={submitAdjust} className="space-y-6">
                         <div>
                             <InputLabel value="Cliente" />
                             <select
                                 value={adjustData.customer_id}
                                 onChange={(e) => setAdjustData('customer_id', e.target.value)}
-                                className="w-full mt-1 border-gray-300 dark:border-gray-700 dark:bg-[#2c2d30] dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
+                                className="w-full mt-1 border-gray-200 dark:border-gray-700 bg-white dark:bg-[#0f1012] text-gray-900 dark:text-white focus:border-[#ff3d03] focus:ring-[#ff3d03] rounded-xl h-12 shadow-sm"
                                 required
                             >
                                 <option value="">Selecione um cliente...</option>
                                 {customers.map(c => (
                                     <option key={c.id} value={c.id}>
-                                        {c.name} ({c.loyalty_points} pts currently)
+                                        {c.name} ({c.loyalty_points} pts atuais)
                                     </option>
                                 ))}
                             </select>
@@ -284,25 +308,25 @@ export default function LoyaltyIndex({ settings, history, customers }: { setting
                                     type="button"
                                     onClick={() => setAdjustData('type', 'add')}
                                     className={clsx(
-                                        "flex items-center justify-center gap-2 py-2 px-4 rounded-lg border font-medium transition-colors",
+                                        "flex items-center justify-center gap-2 py-3 px-4 rounded-xl border font-bold transition-all relative overflow-hidden",
                                         adjustData.type === 'add'
-                                            ? "bg-green-50 border-green-500 text-green-700 dark:bg-green-900/20 dark:text-green-400"
-                                            : "border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400"
+                                            ? "bg-green-500 text-white border-green-500 shadow-md transform scale-[1.02]"
+                                            : "border-gray-200 text-gray-500 bg-gray-50 hover:bg-gray-100 dark:border-gray-700 dark:bg-white/5 dark:text-gray-400"
                                     )}
                                 >
-                                    <Plus className="h-4 w-4" /> Adicionar
+                                    <Plus className="h-5 w-5" /> Adicionar
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setAdjustData('type', 'remove')}
                                     className={clsx(
-                                        "flex items-center justify-center gap-2 py-2 px-4 rounded-lg border font-medium transition-colors",
+                                        "flex items-center justify-center gap-2 py-3 px-4 rounded-xl border font-bold transition-all relative overflow-hidden",
                                         adjustData.type === 'remove'
-                                            ? "bg-red-50 border-red-500 text-red-700 dark:bg-red-900/20 dark:text-red-400"
-                                            : "border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400"
+                                            ? "bg-red-500 text-white border-red-500 shadow-md transform scale-[1.02]"
+                                            : "border-gray-200 text-gray-500 bg-gray-50 hover:bg-gray-100 dark:border-gray-700 dark:bg-white/5 dark:text-gray-400"
                                     )}
                                 >
-                                    <ArrowUpRight className="h-4 w-4" /> Remover
+                                    <ArrowUpRight className="h-5 w-5" /> Remover
                                 </button>
                             </div>
                         </div>
@@ -313,8 +337,9 @@ export default function LoyaltyIndex({ settings, history, customers }: { setting
                                 type="number"
                                 value={adjustData.points}
                                 onChange={(e) => setAdjustData('points', e.target.value)}
-                                className="w-full mt-1"
+                                className="w-full mt-1 h-12 font-bold text-lg"
                                 min="1"
+                                placeholder="0"
                                 required
                             />
                             {adjustErrors.points && <p className="text-red-500 text-xs mt-1">{adjustErrors.points}</p>}
@@ -326,21 +351,19 @@ export default function LoyaltyIndex({ settings, history, customers }: { setting
                                 type="text"
                                 value={adjustData.description}
                                 onChange={(e) => setAdjustData('description', e.target.value)}
-                                className="w-full mt-1"
+                                className="w-full mt-1 h-12"
                                 placeholder="Ex: Bônus de aniversário"
                                 required
                             />
                         </div>
 
-                        <div className="flex justify-end gap-2 mt-6">
-                            <button
-                                type="button"
-                                onClick={() => setIsAdjustModalOpen(false)}
-                                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                            >
+                        <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-100 dark:border-white/5">
+                            <SecondaryButton onClick={() => setIsAdjustModalOpen(false)} className="h-12 px-6 rounded-xl">
                                 Cancelar
-                            </button>
-                            <PrimaryButton disabled={processingAdjust}>Confirmar Ajuste</PrimaryButton>
+                            </SecondaryButton>
+                            <PrimaryButton disabled={processingAdjust} className="h-12 px-6 rounded-xl bg-[#ff3d03] hover:bg-[#e63700] border-transparent shadow-lg shadow-[#ff3d03]/20">
+                                Confirmar Ajuste
+                            </PrimaryButton>
                         </div>
                     </form>
                 </div>

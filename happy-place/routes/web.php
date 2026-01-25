@@ -19,6 +19,7 @@ use App\Http\Controllers\IngredientController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\WhatsAppInstanceController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -116,6 +117,7 @@ Route::middleware(['auth', 'subscription'])->group(function () {
     Route::post('/orders/{order}/mode', [OrderController::class, 'updateMode'])->name('orders.mode');
     Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
     Route::put('/orders/{order}/items', [OrderController::class, 'updateItems'])->name('orders.update-items');
+    Route::post('/orders/{order}/start-preparation', [OrderController::class, 'startPreparation'])->name('orders.start-preparation');
 
     // PDV Routes
 
@@ -186,6 +188,31 @@ Route::middleware(['auth', 'subscription'])->group(function () {
     Route::post('/tables/{table}/add-items', [TableController::class, 'addItems'])->name('tables.addItems');
     Route::post('/tables/{table}/close', [TableController::class, 'close'])->name('tables.close');
     Route::get('/tables/{table}', [TableController::class, 'show'])->name('tables.show');
+
+    // Two-Factor Authentication
+    Route::prefix('settings/two-factor')->name('two-factor.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\TwoFactorController::class, 'show'])->name('show');
+        Route::post('/enable', [\App\Http\Controllers\TwoFactorController::class, 'enable'])->name('enable');
+        Route::post('/confirm', [\App\Http\Controllers\TwoFactorController::class, 'confirm'])->name('confirm');
+        Route::post('/disable', [\App\Http\Controllers\TwoFactorController::class, 'disable'])->name('disable');
+        Route::post('/verify', [\App\Http\Controllers\TwoFactorController::class, 'verify'])->name('verify');
+        Route::post('/regenerate-recovery-codes', [\App\Http\Controllers\TwoFactorController::class, 'regenerateRecoveryCodes'])->name('regenerate-recovery-codes');
+    });
+
+    // WhatsApp - Only for plans with whatsapp_integration feature (Básico+)
+    Route::middleware('feature:whatsapp_integration')->prefix('whatsapp')->name('whatsapp.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\WhatsAppController::class, 'index'])->name('index');
+        Route::post('/toggle', [\App\Http\Controllers\WhatsAppController::class, 'toggleAutoMessages'])->name('toggle');
+        Route::get('/logs', [\App\Http\Controllers\WhatsAppController::class, 'getLogs'])->name('logs');
+
+        // WhatsApp Instances Management
+        Route::get('/instances', [WhatsAppInstanceController::class, 'index'])->name('instances.index');
+        Route::post('/instances', [WhatsAppInstanceController::class, 'store'])->name('instances.store');
+        Route::get('/instances/{instance}/qrcode', [WhatsAppInstanceController::class, 'getQrCode'])->name('instances.qrcode');
+        Route::get('/instances/{instance}/status', [WhatsAppInstanceController::class, 'checkStatus'])->name('instances.status');
+        Route::post('/instances/{instance}/disconnect', [WhatsAppInstanceController::class, 'disconnect'])->name('instances.disconnect');
+        Route::delete('/instances/{instance}', [WhatsAppInstanceController::class, 'destroy'])->name('instances.destroy');
+    });
 
 
 });

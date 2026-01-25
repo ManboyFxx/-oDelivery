@@ -39,10 +39,13 @@ class SettingsController extends Controller
             ->orderBy('display_order')
             ->get();
 
+        $motoboys = $tenant->motoboys()->get();
+
         return Inertia::render('Settings/Index', [
             'settings' => $settings,
             'paymentMethods' => $paymentMethods,
             'deliveryZones' => $deliveryZones,
+            'motoboys' => $motoboys,
             'success' => session('success'),
         ]);
     }

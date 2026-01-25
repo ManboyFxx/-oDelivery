@@ -4,13 +4,14 @@ namespace App\Models;
 
 use App\Traits\HasUuid;
 use App\Traits\BelongsToTenant;
+use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
 {
-    use HasFactory, HasUuid, BelongsToTenant, SoftDeletes;
+    use HasFactory, HasUuid, BelongsToTenant, SoftDeletes, Auditable;
 
     protected $keyType = 'string';
     public $incrementing = false;

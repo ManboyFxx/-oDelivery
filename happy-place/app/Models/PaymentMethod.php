@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class PaymentMethod extends Model
 {
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, Auditable;
 
     protected $fillable = [
         'tenant_id',
@@ -18,6 +19,8 @@ class PaymentMethod extends Model
         'fee_fixed',
         'is_active',
         'display_order',
+        'pix_key',
+        'pix_key_type',
     ];
 
     protected $casts = [

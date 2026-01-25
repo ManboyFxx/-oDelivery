@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { clsx } from 'clsx';
-import { Clock, Printer, Edit, CreditCard, Repeat, MessageCircle, Check, X, User, MapPin, Bike, ChevronDown, ChevronUp } from 'lucide-react';
+import { Clock, Printer, Edit, CreditCard, MessageCircle, Check, X, MapPin, Bike, User, AlertCircle, AlertTriangle, Timer } from 'lucide-react';
 import { router } from '@inertiajs/react';
 
 export interface Order {
@@ -25,15 +25,32 @@ export interface Order {
         product_name: string;
         quantity: number;
         subtotal: number;
+        notes?: string;
         product?: {
             description?: string;
-        }
+        };
+        complements?: {
+            name: string;
+            quantity: number;
+        }[];
     }[];
     motoboy?: {
         id: string;
         name: string;
     };
     customer_phone?: string;
+    // Timing fields
+    preparation_started_at?: string;
+    estimated_ready_at?: string;
+    preparation_time_minutes?: number;
+    is_late?: boolean;
+    elapsed_minutes?: number;
+    preparation_elapsed_minutes?: number;
+    time_status?: 'pending' | 'on_time' | 'warning' | 'late';
+    // Payment
+    payments?: Array<{
+        method: string;
+    }>;
 }
 
 export type OrderAction = 'print' | 'edit' | 'payment' | 'mode' | 'cancel' | 'whatsapp';
@@ -46,8 +63,8 @@ interface Props {
 
 export default function OrderCard({ order, motoboys, onAction }: Props) {
     const [elapsedTime, setElapsedTime] = useState('');
-    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [selectedMotoboy, setSelectedMotoboy] = useState(order.motoboy?.id || '');
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(order.payments?.[0]?.method || 'cash');
 
     // Timer Logic
     useEffect(() => {
@@ -78,8 +95,19 @@ export default function OrderCard({ order, motoboys, onAction }: Props) {
         });
     };
 
+    const handlePaymentMethodChange = (method: string) => {
+        setSelectedPaymentMethod(method);
+        router.post(route('orders.payment', order.id), {
+            payment_method: method
+        });
+    };
+
     const handleStatusUpdate = (status: string) => {
         router.post(route('orders.status', order.id), { status });
+    };
+
+    const handleStartPreparation = () => {
+        router.post(route('orders.start-preparation', order.id));
     };
 
     // Action wrappers
@@ -89,201 +117,287 @@ export default function OrderCard({ order, motoboys, onAction }: Props) {
     const handleWhatsApp = () => onAction('whatsapp', order);
     const handleCancel = () => onAction('cancel', order);
 
-    // Color Helpers
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'new': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
-            case 'preparing': return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
-            case 'ready': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
-            case 'out_for_delivery': return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400';
-            case 'cancelled': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
-            default: return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400';
+    const getModeBadge = (mode: string) => {
+        switch (mode) {
+            case 'delivery':
+                return { label: 'Entrega', color: 'bg-orange-100 text-orange-700 ring-1 ring-orange-500/20', icon: Bike };
+            case 'pickup':
+                return { label: 'Retirada', color: 'bg-blue-100 text-blue-700 ring-1 ring-blue-500/20', icon: Clock };
+            case 'table':
+                return { label: 'Mesa', color: 'bg-purple-100 text-purple-700 ring-1 ring-purple-500/20', icon: User };
+            default:
+                return { label: mode, color: 'bg-gray-100 text-gray-700 ring-1 ring-gray-500/20', icon: Check };
         }
     };
 
+    const getTimeStatusColor = () => {
+        if (!order.time_status) return 'text-gray-500';
+        switch (order.time_status) {
+            case 'late':
+                return 'text-red-500 animate-pulse';
+            case 'warning':
+                return 'text-yellow-500';
+            case 'on_time':
+                return 'text-green-500';
+            default:
+                return 'text-gray-500';
+        }
+    };
+
+    const getTimeStatusIcon = () => {
+        if (!order.time_status) return Clock;
+        switch (order.time_status) {
+            case 'late':
+                return AlertCircle;
+            case 'warning':
+                return AlertTriangle;
+            default:
+                return Timer;
+        }
+    };
+
+    const paymentMethods = [
+        { value: 'cash', label: 'Dinheiro' },
+        { value: 'credit_card', label: 'Crédito' },
+        { value: 'debit_card', label: 'Débito' },
+        { value: 'pix', label: 'PIX' },
+    ];
+
+    const formattedTotal = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(order.total);
+
     return (
-        <div className="bg-white dark:bg-[#1a1b1e] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden mb-3 hover:shadow-md transition-shadow">
+        <div className="group relative flex flex-col w-full bg-white dark:bg-[#1a1b1e] rounded-[20px] p-4 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 dark:border-white/5">
+            {/* Payment Status Indicator Line */}
+            <div className={clsx(
+                "absolute top-6 left-0 w-1 h-8 rounded-r-full",
+                order.payment_status === 'paid' ? "bg-green-500" : "bg-orange-500"
+            )} />
+
             {/* Header */}
-            <div className="p-4 border-b border-gray-100 dark:border-gray-800">
-                <div className="flex justify-between items-start mb-2">
-                    <div>
-                        <h3 className="font-bold text-gray-900 dark:text-white text-base">
-                            {order.customer_name} <span className="text-gray-400 font-normal text-sm">({order.items.length})</span>
-                        </h3>
-                        <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
-                            <span className="uppercase text-[#ff3d03]">ID: {order.order_number}</span>
-                            <span>•</span>
-                            <span className={clsx("uppercase font-bold", order.mode === 'delivery' ? "text-blue-500" : "text-yellow-500")}>
-                                {order.mode === 'delivery' ? 'ENTREGA' : order.mode === 'pickup' ? 'RETIRADA' : 'MESA'}
+            <div className="mb-3 flex items-start justify-between pl-2">
+                <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-2">
+                        <span className="text-lg font-black text-gray-900 dark:text-white tracking-tight">#{order.order_number}</span>
+                        {getModeBadge(order.mode) && (
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${getModeBadge(order.mode)?.color}`}>
+                                {(() => {
+                                    const Icon = getModeBadge(order.mode)?.icon;
+                                    return Icon && <Icon className="h-3 w-3" />;
+                                })()}
+                                {getModeBadge(order.mode)?.label}
                             </span>
-                        </div>
+                        )}
+                        {order.is_late && (
+                            <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-red-100 text-red-700 ring-1 ring-red-500/20 animate-pulse">
+                                <AlertCircle className="h-3 w-3" />
+                                ATRASADO
+                            </span>
+                        )}
                     </div>
-                    <div className="text-right">
-                        <span className="block font-bold text-lg text-[#ff3d03]">
-                            R$ {Number(order.total).toFixed(2).replace('.', ',')}
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                    <div className={clsx(
+                        "flex items-center gap-1 px-2 py-1 rounded-lg border text-xs font-bold",
+                        order.time_status === 'late' ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-600" :
+                            order.time_status === 'warning' ? "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-600" :
+                                "bg-gray-50 dark:bg-white/5 border-gray-100 dark:border-white/5 text-gray-600 dark:text-gray-400"
+                    )}>
+                        {(() => {
+                            const Icon = getTimeStatusIcon();
+                            return <Icon className={clsx("w-3 h-3", getTimeStatusColor())} />;
+                        })()}
+                        <span className="tabular-nums tracking-wide">{elapsedTime}</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Customer Info */}
+            <div className="mb-3 p-3 bg-gray-50 dark:bg-black/20 rounded-xl border border-gray-100 dark:border-white/5">
+                <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 flex-shrink-0 rounded-lg bg-white dark:bg-[#1a1b1e] text-orange-500 flex items-center justify-center border border-gray-100 dark:border-white/5 shadow-sm">
+                        <User className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-bold text-gray-900 dark:text-white truncate pr-2">
+                                {order.customer_name}
+                            </h3>
+                            <button
+                                onClick={handleWhatsApp}
+                                className="text-green-600 hover:text-green-700 dark:text-green-500 dark:hover:text-green-400"
+                                title="Abrir WhatsApp"
+                            >
+                                <MessageCircle className="w-4 h-4" />
+                            </button>
+                        </div>
+                        {order.address && (
+                            <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mt-0.5 truncate flex items-center gap-1">
+                                <MapPin className="w-3 h-3 flex-shrink-0 opacity-70" />
+                                <span className="truncate">
+                                    {order.address.street}, {order.address.number}
+                                </span>
+                            </p>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Items */}
+            <div className="flex-1 space-y-2 mb-3 px-1">
+                {order.items.slice(0, 6).map((item, idx) => (
+                    <div key={idx} className="flex gap-2 group/item">
+                        <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded bg-orange-50 dark:bg-orange-500/10 text-[10px] font-black text-orange-600 dark:text-orange-500">
+                            {item.quantity}×
                         </span>
-                        <div className="flex items-center justify-end gap-1 text-xs text-gray-500">
-                            {order.payment_status === 'paid' ? (
-                                <span className="flex items-center text-green-600 gap-0.5"><Check className="h-3 w-3" /> Pago</span>
-                            ) : (
-                                <span className="text-red-500">Pendente</span>
+                        <div className="flex-1 min-w-0">
+                            <span className="block font-bold text-gray-900 dark:text-white text-xs leading-tight group-hover/item:text-orange-500 transition-colors">
+                                {item.product_name}
+                            </span>
+                            {item.complements && item.complements.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                    {item.complements.map((c, i) => (
+                                        <span key={i} className="text-[10px] font-medium text-gray-500 dark:text-gray-400 leading-tight">
+                                            + {c.name}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                            {item.notes && (
+                                <p className="text-[10px] font-medium text-red-500 mt-0.5 bg-red-50 dark:bg-red-900/10 px-1.5 py-0.5 rounded inline-block">
+                                    Obs: {item.notes}
+                                </p>
                             )}
                         </div>
                     </div>
-                </div>
-
-                {/* Timer line */}
-                <div className="flex items-center justify-between mt-1">
-                    <div className="flex items-center gap-1.5 bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded text-xs font-bold dark:bg-yellow-900/20 dark:text-yellow-500">
-                        <Clock className="h-3 w-3" />
-                        <span>{elapsedTime}</span>
-                    </div>
-                    {order.status === 'out_for_delivery' && (
-                        <div className="text-xs font-bold text-indigo-600 animate-pulse">
-                            EM ENTREGA
-                        </div>
-                    )}
-                </div>
-
-                {/* Address (If Delivery) */}
-                {order.mode === 'delivery' && order.address && (
-                    <div className="mt-3 flex items-start gap-2 text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 p-2 rounded">
-                        <MapPin className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                        <span className="line-clamp-2">
-                            {order.address.street}, {order.address.number} - {order.address.neighborhood}
-                            {order.address.complement ? ` (${order.address.complement})` : ''}
-                        </span>
-                    </div>
+                ))}
+                {order.items.length > 6 && (
+                    <button
+                        onClick={handleEdit}
+                        className="w-full py-1 text-[11px] font-bold text-gray-400 hover:text-orange-500 transition-colors border-t border-gray-100 dark:border-white/5 border-dashed"
+                    >
+                        + {order.items.length - 6} itens
+                    </button>
                 )}
             </div>
 
-            {/* Motoboy Selection */}
-            {order.mode === 'delivery' && (
-                <div className="px-4 py-2 bg-blue-50/50 dark:bg-blue-900/10 border-b border-gray-100 dark:border-gray-800">
+            {/* Payment & Motoboy Controls */}
+            <div className="space-y-2 mb-3">
+                {/* Payment Method Dropdown */}
+                <div className="flex items-center gap-2">
+                    <CreditCard className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <select
+                        value={selectedPaymentMethod}
+                        onChange={(e) => handlePaymentMethodChange(e.target.value)}
+                        className="flex-1 py-1.5 px-2 rounded-lg border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-black/20 text-xs font-medium focus:ring-orange-500 focus:border-orange-500"
+                    >
+                        {paymentMethods.map((pm) => (
+                            <option key={pm.value} value={pm.value}>{pm.label}</option>
+                        ))}
+                    </select>
+                </div>
+
+                {/* Motoboy Assignment - Show for delivery orders */}
+                {order.mode === 'delivery' && (
                     <div className="flex items-center gap-2">
-                        <Bike className="h-4 w-4 text-blue-500" />
+                        <Bike className="w-4 h-4 text-gray-400 flex-shrink-0" />
                         <select
-                            className="bg-transparent border-none text-xs font-medium text-gray-700 focus:ring-0 cursor-pointer w-full p-0 dark:text-gray-300"
                             value={selectedMotoboy}
                             onChange={(e) => {
                                 setSelectedMotoboy(e.target.value);
                                 handleAssignMotoboy(e.target.value);
                             }}
+                            className="flex-1 py-1.5 px-2 rounded-lg border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-black/20 text-xs font-medium focus:ring-orange-500 focus:border-orange-500"
                         >
-                            <option value="">Selecione Entregador...</option>
-                            {motoboys.map(m => (
+                            <option value="">Atribuir motoboy...</option>
+                            {motoboys.map((m) => (
                                 <option key={m.id} value={m.id}>{m.name}</option>
                             ))}
                         </select>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-                <div className="flex gap-3 text-gray-500 dark:text-gray-400">
-                    <button onClick={handlePrint} title="Imprimir" className="hover:text-gray-800 dark:hover:text-white transition-colors">
-                        <Printer className="h-4 w-4" />
-                    </button>
-                    <button title="Copiar / Duplicar" className="hover:text-gray-800 dark:hover:text-white transition-colors">
-                        <Repeat className="h-4 w-4" />
-                    </button>
-                    <button onClick={handleEdit} title="Editar" className="hover:text-gray-800 dark:hover:text-white transition-colors">
+            {/* Footer Actions */}
+            <div className="mt-auto pt-3 border-t border-gray-100 dark:border-white/5 flex items-center justify-between gap-2">
+                <div
+                    className="flex flex-col cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={handlePayment}
+                >
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total</span>
+                    <span className="text-base font-black text-gray-900 dark:text-white tracking-tight">{formattedTotal}</span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                    <button
+                        onClick={handleEdit}
+                        className="h-8 w-8 flex items-center justify-center rounded-lg bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-orange-50 hover:text-orange-600 dark:hover:bg-orange-500/20 dark:hover:text-orange-500 transition-all active:scale-95"
+                        title="Editar"
+                    >
                         <Edit className="h-4 w-4" />
                     </button>
-                    <button onClick={handlePayment} title="Alterar Pagamento" className="hover:text-gray-800 dark:hover:text-white transition-colors">
-                        <CreditCard className="h-4 w-4" />
+                    <button
+                        onClick={handlePrint}
+                        className="h-8 w-8 flex items-center justify-center rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-orange-600 dark:hover:bg-gray-200 transition-all shadow-sm active:scale-95"
+                        title="Imprimir"
+                    >
+                        <Printer className="h-4 w-4" />
                     </button>
-                    <button onClick={handleWhatsApp} title="WhatsApp" className="hover:text-green-500 transition-colors">
-                        <MessageCircle className="h-4 w-4" />
+                    <button
+                        onClick={handleCancel}
+                        className="h-8 w-8 flex items-center justify-center rounded-lg bg-red-50 dark:bg-red-500/10 text-red-500 hover:bg-red-100 dark:hover:bg-red-500/20 transition-all active:scale-95"
+                        title="Cancelar"
+                    >
+                        <X className="h-4 w-4" />
                     </button>
                 </div>
             </div>
 
-            {/* Big Action Button (Status) */}
-            <div className="flex border-b border-gray-100 dark:border-gray-800">
+            {/* Status Actions */}
+            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-white/5">
                 {order.status === 'new' && (
-                    <button onClick={() => handleStatusUpdate('preparing')} className="flex-1 py-3 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors">
-                        Aceitar / Preparar
+                    <button
+                        onClick={handleStartPreparation}
+                        className="w-full py-2 rounded-xl bg-green-500 hover:bg-green-600 text-white text-sm font-bold shadow-md shadow-green-500/20 transition-all active:scale-95"
+                    >
+                        ✓ Aceitar e Iniciar Preparo
                     </button>
                 )}
+
                 {order.status === 'preparing' && (
-                    <button onClick={() => handleStatusUpdate('ready')} className="flex-1 py-3 text-sm font-bold text-white bg-orange-500 hover:bg-orange-600 transition-colors">
-                        Pronto
+                    <button
+                        onClick={() => handleStatusUpdate(order.mode === 'delivery' ? 'waiting_motoboy' : 'ready')}
+                        className="w-full py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold shadow-md shadow-orange-500/20 transition-all active:scale-95"
+                    >
+                        ✓ Marcar como Pronto
                     </button>
                 )}
-                {order.status === 'ready' && order.mode === 'delivery' && (
-                    <button onClick={() => handleStatusUpdate('waiting_motoboy')} className="flex-1 py-3 text-sm font-bold text-white bg-green-600 hover:bg-green-700 transition-colors">
-                        Chamar Entregador
+
+                {order.status === 'waiting_motoboy' && order.motoboy && (
+                    <button
+                        onClick={() => handleStatusUpdate('motoboy_accepted')}
+                        className="w-full py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-bold shadow-md shadow-indigo-500/20 transition-all active:scale-95"
+                    >
+                        🚴 Motoboy Saiu para Entrega
                     </button>
                 )}
-                {order.status === 'ready' && order.mode !== 'delivery' && (
-                    <button onClick={() => handleStatusUpdate('delivered')} className="flex-1 py-3 text-sm font-bold text-white bg-green-600 hover:bg-green-700 transition-colors">
-                        Entregar / Finalizar
+
+                {(order.status === 'motoboy_accepted' || order.status === 'out_for_delivery') && (
+                    <button
+                        onClick={() => handleStatusUpdate('delivered')}
+                        className="w-full py-2 rounded-xl bg-green-500 hover:bg-green-600 text-white text-sm font-bold shadow-md shadow-green-500/20 transition-all active:scale-95"
+                    >
+                        ✓ Pedido Entregue
                     </button>
                 )}
-                {/* More status buttons as needed */}
 
-                <button
-                    onClick={handleCancel}
-                    className="w-12 flex items-center justify-center border-l border-white/20 hover:bg-red-50 hover:text-red-500 text-gray-400 transition-colors"
-                    title="Cancelar"
-                >
-                    <X className="h-5 w-5" />
-                </button>
-            </div>
-
-            {/* Collapsible Details */}
-            <div>
-                <button
-                    onClick={() => setIsDetailsOpen(!isDetailsOpen)}
-                    className="w-full flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-800/50 text-xs font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                >
-                    <span>Exibir detalhes</span>
-                    {isDetailsOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                </button>
-
-                {isDetailsOpen && (
-                    <div className="p-4 bg-gray-50 dark:bg-gray-800/30 text-sm space-y-3">
-                        <div className="space-y-2">
-                            <h4 className="text-xs font-bold text-gray-500 uppercase">ITENS DO PEDIDO</h4>
-                            {order.items.map((item: Order['items'][0]) => (
-                                <div key={item.id} className="flex justify-between items-start">
-                                    <div>
-                                        <span className="font-bold text-orange-500 mr-1">{item.quantity}x</span>
-                                        <span className="text-gray-800 dark:text-gray-200">{item.product_name}</span>
-                                        {item.product?.description && (
-                                            <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{item.product.description}</p>
-                                        )}
-                                    </div>
-                                    <span className="font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                                        R$ {Number(item.subtotal).toFixed(2)}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="pt-2 border-t border-gray-200 dark:border-gray-700 space-y-1">
-                            <div className="flex justify-between text-gray-500">
-                                <span>Subtotal</span>
-                                <span>R$ {Number(order.subtotal).toFixed(2)}</span>
-                            </div>
-                            {Number(order.delivery_fee) > 0 && (
-                                <div className="flex justify-between text-gray-500">
-                                    <span>Taxa de entrega</span>
-                                    <span>R$ {Number(order.delivery_fee).toFixed(2)}</span>
-                                </div>
-                            )}
-                            <div className="flex justify-between font-bold text-base text-gray-900 dark:text-white pt-1">
-                                <span>Total</span>
-                                <span className="text-orange-500">R$ {Number(order.total).toFixed(2)}</span>
-                            </div>
-                        </div>
-
-                        <button className="w-full py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-700 shadow-sm hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700">
-                            Ver detalhes completos
-                        </button>
-                    </div>
+                {order.status === 'ready' && (
+                    <button
+                        onClick={() => handleStatusUpdate('delivered')}
+                        className="w-full py-2 rounded-xl bg-green-500 hover:bg-green-600 text-white text-sm font-bold shadow-md shadow-green-500/20 transition-all active:scale-95"
+                    >
+                        ✓ Cliente Retirou
+                    </button>
                 )}
             </div>
         </div>

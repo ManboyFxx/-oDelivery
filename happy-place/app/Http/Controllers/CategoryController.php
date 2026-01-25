@@ -22,12 +22,7 @@ class CategoryController extends Controller
             'image_url' => 'nullable|url',
         ]);
 
-        // Fix for local dev/demo
         $tenantId = auth()->user()->tenant_id;
-        if (!$tenantId) {
-            $tenant = \App\Models\Tenant::first();
-            $tenantId = $tenant ? $tenant->id : null;
-        }
 
         if (!$tenantId) {
             return redirect()->back()->withErrors(['tenant_id' => 'Erro: Usuário sem estabelecimento vinculado.']);

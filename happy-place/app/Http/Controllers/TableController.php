@@ -23,14 +23,10 @@ class TableController extends Controller
             'capacity' => 'required|integer|min:1',
         ]);
 
-        // Fix for local dev/demo
         $tenantId = auth()->user()->tenant_id;
-        if (!$tenantId) {
-            $tenant = \App\Models\Tenant::first();
-            $tenantId = $tenant ? $tenant->id : null;
-        }
+        $tenant = auth()->user()->tenant;
 
-        if (!$tenantId) {
+        if (!$tenant || !$tenantId) {
             return redirect()->back()->withErrors(['tenant_id' => 'Erro: Usuário sem estabelecimento vinculado.']);
         }
 

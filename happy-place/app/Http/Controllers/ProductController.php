@@ -11,6 +11,8 @@ class ProductController extends Controller
 {
     public function index()
     {
+        $tenant = auth()->user()->tenant;
+
         $products = Product::query()
             ->with(['category', 'complementGroups'])
             ->orderBy('created_at', 'desc')
@@ -18,16 +20,19 @@ class ProductController extends Controller
 
         return Inertia::render('Products/Index', [
             'products' => $products,
-            'categories' => Category::orderBy('name')->get(),
-            'complement_groups' => \App\Models\ComplementGroup::orderBy('name')->get(),
+            'categories' => Category::where('tenant_id', $tenant->id)->orderBy('name')->get(),
+            'complement_groups' => \App\Models\ComplementGroup::where('tenant_id', $tenant->id)->with(['options.ingredient'])->orderBy('name')->get(),
+            'ingredients' => \App\Models\Ingredient::where('tenant_id', $tenant->id)->orderBy('name')->get(),
         ]);
     }
 
     public function create()
     {
+        $tenant = auth()->user()->tenant;
+
         return Inertia::render('Products/Create', [
-            'categories' => Category::all(),
-            'complement_groups' => \App\Models\ComplementGroup::with('options')->get(),
+            'categories' => Category::where('tenant_id', $tenant->id)->orderBy('name')->get(),
+            'complement_groups' => \App\Models\ComplementGroup::where('tenant_id', $tenant->id)->with('options')->orderBy('name')->get(),
         ]);
     }
 
@@ -38,9 +43,12 @@ class ProductController extends Controller
             'price' => 'required|numeric|min:0',
             'description' => 'nullable|string',
             'category_id' => 'nullable|exists:categories,id',
-            'image' => 'nullable|image|max:2048', // 2MB Max
+            'image' => 'nullable|image|max:2048',
             'complement_groups' => 'nullable|array',
-            'complement_groups.*' => 'exists:complement_groups,id',
+            'complement_groups.*' => 'string|exists:complement_groups,id',
+            'is_available' => 'boolean',
+            'track_stock' => 'boolean',
+            'stock_quantity' => 'nullable|integer',
         ]);
 
         if ($request->hasFile('image')) {
@@ -48,13 +56,11 @@ class ProductController extends Controller
             $validated['image_url'] = '/storage/' . $path;
         }
 
-        // Fix for local dev/demo
-        $tenantId = auth()->user()->tenant_id;
-        if (!$tenantId) {
-            $tenant = \App\Models\Tenant::first();
-            $tenantId = $tenant ? $tenant->id : null;
-        }
-        $validated['tenant_id'] = $tenantId;
+        $validated['tenant_id'] = auth()->user()->tenant_id;
+
+        // Ensure boolean casting
+        $validated['is_available'] = $request->boolean('is_available');
+        $validated['track_stock'] = $request->boolean('track_stock');
 
         $product = Product::create($validated);
 
@@ -62,15 +68,19 @@ class ProductController extends Controller
             $product->complementGroups()->sync($validated['complement_groups']);
         }
 
-        return redirect()->route('products.index')->with('success', 'Produto criado com sucesso!');
+
+        flash_success('Produto Criado!', 'O produto foi adicionado ao cardápio com sucesso.');
+        return redirect()->route('products.index');
     }
 
     public function edit(Product $product)
     {
+        $tenant = auth()->user()->tenant;
+
         return Inertia::render('Products/Edit', [
             'product' => $product->load(['category', 'complementGroups']),
-            'categories' => Category::all(),
-            'complement_groups' => \App\Models\ComplementGroup::all(),
+            'categories' => Category::where('tenant_id', $tenant->id)->orderBy('name')->get(),
+            'complement_groups' => \App\Models\ComplementGroup::where('tenant_id', $tenant->id)->with('options')->orderBy('name')->get(),
         ]);
     }
 
@@ -83,13 +93,22 @@ class ProductController extends Controller
             'category_id' => 'nullable|exists:categories,id',
             'image' => 'nullable|image|max:2048',
             'complement_groups' => 'nullable|array',
-            'complement_groups.*' => 'exists:complement_groups,id',
+            'complement_groups.*' => 'string|exists:complement_groups,id',
+            'is_available' => 'boolean',
+            'track_stock' => 'boolean',
+            'stock_quantity' => 'nullable|integer',
         ]);
 
         if ($request->hasFile('image')) {
             $path = $request->file('image')->store('products', 'public');
             $validated['image_url'] = '/storage/' . $path;
         }
+
+        // Ensure boolean casting
+        $validated['is_available'] = $request->boolean('is_available');
+        $validated['track_stock'] = $request->boolean('track_stock');
+
+        // Handle explicit null for stock if not tracking? No, keeping it is fine.
 
         $product->update($validated);
 
@@ -113,5 +132,14 @@ class ProductController extends Controller
         ]);
 
         return back()->with('success', 'Disponibilidade do produto atualizada!');
+    }
+
+    public function toggleFeatured(Product $product)
+    {
+        $product->update([
+            'is_featured' => !$product->is_featured
+        ]);
+
+        return back()->with('success', 'Destaque do produto atualizado!');
     }
 }

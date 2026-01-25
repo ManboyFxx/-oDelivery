@@ -12,12 +12,22 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Global middleware - applied to all routes
+        $middleware->append(\App\Http\Middleware\GlobalRateLimiter::class);
+
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        //
+        // Register middleware aliases
+        $middleware->alias([
+            'subscription' => \App\Http\Middleware\CheckSubscription::class,
+            'plan.limit' => \App\Http\Middleware\CheckPlanLimits::class,
+            'feature' => \App\Http\Middleware\CheckFeature::class,
+            'tenant.required' => \App\Http\Middleware\EnsureTenantExists::class,
+            'two-factor' => \App\Http\Middleware\EnsureTwoFactorEnabled::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

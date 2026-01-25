@@ -75,7 +75,7 @@ export default function CustomerIndex({ settings, customer, history }: PageProps
 
                     {/* How it works (Optional, keeps UI rich) */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-white dark:bg-[#1a1b1e] p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
+                        <div className="bg-white dark:bg-[#1a1b1e] p-6 rounded-xl shadow-sm border border-gray-100 dark:border-white/5">
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 rounded-lg">
                                     <ArrowDownLeft className="h-6 w-6" />
@@ -87,7 +87,7 @@ export default function CustomerIndex({ settings, customer, history }: PageProps
                             </p>
                         </div>
 
-                        <div className="bg-white dark:bg-[#1a1b1e] p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
+                        <div className="bg-white dark:bg-[#1a1b1e] p-6 rounded-xl shadow-sm border border-gray-100 dark:border-white/5">
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-lg">
                                     <ArrowUpRight className="h-6 w-6" />
@@ -101,8 +101,8 @@ export default function CustomerIndex({ settings, customer, history }: PageProps
                     </div>
 
                     {/* History */}
-                    <div className="bg-white dark:bg-[#1a1b1e] shadow-sm sm:rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800">
-                        <div className="p-6 border-b border-gray-200 dark:border-gray-800">
+                    <div className="bg-white dark:bg-[#1a1b1e] shadow-sm sm:rounded-lg overflow-hidden border border-gray-200 dark:border-white/5">
+                        <div className="p-6 border-b border-gray-200 dark:border-white/5">
                             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
                                 <Trophy className="text-yellow-500 h-5 w-5" />
                                 Histórico de Movimentações

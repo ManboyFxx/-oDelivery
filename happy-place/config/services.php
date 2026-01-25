@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'evolution' => [
+        'url' => env('EVOLUTION_API_URL', 'http://localhost:8080'),
+        'api_key' => env('EVOLUTION_API_KEY'),
+        'webhook_url' => env('APP_URL') . '/webhooks/whatsapp',
+    ],
+
 ];

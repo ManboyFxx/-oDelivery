@@ -11,7 +11,7 @@ class IngredientController extends Controller
 {
     public function index()
     {
-        $tenant = Tenant::first(); // Demo: get first tenant
+        $tenant = auth()->user()->tenant; // Demo: get first tenant
 
         $ingredients = Ingredient::where('tenant_id', $tenant->id)
             ->withCount('complementOptions')
@@ -26,7 +26,7 @@ class IngredientController extends Controller
 
     public function store(Request $request)
     {
-        $tenant = Tenant::first();
+        $tenant = auth()->user()->tenant;
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -45,7 +45,7 @@ class IngredientController extends Controller
 
     public function update(Request $request, $id)
     {
-        $tenant = Tenant::first();
+        $tenant = auth()->user()->tenant;
 
         $ingredient = Ingredient::where('tenant_id', $tenant->id)
             ->findOrFail($id);
@@ -62,7 +62,7 @@ class IngredientController extends Controller
 
     public function destroy($id)
     {
-        $tenant = Tenant::first();
+        $tenant = auth()->user()->tenant;
 
         $ingredient = Ingredient::where('tenant_id', $tenant->id)
             ->findOrFail($id);
@@ -84,7 +84,7 @@ class IngredientController extends Controller
      */
     public function toggle(Request $request, $id)
     {
-        $tenant = Tenant::first();
+        $tenant = auth()->user()->tenant;
 
         $ingredient = Ingredient::where('tenant_id', $tenant->id)
             ->with('complementOptions')
@@ -112,7 +112,7 @@ class IngredientController extends Controller
      */
     public function getImpact($id)
     {
-        $tenant = Tenant::first();
+        $tenant = auth()->user()->tenant;
 
         $ingredient = Ingredient::where('tenant_id', $tenant->id)
             ->findOrFail($id);
@@ -125,7 +125,7 @@ class IngredientController extends Controller
      */
     public function reorder(Request $request)
     {
-        $tenant = Tenant::first();
+        $tenant = auth()->user()->tenant;
 
         $validated = $request->validate([
             'ingredients' => 'required|array',

@@ -11,7 +11,7 @@ class PaymentMethodController extends Controller
 {
     public function index()
     {
-        $tenant = Tenant::first(); // Demo tenant
+        $tenant = auth()->user()->tenant;
         $methods = PaymentMethod::where('tenant_id', $tenant->id)
             ->orderBy('display_order')
             ->get();
@@ -31,7 +31,7 @@ class PaymentMethodController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $tenant = Tenant::first();
+        $tenant = auth()->user()->tenant;
 
         PaymentMethod::create([
             ...$validated,

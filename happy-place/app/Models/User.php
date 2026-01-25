@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Traits\HasUuid;
+use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -12,7 +13,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, HasUuid, SoftDeletes;
+    use HasApiTokens, HasFactory, Notifiable, HasUuid, SoftDeletes, Auditable;
 
     protected $keyType = 'string';
     public $incrementing = false;
@@ -76,8 +77,36 @@ class User extends Authenticatable
         return $this->role === 'motoboy';
     }
 
+
     public function isEmployee(): bool
     {
         return $this->role === 'employee';
+    }
+
+    // Roles & Permissions
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, 'user_role');
+    }
+
+    public function hasRole(string $roleSlug): bool
+    {
+        return $this->roles()->where('slug', $roleSlug)->exists();
+    }
+
+    public function hasPermission(string $permissionSlug): bool
+    {
+        return $this->roles()->whereHas('permissions', function ($query) use ($permissionSlug) {
+            $query->where('slug', $permissionSlug);
+        })->exists();
+    }
+
+    public function giveRole(Role|string $role)
+    {
+        if (is_string($role)) {
+            $role = Role::where('slug', $role)->firstOrFail();
+        }
+
+        $this->roles()->syncWithoutDetaching($role);
     }
 }

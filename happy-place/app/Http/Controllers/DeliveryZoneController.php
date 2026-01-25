@@ -11,7 +11,7 @@ class DeliveryZoneController extends Controller
 {
     public function index()
     {
-        $tenant = Tenant::first(); // Demo tenant
+        $tenant = auth()->user()->tenant;
         $zones = DeliveryZone::where('tenant_id', $tenant->id)
             ->orderBy('display_order')
             ->orderBy('neighborhood')
@@ -31,7 +31,7 @@ class DeliveryZoneController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $tenant = Tenant::first();
+        $tenant = auth()->user()->tenant;
 
         DeliveryZone::create([
             ...$validated,

@@ -15,20 +15,134 @@ class OrderController extends Controller
         $orders = Order::query()
             ->with(['customer', 'items.product', 'motoboy'])
             ->whereIn('status', ['new', 'preparing', 'ready', 'waiting_motoboy', 'motoboy_accepted', 'out_for_delivery'])
-            ->orderBy('created_at', 'asc') // Oldest first for kitchen
-            ->get();
+            ->orderBy('created_at', 'desc') // Newest first
+            ->get()
+            ->map(function ($order) {
+                // Append computed attributes
+                $order->is_late = $order->is_late;
+                $order->elapsed_minutes = $order->elapsed_minutes;
+                $order->preparation_elapsed_minutes = $order->preparation_elapsed_minutes;
+                $order->time_status = $order->time_status;
+                return $order;
+            });
 
-        // Fetch Motoboys (Assuming generic user model doesn't have roles yet, catching all or hardcoded for now)
-        // Ideally: User::where('role', 'motoboy')->get();
-        // For this environment, let's assume all users are potentially assignable or create a dummy list if role missing
-        // Checking User model next. For now, returning all users as potential assignees.
-        $motoboys = \App\Models\User::all(); // Simple for now
+        // Fetch Motoboys for this tenant only
+        $motoboys = auth()->user()->tenant->motoboys()->get();
+
+        // Fetch Active Products for the Edit Modal
+        $products = \App\Models\Product::where('is_available', true)
+            ->with(['complementGroups.options'])
+            ->get();
 
         return Inertia::render('Orders/Index', [
             'orders' => $orders,
-            'motoboys' => $motoboys
+            'motoboys' => $motoboys,
+            'products' => $products
         ]);
     }
+
+    public function updateItems(Request $request, Order $order)
+    {
+        $validated = $request->validate([
+            'items' => 'required|array',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.notes' => 'nullable|string',
+            'items.*.id' => 'nullable|exists:order_items,id', // Existing item ID
+            'items.*.complements' => 'nullable|array', // New: Complements
+            'items.*.complements.*.id' => 'required|exists:complement_options,id',
+            'items.*.complements.*.quantity' => 'nullable|integer|min:1',
+        ]);
+
+        $inputItems = collect($validated['items']);
+        $existingItemIds = $order->items()->pluck('id')->toArray();
+        $inputItemIds = $inputItems->pluck('id')->filter()->toArray();
+
+        // 1. Delete removed items
+        $itemsToDelete = array_diff($existingItemIds, $inputItemIds);
+        if (!empty($itemsToDelete)) {
+            $order->items()->whereIn('id', $itemsToDelete)->delete();
+        }
+
+        // 2. Update existing or Create new
+        foreach ($inputItems as $itemData) {
+            $complementsPrice = 0;
+            $selectedComplements = $itemData['complements'] ?? [];
+
+            // Calculate complements price
+            foreach ($selectedComplements as $comp) {
+                $option = \App\Models\ComplementOption::find($comp['id']);
+                if ($option) {
+                    $qty = $comp['quantity'] ?? 1;
+                    $complementsPrice += $option->price * $qty;
+                }
+            }
+
+            if (isset($itemData['id']) && in_array($itemData['id'], $existingItemIds)) {
+                // Update Existing Item
+                $itemModel = $order->items()->find($itemData['id']);
+
+                // Sync complements if provided
+                if (array_key_exists('complements', $itemData)) {
+                    // Sync complements
+                    $itemModel->complements()->delete();
+                    foreach ($selectedComplements as $comp) {
+                        $option = \App\Models\ComplementOption::find($comp['id']);
+                        $qty = $comp['quantity'] ?? 1;
+                        $itemModel->complements()->create([
+                            'complement_option_id' => $option->id,
+                            'name' => $option->name,
+                            'price' => $option->price,
+                            'quantity' => $qty,
+                        ]);
+                    }
+                    $itemModel->complements_price = $complementsPrice;
+                }
+
+                $itemModel->update([
+                    'quantity' => $itemData['quantity'],
+                    'notes' => $itemData['notes'] ?? null,
+                    'complements_price' => $itemModel->complements_price,
+                    'subtotal' => ($itemModel->unit_price + $itemModel->complements_price) * $itemData['quantity']
+                ]);
+
+            } else {
+                // Create New Item
+                $product = \App\Models\Product::find($itemData['product_id']);
+
+                $newItem = $order->items()->create([
+                    'product_id' => $product->id,
+                    'product_name' => $product->name,
+                    'quantity' => $itemData['quantity'],
+                    'unit_price' => $product->price,
+                    'complements_price' => $complementsPrice,
+                    'subtotal' => ($product->price + $complementsPrice) * $itemData['quantity'],
+                    'notes' => $itemData['notes'] ?? null,
+                ]);
+
+                // Save Complements
+                foreach ($selectedComplements as $comp) {
+                    $option = \App\Models\ComplementOption::find($comp['id']);
+                    $qty = $comp['quantity'] ?? 1;
+                    $newItem->complements()->create([
+                        'complement_option_id' => $option->id,
+                        'name' => $option->name,
+                        'price' => $option->price,
+                        'quantity' => $qty,
+                    ]);
+                }
+            }
+        }
+
+        // 3. Recalculate Order Total
+        $newTotal = $order->items()->sum('subtotal');
+        // Add delivery fee logic if exists
+        $order->total = $newTotal + ($order->delivery_fee ?? 0);
+        $order->save();
+
+        return back()->with('success', 'Itens do pedido atualizados!');
+    }
+
 
     public function updateStatus(Request $request, Order $order)
     {
@@ -36,9 +150,19 @@ class OrderController extends Controller
             'status' => 'required|string|in:new,preparing,ready,waiting_motoboy,motoboy_accepted,out_for_delivery,delivered,cancelled'
         ]);
 
+        $oldStatus = $order->status;
         $order->update($validated);
 
-        // Log status change if needed
+        // Send WhatsApp notifications based on status change
+        $ooBot = app(\App\Services\OoBotService::class);
+
+        match($validated['status']) {
+            'preparing' => $ooBot->sendOrderConfirmation($order),
+            'ready' => $ooBot->sendOrderReady($order),
+            'out_for_delivery' => $ooBot->sendOrderOutForDelivery($order),
+            'delivered' => $ooBot->sendOrderDelivered($order),
+            default => null,
+        };
 
         return back()->with('success', 'Status atualizado!');
     }
@@ -105,5 +229,12 @@ class OrderController extends Controller
         $order->load(['customer', 'items.product', 'motoboy']);
         // Return a blade view for printing would be simpler for receipt style
         return view('orders.print', compact('order'));
+    }
+
+    public function startPreparation(Order $order)
+    {
+        $order->startPreparation();
+
+        return back()->with('success', 'Preparo iniciado!');
     }
 }
