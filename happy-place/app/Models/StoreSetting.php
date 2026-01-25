@@ -62,6 +62,9 @@ class StoreSetting extends Model
         'pwa_theme_color',
         'pwa_background_color',
         'notification_settings',
+        'status_override',
+        'is_delivery_paused',
+        'paused_until',
     ];
 
     protected $casts = [
@@ -86,6 +89,8 @@ class StoreSetting extends Model
         'estimated_delivery_time' => 'integer',
         'store_latitude' => 'float',
         'store_longitude' => 'float',
+        'is_delivery_paused' => 'boolean',
+        'paused_until' => 'datetime',
     ];
 
     protected $hidden = [
@@ -103,6 +108,20 @@ class StoreSetting extends Model
      */
     public function isOpenNow()
     {
+        // 1. Check Manual Override
+        if ($this->status_override === 'open') {
+            return true;
+        }
+        if ($this->status_override === 'closed') {
+            return false;
+        }
+
+        // 2. Check Pause Timer
+        if ($this->paused_until && now()->lessThan($this->paused_until)) {
+            return false;
+        }
+
+        // 3. Business Hours Logic
         if (!$this->business_hours) {
             return false;
         }
@@ -123,12 +142,35 @@ class StoreSetting extends Model
         ];
 
         $day = $dayMap[$dayOfWeek] ?? null;
-        if (!$day || !isset($hours[$day]) || !$hours[$day]['isOpen']) {
+        if (!$day || !isset($hours[$day])) {
             return false;
         }
 
-        $openTime = \Carbon\Carbon::createFromFormat('H:i', $hours[$day]['open'], $timezone);
-        $closeTime = \Carbon\Carbon::createFromFormat('H:i', $hours[$day]['close'], $timezone);
+        $dayData = $hours[$day];
+        $isOpen = $dayData['isOpen'] ?? $dayData['is_open'] ?? false;
+
+        if (!$isOpen) {
+            return false;
+        }
+
+        $openTimeStr = $dayData['open'] ?? $dayData['open_time'] ?? null;
+        $closeTimeStr = $dayData['close'] ?? $dayData['close_time'] ?? null;
+
+        $openTime = @\Carbon\Carbon::createFromFormat('H:i', $openTimeStr ?? '', $timezone);
+        $closeTime = @\Carbon\Carbon::createFromFormat('H:i', $closeTimeStr ?? '', $timezone);
+
+        if (!$openTime || !$closeTime) {
+            return false;
+        }
+
+        // Set dates to match $now's date to avoid issues with createFromFormat defaulting differently
+        $openTime->setDate($now->year, $now->month, $now->day);
+        $closeTime->setDate($now->year, $now->month, $now->day);
+
+        // Handle overnight hours (e.g. 18:00 to 02:00)
+        if ($closeTime->lessThan($openTime)) {
+            $closeTime->addDay();
+        }
 
         return $now->between($openTime, $closeTime);
     }

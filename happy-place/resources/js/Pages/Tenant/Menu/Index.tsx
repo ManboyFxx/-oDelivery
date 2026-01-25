@@ -1,5 +1,6 @@
 import { Head } from '@inertiajs/react';
-import { ShoppingBag, Phone, Instagram, Globe, MapPin, Clock, User, LogOut, Gift, History, X, Plus, Minus, ShoppingCart, ChevronRight, Trash2, Home, Edit2, Check } from 'lucide-react';
+import { ShoppingBag, Phone, Instagram, Globe, MapPin, Clock, User, LogOut, Gift, History, X, Plus, Minus, ShoppingCart, ChevronRight, Trash2, Home, Edit2, Check, Info } from 'lucide-react';
+import Modal from '@/Components/Modal';
 import { useState, useEffect } from 'react';
 import clsx from 'clsx';
 import axios from 'axios';
@@ -77,6 +78,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer }: { 
 
     // Auth Modal
     const [showAuthModal, setShowAuthModal] = useState(false);
+    const [showInfoModal, setShowInfoModal] = useState(false);
     const [authStep, setAuthStep] = useState<'phone' | 'name'>('phone');
     const [phone, setPhone] = useState('');
     const [name, setName] = useState('');
@@ -1005,6 +1007,12 @@ export default function PublicMenu({ store, categories, slug, authCustomer }: { 
 
                             {/* User Section */}
                             <div className="flex gap-3 items-center">
+                                <button
+                                    onClick={() => setShowInfoModal(true)}
+                                    className="h-10 w-10 bg-white text-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-50 transition-colors shadow-lg shadow-gray-200/50"
+                                >
+                                    <Info className="h-5 w-5" />
+                                </button>
                                 {customer ? (
                                     <button
                                         onClick={() => setShowCustomerArea(true)}
@@ -1158,6 +1166,121 @@ export default function PublicMenu({ store, categories, slug, authCustomer }: { 
                     )}
                 </div>
             )}
-        </div>
+
+
+            {/* Store Info Modal */}
+            <Modal show={showInfoModal} onClose={() => setShowInfoModal(false)}>
+                <div className="p-6">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-bold text-gray-900">Informações da Loja</h2>
+                        <button onClick={() => setShowInfoModal(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                            <X className="h-6 w-6" />
+                        </button>
+                    </div>
+
+                    <div className="space-y-8">
+                        {/* Address & Contact */}
+                        <div className="space-y-4">
+                            <div className="flex items-start gap-4">
+                                <div className="bg-orange-50 p-2.5 rounded-xl text-[#ff3d03] shrink-0">
+                                    <MapPin className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-gray-900 mb-1">Endereço</h3>
+                                    <p className="text-gray-600 text-sm leading-relaxed">{store.address}</p>
+                                    <a
+                                        href={`https://maps.google.com/?q=${encodeURIComponent(store.address)}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-block mt-2 text-sm font-bold text-[#ff3d03] hover:underline"
+                                    >
+                                        Ver no mapa
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div className="flex items-start gap-4">
+                                <div className="bg-green-50 p-2.5 rounded-xl text-green-600 shrink-0">
+                                    <Phone className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-gray-900 mb-1">Contato</h3>
+                                    {store.phone && <p className="text-gray-600 text-sm">Tel: {store.phone}</p>}
+                                    {store.whatsapp && <p className="text-gray-600 text-sm">WhatsApp: {store.whatsapp}</p>}
+                                    {store.email && <p className="text-gray-600 text-sm">Email: {store.email}</p>}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Social Media */}
+                        {(store.settings?.instagram || store.settings?.facebook || store.settings?.website) && (
+                            <div>
+                                <h3 className="font-bold text-gray-900 mb-4">Redes Sociais</h3>
+                                <div className="flex gap-4">
+                                    {store.settings?.instagram && (
+                                        <a href={`https://instagram.com/${store.settings.instagram.replace('@', '')}`} target="_blank" className="flex items-center gap-2 px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors text-gray-700 font-medium text-sm">
+                                            <Instagram className="h-5 w-5 text-pink-600" />
+                                            Instagram
+                                        </a>
+                                    )}
+                                    {store.settings?.facebook && (
+                                        <a href={store.settings.facebook} target="_blank" className="flex items-center gap-2 px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors text-gray-700 font-medium text-sm">
+                                            <Globe className="h-5 w-5 text-blue-600" />
+                                            Facebook
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Business Hours */}
+                        <div>
+                            <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                <Clock className="h-5 w-5 text-gray-400" />
+                                Horários de Funcionamento
+                            </h3>
+                            <div className="bg-gray-50 rounded-2xl p-4 space-y-3">
+                                {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => {
+                                    const dayNames: Record<string, string> = {
+                                        monday: 'Segunda', tuesday: 'Terça', wednesday: 'Quarta',
+                                        thursday: 'Quinta', friday: 'Sexta', saturday: 'Sábado', sunday: 'Domingo'
+                                    };
+
+                                    const hours = store.settings?.business_hours?.[day] || {};
+                                    const isOpen = hours.isOpen || hours.is_open;
+                                    const open = hours.open || hours.open_time;
+                                    const close = hours.close || hours.close_time;
+
+                                    return (
+                                        <div key={day} className="flex justify-between text-sm">
+                                            <span className="text-gray-600 font-medium w-24">{dayNames[day]}</span>
+                                            {isOpen && open && close ? (
+                                                <span className="text-gray-900 font-bold">{open} às {close}</span>
+                                            ) : (
+                                                <span className="text-gray-400">Fechado</span>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Payment Methods */}
+                        {store.payment_methods && store.payment_methods.length > 0 && (
+                            <div>
+                                <h3 className="font-bold text-gray-900 mb-4">Formas de Pagamento</h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {store.payment_methods.map((method: any) => (
+                                        <span key={method.id} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold uppercase tracking-wide">
+                                            {method.name}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </Modal>
+        </div >
     );
 }
