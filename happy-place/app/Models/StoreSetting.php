@@ -23,6 +23,13 @@ class StoreSetting extends Model
         'address',
         'phone',
         'whatsapp',
+        'email',
+        'business_hours',
+        'theme_color',
+        'description',
+        'instagram',
+        'facebook',
+        'website',
         'operating_hours',
         'special_hours',
         'delivery_radius_km',
@@ -31,6 +38,7 @@ class StoreSetting extends Model
         'delivery_fee_per_km',
         'delivery_fee_mode',
         'fixed_delivery_fee',
+        'estimated_delivery_time',
         'service_fee_percentage',
         'suggested_tip_percentage',
         'points_per_currency',
@@ -53,12 +61,15 @@ class StoreSetting extends Model
         'pwa_short_name',
         'pwa_theme_color',
         'pwa_background_color',
+        'notification_settings',
     ];
 
     protected $casts = [
+        'business_hours' => 'array',
         'operating_hours' => 'array',
         'special_hours' => 'array',
         'menu_theme' => 'array',
+        'notification_settings' => 'array',
         'delivery_radius_km' => 'float',
         'min_order_delivery' => 'float',
         'free_delivery_min' => 'float',
@@ -72,6 +83,7 @@ class StoreSetting extends Model
         'printer_paper_width' => 'integer',
         'auto_print_on_confirm' => 'boolean',
         'print_copies' => 'integer',
+        'estimated_delivery_time' => 'integer',
         'store_latitude' => 'float',
         'store_longitude' => 'float',
     ];
@@ -84,5 +96,49 @@ class StoreSetting extends Model
     public function tenant()
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    /**
+     * Check if store is open now
+     */
+    public function isOpenNow()
+    {
+        if (!$this->business_hours) {
+            return false;
+        }
+
+        $timezone = $this->tenant->timezone ?? 'America/Sao_Paulo';
+        $now = now($timezone);
+        $hours = $this->business_hours;
+
+        $dayOfWeek = strtolower($now->format('l'));
+        $dayMap = [
+            'monday' => 'monday',
+            'tuesday' => 'tuesday',
+            'wednesday' => 'wednesday',
+            'thursday' => 'thursday',
+            'friday' => 'friday',
+            'saturday' => 'saturday',
+            'sunday' => 'sunday',
+        ];
+
+        $day = $dayMap[$dayOfWeek] ?? null;
+        if (!$day || !isset($hours[$day]) || !$hours[$day]['isOpen']) {
+            return false;
+        }
+
+        $openTime = \Carbon\Carbon::createFromFormat('H:i', $hours[$day]['open'], $timezone);
+        $closeTime = \Carbon\Carbon::createFromFormat('H:i', $hours[$day]['close'], $timezone);
+
+        return $now->between($openTime, $closeTime);
+    }
+
+    /**
+     * Get formatted operating hours
+     */
+    public function getFormattedOperatingHours()
+    {
+        $service = new \App\Services\SettingsService();
+        return $service->formatOperatingHours($this->business_hours);
     }
 }

@@ -28,6 +28,8 @@ interface Product {
     price: string;
     image_url?: string;
     complement_groups?: ComplementGroup[];
+    track_stock: boolean;
+    stock_quantity: number | null;
 }
 
 interface Category {
@@ -979,10 +981,17 @@ export default function PublicMenu({ store, categories, slug, authCustomer }: { 
                                         <img src={store.logo_url || "/images/logo.png"} className="h-full w-full object-contain" />
                                     </div>
                                 </div>
-                                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md flex items-center gap-1">
-                                    <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
-                                    ABERTO
-                                </div>
+                                {store.is_open ? (
+                                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md flex items-center gap-1">
+                                        <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
+                                        ABERTO
+                                    </div>
+                                ) : (
+                                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md flex items-center gap-1">
+                                        <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                                        FECHADO
+                                    </div>
+                                )}
                             </div>
 
                             {/* Info */}
@@ -990,7 +999,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer }: { 
                                 <h1 className="text-3xl font-black text-gray-800 mb-2">{store.name}</h1>
                                 <div className="flex items-center justify-center md:justify-start gap-2 text-gray-500 text-sm bg-gray-100 px-3 py-1.5 rounded-lg inline-flex">
                                     <Clock className="h-4 w-4" />
-                                    <span>{store.operating_hours || 'Terça a Domingo: 18:00 às 23:30'}</span>
+                                    <span>{store.operating_hours_formatted}</span>
                                 </div>
                             </div>
 
@@ -1023,6 +1032,19 @@ export default function PublicMenu({ store, categories, slug, authCustomer }: { 
                             </div>
                         </div>
                     </div>
+
+                    {/* Closed Banner */}
+                    {!store.is_open && (
+                        <div className="max-w-5xl mx-auto px-4 mt-6">
+                            <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-4 flex items-center gap-3 shadow-md">
+                                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                                <div className="flex-1">
+                                    <p className="font-bold text-red-700">🔒 Fechado no momento</p>
+                                    <p className="text-sm text-red-600">{store.operating_hours_formatted}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Navigation Pills */}
                     <div className="max-w-5xl mx-auto px-4 mt-8 sticky top-4 z-40">
@@ -1067,39 +1089,56 @@ export default function PublicMenu({ store, categories, slug, authCustomer }: { 
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {cat.products.map((product) => (
-                                        <div key={product.id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group border border-gray-100 flex flex-col">
-                                            <div className="h-48 w-full bg-gray-100 relative overflow-hidden">
-                                                {product.image_url ? (
-                                                    <img src={product.image_url} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                                ) : (
-                                                    <div className="h-full w-full flex items-center justify-center bg-gray-50 text-gray-300">
-                                                        <ShoppingBag className="h-12 w-12" />
-                                                    </div>
-                                                )}
-                                            </div>
+                                    {cat.products.map((product) => {
+                                        const isOutOfStock = product.track_stock && (product.stock_quantity || 0) <= 0;
 
-                                            <div className="p-5 flex-1 flex flex-col">
-                                                <h3 className="font-extrabold text-gray-900 text-lg mb-2">{product.name}</h3>
-                                                <p className="text-sm text-gray-500 line-clamp-2 mb-4 flex-1">
-                                                    {product.description || 'Uma explosão de sabor. Ingredientes selecionados para uma experiência única.'}
-                                                </p>
+                                        return (
+                                            <div key={product.id} className={`bg-white rounded-2xl overflow-hidden shadow-sm transition-all duration-300 group border border-gray-100 flex flex-col ${isOutOfStock ? 'opacity-70 grayscale' : 'hover:shadow-xl'}`}>
+                                                <div className="h-48 w-full bg-gray-100 relative overflow-hidden">
+                                                    {product.image_url ? (
+                                                        <img src={product.image_url} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                                    ) : (
+                                                        <div className="h-full w-full flex items-center justify-center bg-gray-50 text-gray-300">
+                                                            <ShoppingBag className="h-12 w-12" />
+                                                        </div>
+                                                    )}
 
-                                                <div className="mt-auto pt-4 border-t border-gray-100">
-                                                    <div className="flex items-center justify-between mb-3">
-                                                        <span className="text-xs text-gray-400">A partir de</span>
-                                                        <PriceTag price={product.price} />
+                                                    {isOutOfStock && (
+                                                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
+                                                            <span className="bg-red-600 text-white font-black text-xs uppercase tracking-widest px-3 py-1.5 rounded-lg -rotate-3 border-2 border-white shadow-lg">
+                                                                Esgotado
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="p-5 flex-1 flex flex-col">
+                                                    <h3 className="font-extrabold text-gray-900 text-lg mb-2">{product.name}</h3>
+                                                    <p className="text-sm text-gray-500 line-clamp-2 mb-4 flex-1">
+                                                        {product.description || 'Uma explosão de sabor. Ingredientes selecionados para uma experiência única.'}
+                                                    </p>
+
+                                                    <div className="mt-auto pt-4 border-t border-gray-100">
+                                                        <div className="flex items-center justify-between mb-3">
+                                                            <span className="text-xs text-gray-400">A partir de</span>
+                                                            <PriceTag price={product.price} />
+                                                        </div>
+                                                        <button
+                                                            onClick={() => !isOutOfStock && openProductModal(product)}
+                                                            disabled={isOutOfStock}
+                                                            className={`w-full font-bold py-3 rounded-xl transition-colors shadow-lg active:scale-95 text-sm uppercase tracking-wide
+                                                                ${isOutOfStock
+                                                                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed shadow-none'
+                                                                    : 'bg-[#ff3d03] hover:bg-[#e63700] text-white shadow-orange-500/20'
+                                                                }`}
+                                                        >
+                                                            {isOutOfStock ? 'Indisponível' : 'Adicionar'}
+                                                        </button>
                                                     </div>
-                                                    <button
-                                                        onClick={() => openProductModal(product)}
-                                                        className="w-full bg-[#ff3d03] hover:bg-[#e63700] text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-orange-500/20 active:scale-95 text-sm uppercase tracking-wide"
-                                                    >
-                                                        Adicionar
-                                                    </button>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
                         ))}

@@ -4,16 +4,30 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
-use App\Models\Tenant; // Assuming we have a Tenant model or similar
+use App\Models\Tenant;
+use App\Services\SettingsService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class TenantMenuController extends Controller
 {
+    protected $settingsService;
+
+    public function __construct(SettingsService $settingsService)
+    {
+        $this->settingsService = $settingsService;
+    }
+
     public function show($slug)
     {
-        // For demo: get first settings available
-        $settings = \App\Models\StoreSetting::first();
+        // Get tenant by slug
+        $tenant = \App\Models\Tenant::where('slug', $slug)->firstOrFail();
+
+        // Get settings for this tenant
+        $settings = \App\Models\StoreSetting::where('tenant_id', $tenant->id)->firstOrCreate(
+            ['tenant_id' => $tenant->id],
+            ['store_name' => $tenant->name]
+        );
 
         // Check for logged in customer
         $customer = null;
@@ -21,7 +35,7 @@ class TenantMenuController extends Controller
             $customer = \App\Models\Customer::find(session('customer_id'));
         }
 
-        $tenantId = $settings->tenant_id ?? \App\Models\Tenant::first()->id;
+        $tenantId = $tenant->id;
 
         $deliveryZones = \App\Models\DeliveryZone::where('tenant_id', $tenantId)
             ->where('is_active', true)
@@ -34,38 +48,44 @@ class TenantMenuController extends Controller
             ->orderBy('display_order')
             ->get();
 
-        $categories = Category::with([
-            'products' => function ($query) {
-                $query->where('is_available', true)
-                    ->with([
-                        'complementGroups.options' => function ($q) {
-                            $q->where('is_available', true)
-                                ->orderBy('sort_order')
-                                ->select('id', 'group_id', 'name', 'price', 'is_available', 'max_quantity', 'sort_order');
-                        }
-                    ]);
-            }
-        ])
+        $categories = Category::where('tenant_id', $tenantId)
+            ->with([
+                'products' => function ($query) {
+                    $query->where('is_available', true)
+                        ->with([
+                            'complementGroups.options' => function ($q) {
+                                $q->where('is_available', true)
+                                    ->orderBy('sort_order')
+                                    ->select('id', 'group_id', 'name', 'price', 'is_available', 'max_quantity', 'sort_order');
+                            }
+                        ]);
+                }
+            ])
             ->where('is_active', true)
+            ->orderBy('sort_order')
             ->get();
 
         return Inertia::render('Tenant/Menu/Index', [
             'slug' => $slug,
             'categories' => $categories,
-            'authCustomer' => $customer, // Pass logged in customer
+            'authCustomer' => $customer,
             'store' => [
                 'name' => $settings->store_name ?? 'ÓoDelivery Demo',
                 'logo_url' => $settings->logo_path ? "/storage/{$settings->logo_path}" : $settings->logo_url,
                 'banner_url' => $settings->banner_path ? "/storage/{$settings->banner_path}" : $settings->banner_url,
                 'phone' => $settings->phone,
                 'whatsapp' => $settings->whatsapp,
+                'email' => $settings->email,
                 'address' => $settings->address,
                 'theme_color' => $settings->pwa_theme_color ?? '#ff3d03',
                 'theme_mode' => $settings->menu_theme ?? 'modern-clean',
                 'loyalty_enabled' => $settings->loyalty_enabled ?? true,
+                'operating_hours_formatted' => $this->settingsService->formatOperatingHours($settings->business_hours),
+                'is_open' => $this->settingsService->isStoreOpen($tenant->id),
+                'estimated_delivery_time' => $settings->estimated_delivery_time ?? 30,
                 'delivery_zones' => $deliveryZones,
                 'payment_methods' => $paymentMethods,
-                'settings' => $settings, // Pass all settings for fee calculations
+                'settings' => $settings,
             ]
         ]);
     }
