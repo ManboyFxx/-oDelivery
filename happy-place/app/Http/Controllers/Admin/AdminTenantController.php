@@ -17,6 +17,7 @@ class AdminTenantController extends Controller
                     ->orWhere('slug', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%");
             })
+            ->with(['whatsAppInstances'])
             ->latest()
             ->paginate(10)
             ->withQueryString();
@@ -27,16 +28,35 @@ class AdminTenantController extends Controller
         ]);
     }
 
-    public function suspend(Tenant $tenant)
+    public function suspend(Request $request, Tenant $tenant)
     {
-        $tenant->update(['is_active' => false]);
+        $tenant->update([
+            'is_active' => false,
+            'suspension_reason' => $request->input('reason', null),
+        ]);
         return back()->with('success', 'Loja suspensa com sucesso.');
     }
 
     public function restore(Tenant $tenant)
     {
-        $tenant->update(['is_active' => true]);
+        $tenant->update([
+            'is_active' => true,
+            'suspension_reason' => null
+        ]);
         return back()->with('success', 'Loja reativada com sucesso.');
+    }
+
+    public function updatePlan(Request $request, Tenant $tenant)
+    {
+        $validated = $request->validate([
+            'plan' => 'required|string|in:free,basic,pro,trial,enterprise'
+        ]);
+
+        $tenant->update([
+            'plan' => $validated['plan']
+        ]);
+
+        return back()->with('success', 'Plano atualizado com sucesso.');
     }
 
     public function metrics(Tenant $tenant)

@@ -22,17 +22,17 @@ class GlobalRateLimiter
         // Determine limit and window based on user role
         if ($user) {
             if ($user->isSuperAdmin()) {
-                // Super Admins: 1000 requests per minute
-                $limit = 1000;
+                // Super Admins: 5000 requests per minute
+                $limit = 5000;
                 $key = "super_admin_{$user->id}";
             } else {
-                // Authenticated users: 100 requests per minute
-                $limit = 100;
+                // Authenticated users: 1000 requests per minute
+                $limit = 1000;
                 $key = "user_{$user->id}";
             }
         } else {
-            // Guests: 30 requests per minute
-            $limit = 30;
+            // Guests: 300 requests per minute
+            $limit = 300;
             $key = "guest_{$ip}";
         }
 

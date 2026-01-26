@@ -20,6 +20,7 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\WhatsAppInstanceController;
+use App\Http\Controllers\Tenant\CustomerRedemptionController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -37,6 +38,14 @@ Route::get('/planos', function () {
     return Inertia::render('Welcome/Plans'); // Creating a dedicated folder for welcome related pages
 })->name('plans');
 
+Route::get('/oomotoboy', function () {
+    return Inertia::render('Welcome/OoMotoboy');
+})->name('oomotoboy');
+
+Route::get('/ooprint', function () {
+    return Inertia::render('Welcome/OoPrint');
+})->name('ooprint');
+
 // Customer Auth Routes (Public - Phone Only)
 Route::post('/check-slug', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'checkSlug'])->name('check-slug');
 
@@ -51,7 +60,13 @@ Route::post('/customer/addresses', [\App\Http\Controllers\Tenant\CustomerAddress
 Route::put('/customer/addresses/{id}', [\App\Http\Controllers\Tenant\CustomerAddressController::class, 'update']);
 Route::delete('/customer/addresses/{id}', [\App\Http\Controllers\Tenant\CustomerAddressController::class, 'destroy']);
 Route::post('/customer/addresses/{id}/set-default', [\App\Http\Controllers\Tenant\CustomerAddressController::class, 'setDefault']);
+Route::get('/customer/orders', [\App\Http\Controllers\Tenant\CustomerOrderController::class, 'index']);
+Route::post('/customer/checkout', [\App\Http\Controllers\Tenant\CustomerOrderController::class, 'store']);
+Route::post('/customer/redeem-product', [CustomerRedemptionController::class, 'redeemProduct']);
+Route::post('/customer/validate-coupon', [\App\Http\Controllers\CouponValidationController::class, 'validate']);
 
+// Internal API for Polling (needs auth but generous rate limit - 60 requests per minute)
+Route::middleware(['auth', 'throttle:60,1'])->get('/api/orders/status-check', \App\Http\Controllers\Api\OrderStatusCheckController::class)->name('api.orders.status-check');
 
 // Super Admin Routes
 Route::middleware(['auth', \App\Http\Middleware\SuperAdminMiddleware::class])->prefix('admin')->name('admin.')->group(function () {
@@ -65,6 +80,7 @@ Route::middleware(['auth', \App\Http\Middleware\SuperAdminMiddleware::class])->p
     Route::post('/tenants/{tenant}/suspend', [\App\Http\Controllers\Admin\AdminTenantController::class, 'suspend'])->name('tenants.suspend');
     Route::post('/tenants/{tenant}/restore', [\App\Http\Controllers\Admin\AdminTenantController::class, 'restore'])->name('tenants.restore');
     Route::get('/tenants/{tenant}/metrics', [\App\Http\Controllers\Admin\AdminTenantController::class, 'metrics'])->name('tenants.metrics');
+    Route::put('/tenants/{tenant}/plan', [\App\Http\Controllers\Admin\AdminTenantController::class, 'updatePlan'])->name('tenants.update-plan');
 
     // API Keys Management
     Route::get('/api-keys', [\App\Http\Controllers\Admin\AdminApiKeysController::class, 'index'])->name('api-keys.index');
@@ -76,16 +92,24 @@ Route::middleware(['auth', \App\Http\Middleware\SuperAdminMiddleware::class])->p
     // Logs
     Route::get('/logs/security', [\App\Http\Controllers\Admin\AdminLogsController::class, 'security'])->name('logs.security');
     Route::get('/logs/audit', [\App\Http\Controllers\Admin\AdminLogsController::class, 'audit'])->name('logs.audit');
+
+    // WhatsApp Master (Shared Instance)
+    Route::get('/whatsapp', [\App\Http\Controllers\Admin\AdminWhatsAppController::class, 'index'])->name('whatsapp.index');
+    Route::post('/whatsapp/connect', [\App\Http\Controllers\Admin\AdminWhatsAppController::class, 'connect'])->name('whatsapp.connect');
+    Route::get('/whatsapp/qrcode', [\App\Http\Controllers\Admin\AdminWhatsAppController::class, 'getQrCode'])->name('whatsapp.qrcode');
+    Route::get('/whatsapp/status', [\App\Http\Controllers\Admin\AdminWhatsAppController::class, 'checkStatus'])->name('whatsapp.status');
+    Route::post('/whatsapp/disconnect', [\App\Http\Controllers\Admin\AdminWhatsAppController::class, 'disconnect'])->name('whatsapp.disconnect');
+
+    // Templates
+    Route::resource('/whatsapp/templates', \App\Http\Controllers\Admin\WhatsAppTemplateController::class)->only(['index', 'update'])->names('whatsapp.templates');
 });
 
 Route::get('/{slug}/menu', [TenantMenuController::class, 'show'])->name('tenant.menu');
+Route::get('/{slug}/menu/demo', [TenantMenuController::class, 'demo'])->name('tenant.menu.demo');
 
-Route::get('/dashboard', function () {
-    if (auth()->user()->isSuperAdmin()) {
-        return redirect()->route('admin.dashboard');
-    }
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified', 'subscription'])->name('dashboard');
+Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified', 'subscription'])
+    ->name('dashboard');
 
 // Subscription Management (accessible even if expired)
 Route::middleware(['auth', 'tenant.required'])->group(function () {
@@ -123,6 +147,7 @@ Route::middleware(['auth', 'subscription'])->group(function () {
 
     Route::post('/products/{product}/toggle', [ProductController::class, 'toggle'])->name('products.toggle');
     Route::post('/products/{product}/toggle-featured', [ProductController::class, 'toggleFeatured'])->name('products.toggle-featured');
+    Route::post('/products/{product}/toggle-badge', [ProductController::class, 'toggleBadge'])->name('products.toggle-badge');
     Route::resource('products', ProductController::class);
     Route::resource('categories', CategoryController::class);
     Route::resource('complements', ComplementController::class);
@@ -216,5 +241,8 @@ Route::middleware(['auth', 'subscription'])->group(function () {
 
 
 });
+
+// Public Webhooks (Outside Auth)
+Route::post('/webhooks/whatsapp', [\App\Http\Controllers\WhatsAppWebhookController::class, 'handle'])->name('webhooks.whatsapp');
 
 require __DIR__ . '/auth.php';

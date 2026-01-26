@@ -6,6 +6,7 @@ import { useForm } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { Order } from '../Partials/OrderCard';
 import { X, AlertCircle, CreditCard, ShoppingBag } from 'lucide-react';
+import { useToast } from '@/Hooks/useToast';
 
 interface Props {
     show: boolean;
@@ -17,6 +18,7 @@ export function CancelOrderModal({ show, onClose, order }: Props) {
     const { data, setData, post, processing, reset } = useForm({
         reason: '',
     });
+    const { success, error: showError } = useToast();
 
     useEffect(() => {
         if (show) reset();
@@ -26,7 +28,13 @@ export function CancelOrderModal({ show, onClose, order }: Props) {
         e.preventDefault();
         if (!order) return;
         post(route('orders.cancel', order.id), {
-            onSuccess: onClose
+            onSuccess: () => {
+                success('Pedido Cancelado', `Pedido #${order.order_number} foi cancelado com sucesso.`);
+                onClose();
+            },
+            onError: () => {
+                showError('Erro', 'Não foi possível cancelar o pedido.');
+            }
         });
     };
 
@@ -85,6 +93,7 @@ export function ChangePaymentModal({ show, onClose, order }: Props) {
         payment_method: '',
         payment_status: '',
     });
+    const { success } = useToast();
 
     useEffect(() => {
         if (order) {
@@ -99,7 +108,10 @@ export function ChangePaymentModal({ show, onClose, order }: Props) {
         e.preventDefault();
         if (!order) return;
         post(route('orders.payment', order.id), {
-            onSuccess: onClose
+            onSuccess: () => {
+                success('Pagamento Atualizado', 'Informações de pagamento foram atualizadas.');
+                onClose();
+            }
         });
     };
 
@@ -162,6 +174,7 @@ export function ChangeModeModal({ show, onClose, order }: Props) {
     const { data, setData, post, processing } = useForm({
         mode: '',
     });
+    const { success } = useToast();
 
     useEffect(() => {
         if (order) setData('mode', order.mode);
@@ -171,7 +184,10 @@ export function ChangeModeModal({ show, onClose, order }: Props) {
         e.preventDefault();
         if (!order) return;
         post(route('orders.mode', order.id), {
-            onSuccess: onClose
+            onSuccess: () => {
+                success('Tipo Atualizado', 'Tipo de pedido foi alterado com sucesso.');
+                onClose();
+            }
         });
     };
 
@@ -198,8 +214,8 @@ export function ChangeModeModal({ show, onClose, order }: Props) {
                                 type="button"
                                 onClick={() => setData('mode', m)}
                                 className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${data.mode === m
-                                        ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md transform scale-[1.02]'
-                                        : 'border-gray-100 bg-white text-gray-500 hover:border-gray-200'
+                                    ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md transform scale-[1.02]'
+                                    : 'border-gray-100 bg-white text-gray-500 hover:border-gray-200'
                                     }`}
                             >
                                 <span className="font-bold uppercase tracking-wider text-sm">
@@ -228,6 +244,7 @@ export function EditOrderModal({ show, onClose, order, products = [] }: Props & 
     const { data, setData, put, processing, reset } = useForm({
         items: [] as any[],
     });
+    const { success } = useToast();
 
     const [newItemId, setNewItemId] = useState('');
     const [selectedComplements, setSelectedComplements] = useState<Record<string, number>>({});
@@ -337,7 +354,10 @@ export function EditOrderModal({ show, onClose, order, products = [] }: Props & 
         e.preventDefault();
         if (!order) return;
         put(route('orders.update-items', order.id), {
-            onSuccess: onClose
+            onSuccess: () => {
+                success('Pedido Atualizado', 'Itens do pedido foram atualizados com sucesso.');
+                onClose();
+            }
         });
     };
 

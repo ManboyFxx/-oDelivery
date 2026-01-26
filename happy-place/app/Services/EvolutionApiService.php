@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Models\ApiCredential;
 
 class EvolutionApiService
 {
@@ -12,8 +13,21 @@ class EvolutionApiService
 
     public function __construct()
     {
-        $this->baseUrl = rtrim(config('services.evolution.url'), '/');
-        $this->apiKey = config('services.evolution.api_key');
+        $credential = ApiCredential::where('service', 'evolution')
+            ->whereNull('tenant_id')
+            ->where('is_active', true)
+            ->latest()
+            ->first();
+
+        $this->baseUrl = rtrim(config('services.evolution.url') ?? '', '/');
+
+        $dbKey = $credential ? $credential->decrypted_value : null;
+
+        if (is_array($dbKey)) {
+            $dbKey = $dbKey['apikey'] ?? null;
+        }
+
+        $this->apiKey = (string) ($dbKey ?? config('services.evolution.api_key') ?? '');
     }
 
     /**

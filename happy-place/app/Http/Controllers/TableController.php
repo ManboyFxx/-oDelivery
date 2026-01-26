@@ -19,7 +19,11 @@ class TableController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'number' => 'required|integer|unique:tables,number', // Should be unique per tenant scope, but we rely on tenant scope trait
+            'number' => [
+                'required',
+                'integer',
+                \Illuminate\Validation\Rule::unique('tables')->where('tenant_id', $request->user()->tenant_id)
+            ],
             'capacity' => 'required|integer|min:1',
         ]);
 

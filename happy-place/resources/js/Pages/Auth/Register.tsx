@@ -160,8 +160,8 @@ export default function Register() {
                 <div className="w-full lg:w-1/2 flex flex-col justify-center px-6 sm:px-12 lg:px-16 xl:px-24 bg-white py-12 overflow-y-auto">
                     <div className="max-w-lg w-full mx-auto">
                         <div className="text-center mb-8">
-                            <Link href="/">
-                                <img src="/images/logo-full.png" alt="ÓoDelivery" className="h-20 w-auto mx-auto drop-shadow-sm" />
+                            <Link href="/" className="text-4xl font-black text-[#ff3d03] tracking-tight hover:opacity-90 transition-opacity">
+                                ÓoDelivery.
                             </Link>
                         </div>
                         <div className="mb-8">
@@ -209,13 +209,12 @@ export default function Register() {
                                         type="text"
                                         name="slug"
                                         value={data.slug}
-                                        className={`block w-full pl-12 pr-12 py-3.5 bg-white border focus:ring-4 rounded-xl text-gray-900 font-semibold placeholder-gray-300 transition-all ${
-                                            slugStatus.available === true
-                                                ? 'border-green-500 focus:border-green-500 focus:ring-green-500/10'
-                                                : slugStatus.available === false
+                                        className={`block w-full pl-12 pr-12 py-3.5 bg-white border focus:ring-4 rounded-xl text-gray-900 font-semibold placeholder-gray-300 transition-all ${slugStatus.available === true
+                                            ? 'border-green-500 focus:border-green-500 focus:ring-green-500/10'
+                                            : slugStatus.available === false
                                                 ? 'border-red-400 focus:border-red-400 focus:ring-red-500/10'
                                                 : 'border-gray-200 focus:border-[#ff3d03] focus:ring-[#ff3d03]/10'
-                                        }`}
+                                            }`}
                                         autoComplete="off"
                                         onChange={(e) => {
                                             setSlugManuallyEdited(true);
@@ -410,7 +409,7 @@ export default function Register() {
                 {/* Visual Side (Right) */}
                 <div className="hidden lg:flex lg:w-1/2 bg-gray-900 relative overflow-hidden items-center justify-center p-16 xl:p-24">
                     <img
-                        src="/images/hero-restaurant.jpg"
+                        src="/images/auth-background.jpg"
                         alt="Background"
                         className="absolute inset-0 w-full h-full object-cover opacity-50 mix-blend-overlay"
                     />
@@ -418,7 +417,7 @@ export default function Register() {
 
                     <div className="relative z-10 max-w-lg">
                         <div className="mb-16 flex justify-center">
-                            <img src="/images/logo-full.png" alt="ÓoDelivery" className="h-32 w-auto brightness-0 invert drop-shadow-2xl" />
+                            <img src="/images/landing/header-icon.png" alt="ÓoDelivery" className="h-32 w-auto drop-shadow-2xl" />
                         </div>
 
                         <div className="space-y-10">

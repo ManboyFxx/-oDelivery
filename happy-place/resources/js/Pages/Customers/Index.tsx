@@ -11,6 +11,8 @@ interface Customer {
     phone: string;
     email?: string;
     orders_count: number;
+    loyalty_points: number;
+    loyalty_tier: string;
 }
 
 export default function CustomerIndex({ customers }: { customers: { data: Customer[] } }) {
@@ -74,6 +76,15 @@ export default function CustomerIndex({ customers }: { customers: { data: Custom
                                         <Pencil className="h-4 w-4" />
                                     </Link>
                                 </div>
+                                {/* Tier Badge */}
+                                {(customer.loyalty_tier && customer.loyalty_tier !== 'bronze') && (
+                                    <div className="absolute top-3 left-3 bg-white/90 dark:bg-black/60 px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm shadow-sm flex items-center gap-1">
+                                        {customer.loyalty_tier === 'diamond' && '💎'}
+                                        {customer.loyalty_tier === 'gold' && '🥇'}
+                                        {customer.loyalty_tier === 'silver' && '🥈'}
+                                        {customer.loyalty_tier}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Content */}
@@ -95,10 +106,15 @@ export default function CustomerIndex({ customers }: { customers: { data: Custom
                                     )}
                                 </div>
 
+                                {/* Loyalty Points & Orders Footer */}
                                 <div className="mt-auto pt-4 border-t border-gray-100 dark:border-white/5 flex justify-between items-center">
                                     <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-[#ff3d03] text-xs font-bold">
                                         <ShoppingBag className="h-3.5 w-3.5" />
-                                        {customer.orders_count} pedidos
+                                        {customer.orders_count}
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Pontos</p>
+                                        <p className="text-sm font-black text-gray-900 dark:text-white">{customer.loyalty_points || 0}</p>
                                     </div>
                                 </div>
                             </div>

@@ -11,8 +11,81 @@ import {
     TrendingUp,
     ShieldCheck,
     Truck,
-    Clock
+    Clock,
+    ChevronDown,
+    Printer,
+    Menu,
+    X,
+    Bike,
+    FileText
 } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+
+// Dropdown Component
+function ProductDropdown() {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
+    return (
+        <div className="relative" ref={dropdownRef}>
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="flex items-center gap-1 text-sm font-bold text-gray-700 hover:text-[#ff3d03] transition-colors py-2"
+            >
+                Produtos
+                <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Dropdown Menu */}
+            <div className={`absolute top-full left-1/2 -translate-x-1/2 mt-4 w-96 bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-100 p-4 transition-all duration-200 origin-top transform ${isOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible'}`}>
+                <div className="space-y-2">
+                    <Link href="/" className="flex items-start gap-4 p-4 rounded-xl hover:bg-orange-50 transition-colors group">
+                        <div className="shrink-0 h-10 w-10 bg-orange-100 rounded-lg flex items-center justify-center text-[#ff3d03] group-hover:scale-110 transition-transform">
+                            <Smartphone className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <div className="font-bold text-gray-900 mb-1">ÓoDelivery</div>
+                            <p className="text-xs text-gray-500 font-medium leading-relaxed">Cardápio digital completo com pedidos via WhatsApp.</p>
+                        </div>
+                    </Link>
+
+                    <Link href="/ooprint" className="flex items-start gap-4 p-4 rounded-xl hover:bg-orange-50 transition-colors group">
+                        <div className="shrink-0 h-10 w-10 bg-orange-100 rounded-lg flex items-center justify-center text-[#ff3d03] group-hover:scale-110 transition-transform">
+                            <Printer className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <div className="font-bold text-gray-900 mb-1">ÓoPrint</div>
+                            <p className="text-xs text-gray-500 font-medium leading-relaxed">Impressão automática de comandas na cozinha.</p>
+                        </div>
+                    </Link>
+
+                    <Link href="/oomotoboy" className="flex items-start gap-4 p-4 rounded-xl hover:bg-orange-50 transition-colors group">
+                        <div className="shrink-0 h-10 w-10 bg-orange-100 rounded-lg flex items-center justify-center text-[#ff3d03] group-hover:scale-110 transition-transform">
+                            <Bike className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <div className="font-bold text-gray-900 mb-1">ÓoMotoboy</div>
+                            <p className="text-xs text-gray-500 font-medium leading-relaxed">Gestão e rastreamento de entregadores.</p>
+                        </div>
+                    </Link>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 export default function Welcome({ auth }: PageProps) {
     return (
@@ -24,73 +97,71 @@ export default function Welcome({ auth }: PageProps) {
                 <div className="max-w-7xl mx-auto px-6 lg:px-8">
                     <div className="flex justify-between items-center h-20">
                         <Link href="/">
-                            <div className="flex items-center gap-2">
-                                <div className="bg-[#ff3d03] text-white p-1.5 rounded-lg">
-                                    <ShoppingBag className="w-6 h-6" fill="currentColor" />
-                                </div>
-                                <span className="text-2xl font-black text-gray-900 tracking-tight">ÓoDelivery</span>
+                            <div className="flex items-center">
+                                <img
+                                    src="/images/landing/header-icon.png"
+                                    alt="ÓoDelivery"
+                                    className="h-10 w-auto object-contain" // Slightly smaller icon
+                                />
+                                <span className="ml-2 text-2xl font-bold text-gray-900 tracking-tight">ÓoDelivery</span>
                             </div>
                         </Link>
 
-                        <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
-                            <Link href="#funcionalidades" className="hover:text-[#ff3d03] transition-colors">Funcionalidades</Link>
-                            <Link href={route('plans')} className="hover:text-[#ff3d03] transition-colors">Planos</Link>
-                            <Link href="#sobre" className="hover:text-[#ff3d03] transition-colors">Sobre nós</Link>
-                            <Link href="#blog" className="hover:text-[#ff3d03] transition-colors">Blog</Link>
+                        {/* Center Links (Desktop) */}
+                        <div className="hidden md:flex items-center gap-8">
+                            <ProductDropdown />
+                            <Link href={route('plans')} className="text-sm font-bold text-gray-700 hover:text-[#ff3d03] transition-colors">
+                                Planos
+                            </Link>
+                            <Link href="#" className="text-sm font-bold text-gray-700 hover:text-[#ff3d03] transition-colors">
+                                Sobre nós
+                            </Link>
+                            <Link href="#" className="text-sm font-bold text-gray-700 hover:text-[#ff3d03] transition-colors">
+                                Blog
+                            </Link>
                         </div>
 
                         <div className="flex items-center gap-4">
-                            {auth.user ? (
-                                <Link
-                                    href={route('dashboard')}
-                                    className="px-6 py-2.5 rounded-lg border-2 border-gray-200 text-gray-700 font-bold text-sm hover:border-[#ff3d03] hover:text-[#ff3d03] transition-all"
-                                >
-                                    Ir para o Painel
-                                </Link>
-                            ) : (
-                                <>
-                                    <Link
-                                        href={route('login')}
-                                        className="px-6 py-2.5 rounded-lg border-2 border-gray-200 text-gray-700 font-bold text-sm hover:border-[#ff3d03] hover:text-[#ff3d03] transition-all"
-                                    >
-                                        Entrar
-                                    </Link>
-                                    <Link
-                                        href={route('register')}
-                                        className="px-6 py-2.5 rounded-lg bg-[#ff3d03] text-white font-bold text-sm hover:bg-[#e63703] shadow-lg shadow-[#ff3d03]/20 hover:shadow-[#ff3d03]/40 transition-all transform hover:-translate-y-0.5"
-                                    >
-                                        Criar cardápio grátis
-                                    </Link>
-                                </>
-                            )}
+                            <Link
+                                href={route('login')}
+                                className="text-sm font-bold text-gray-700 hover:text-[#ff3d03] transition-colors hidden sm:block"
+                            >
+                                Entrar
+                            </Link>
+                            <Link
+                                href={route('register')}
+                                className="px-6 py-2.5 rounded-xl bg-[#ff3d03] text-white font-bold text-sm hover:bg-[#e63703] transition-all shadow-lg shadow-[#ff3d03]/20 hover:shadow-[#ff3d03]/40"
+                            >
+                                Começar Grátis
+                            </Link>
                         </div>
                     </div>
                 </div>
             </nav>
 
             {/* Hero Section */}
-            <section className="pt-32 pb-20 px-6 bg-gray-50 overflow-hidden">
-                <div className="max-w-7xl mx-auto">
-                    <div className="grid lg:grid-cols-2 gap-12 items-center">
-                        <div className="space-y-8 relative z-10">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-xs font-bold uppercase tracking-wide">
-                                <Zap className="w-3 h-3 fill-current" />
-                                Delivery 2.0
+            <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden bg-gray-50">
+                <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
+                    <div className="max-w-4xl mx-auto text-center">
+                        <div className="space-y-8">
+                            <div>
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100/50 border border-orange-200 text-[#ff3d03] font-bold text-xs uppercase tracking-wider mb-8">
+                                    <span className="w-2 h-2 rounded-full bg-[#ff3d03] animate-pulse"></span>
+                                    Sistema para Delivery e Gestão
+                                </div>
+
+                                {/* New Headline */}
+                                <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-gray-900 leading-tight mb-8">
+                                    Crie seu <span className="text-[#ff3d03]">Cardápio Digital</span> gratuito e comece a receber pedidos hoje mesmo!
+                                </h1>
                             </div>
-
-                            <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-gray-900 leading-[1.1] tracking-tight">
-                                Crie grátis seu<br />
-                                <span className="text-[#ff3d03]">Cardápio Digital</span><br />
-                                para Delivery
-                            </h1>
-
-                            <div className="space-y-4">
+                            <div className="text-xl text-gray-600 font-medium space-y-4">
                                 {[
                                     'Pedidos no WhatsApp com atendente virtual',
                                     'Canal de vendas sem taxas e com link próprio',
                                     'Funcionalidades avançadas exclusivas'
                                 ].map((item, i) => (
-                                    <div key={i} className="flex items-center gap-3">
+                                    <div key={i} className="flex items-center justify-center gap-3">
                                         <CheckCircle2 className="w-6 h-6 text-gray-900 flex-shrink-0" />
                                         <span className="text-lg text-gray-700 font-medium">{item}</span>
                                     </div>
@@ -107,40 +178,28 @@ export default function Welcome({ auth }: PageProps) {
                                 </Link>
                             </div>
                         </div>
-
-                        <div className="relative lg:h-[600px] flex items-center justify-center">
-                            {/* Decorative blobs */}
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#ff3d03]/5 rounded-full blur-3xl" />
-                            <div className="absolute top-1/2 right-0 -translate-y-1/2 w-[300px] h-[300px] bg-blue-500/5 rounded-full blur-3xl" />
-
-                            <img
-                                src="/images/dashboard-mockup.png"
-                                alt="Dashboard ÓoDelivery"
-                                className="relative w-[140%] max-w-none transform translate-x-10 rotate-y-12 rounded-2xl shadow-2xl border-4 border-white"
-                                style={{ transform: 'perspective(1000px) rotateY(-10deg) rotateX(2deg) scale(1.1)' }}
-                            />
-                        </div>
                     </div>
                 </div>
             </section>
 
             {/* WhatsApp Feature Section */}
             <section className="py-24 px-6 bg-white overflow-hidden">
-                <div className="max-w-7xl mx-auto rounded-[3rem] bg-gray-50 p-12 lg:p-24 relative">
-                    <div className="grid lg:grid-cols-2 gap-16 items-center">
-                        <div className="space-y-8">
+                <div className="max-w-7xl mx-auto rounded-[3rem] bg-gray-50 relative overflow-hidden">
+                    <div className="grid lg:grid-cols-2 items-center">
+                        <div className="p-12 lg:p-24 space-y-8">
+                            <span className="block text-[#ff3d03] font-bold text-lg mb-2 uppercase tracking-wide">ÓoMotoboy</span>
                             <h2 className="text-4xl md:text-5xl font-black text-gray-900 leading-tight">
-                                Quer responder rapidamente aos clientes?
+                                Perdido em comandas do delivery?
                             </h2>
                             <p className="text-xl text-gray-600 font-medium">
-                                O atendente virtual faz isso por você. Na hora, pelo WhatsApp, sem um colaborador exclusivo.
+                                Sistema completo de gestão de entregas com rastreamento e relatórios detalhados.
                             </p>
 
                             <div className="space-y-6">
                                 {[
-                                    'Respostas imediatas sobre cardápio, horários, entregas etc.',
-                                    'Status dos pedidos atualizados do preparo até a entrega',
-                                    'Seu cliente não fica esperando, e você não perde vendas'
+                                    'Seus entregadores na palma da mão',
+                                    'Rastreamento dos entregadores',
+                                    'Delivery organizado começa com gestão inteligente'
                                 ].map((item, i) => (
                                     <div key={i} className="flex items-start gap-3">
                                         <div className="mt-1">
@@ -161,83 +220,64 @@ export default function Welcome({ auth }: PageProps) {
                             </div>
                         </div>
 
-                        <div className="relative flex justify-center lg:justify-end">
-                            {/* Phone Mockup Placeholder - using CSS shapes for now if image fails, but ideally image */}
-                            <div className="relative w-[300px] h-[600px] bg-black rounded-[3rem] p-4 shadow-2xl border-8 border-gray-800">
-                                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-b-2xl z-20"></div>
-                                <div className="w-full h-full bg-white rounded-[2.2rem] overflow-hidden relative">
-                                    <img
-                                        src="/images/app-mockup.png"
-                                        alt="App Interface"
-                                        className="w-full h-full object-cover"
-                                    />
-
-                                    {/* Chat overlay simulation */}
-                                    <div className="absolute bottom-8 right-4 left-4 bg-white/90 backdrop-blur shadow-lg rounded-2xl p-4 border border-green-100 animate-in slide-in-from-bottom-10 fade-in duration-1000">
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white">
-                                                <Smartphone className="w-4 h-4" />
-                                            </div>
-                                            <div className="text-xs font-bold text-green-800">WhatsApp</div>
-                                        </div>
-                                        <p className="text-sm font-medium text-gray-800">✅ Seu pedido #472 saiu para entrega!</p>
-                                    </div>
-                                </div>
-                            </div>
+                        <div className="relative h-full min-h-[400px] lg:min-h-full">
+                            <img
+                                src="/images/landing/whatsapp-feature.jpg"
+                                alt="Atendimento via WhatsApp"
+                                className="absolute inset-0 w-full h-full object-cover"
+                            />
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* Benefits Grid */}
+            {/* ÓoPrint Feature Section */}
             <section className="py-24 px-6 bg-white">
-                <div className="max-w-7xl mx-auto text-center mb-16">
-                    <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-6">
-                        Venda mais – e mais rápido – com<br />
-                        o Cardápio Online para Delivery
-                    </h2>
-                </div>
-
-                <div className="max-w-7xl mx-auto grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-                    {[
-                        {
-                            icon: Smartphone,
-                            title: 'Facilite para o cliente',
-                            desc: 'Garanta que seus clientes encontrem facilmente o seu cardápio, através de um link exclusivo para compartilhar'
-                        },
-                        {
-                            icon: LayoutDashboard,
-                            title: 'Centralize os pedidos',
-                            desc: 'Organize os pedidos que chegam via WhatsApp e no seu gestor, facilitando e agilizando o fluxo de atendimento'
-                        },
-                        {
-                            icon: MessageCircle,
-                            title: 'Informe o status',
-                            desc: 'Automatize o envio de notificações para o WhatsApp do cliente para informar sobre o andamento do pedido'
-                        },
-                        {
-                            icon: TrendingUp,
-                            title: 'Fidelize e Venda Mais',
-                            desc: 'Use ferramentas de fidelização e promoções para fazer seus clientes comprarem mais vezes'
-                        }
-                    ].map((item, i) => (
-                        <div key={i} className="text-center group hover:-translate-y-2 transition-transform duration-300">
-                            <div className="w-16 h-16 mx-auto bg-orange-50 rounded-2xl flex items-center justify-center mb-6 text-[#ff3d03] group-hover:bg-[#ff3d03] group-hover:text-white transition-colors">
-                                <item.icon className="w-8 h-8" />
-                            </div>
-                            <h3 className="text-lg font-bold text-gray-900 mb-3">{item.title}</h3>
-                            <p className="text-gray-600 font-medium leading-relaxed">{item.desc}</p>
+                <div className="max-w-7xl mx-auto rounded-[3rem] bg-gray-900 relative overflow-hidden">
+                    <div className="grid lg:grid-cols-2 items-center">
+                        <div className="relative h-full min-h-[400px] lg:min-h-full bg-gray-800 flex items-center justify-center overflow-hidden">
+                            <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#ff3d03_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                            <img
+                                src="/images/landing/ooprint-preview.png"
+                                alt="Sistema ÓoPrint"
+                                className="relative z-10 w-full h-full object-contain opacity-90 p-8"
+                            />
                         </div>
-                    ))}
-                </div>
 
-                <div className="text-center mt-12">
-                    <Link
-                        href={route('register')}
-                        className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-[#ff3d03] text-white font-bold text-lg hover:bg-[#e63703] shadow-xl shadow-[#ff3d03]/20 hover:shadow-[#ff3d03]/40 transition-all"
-                    >
-                        Começar delivery grátis
-                    </Link>
+                        <div className="p-12 lg:p-24 space-y-8">
+                            <span className="block text-[#ff3d03] font-bold text-lg mb-2 uppercase tracking-wide">ÓoPrint</span>
+                            <h2 className="text-4xl md:text-5xl font-black text-white leading-tight">
+                                Cozinha organizada, cliente feliz.
+                            </h2>
+                            <p className="text-xl text-gray-400 font-medium">
+                                Esqueça as comandas manuais. O ÓoPrint automatiza a impressão dos pedidos assim que eles chegam.
+                            </p>
+
+                            <div className="space-y-6">
+                                {[
+                                    'Impressão automática em 1 segundo',
+                                    'Sem erros de anotação ou leitura',
+                                    'Compatível com impressoras térmicas (Windows)'
+                                ].map((item, i) => (
+                                    <div key={i} className="flex items-start gap-3">
+                                        <div className="mt-1">
+                                            <CheckCircle2 className="w-6 h-6 text-[#ff3d03]" />
+                                        </div>
+                                        <span className="text-lg text-gray-300 font-medium leading-relaxed">{item}</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="pt-4">
+                                <Link
+                                    href={route('register')}
+                                    className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-[#ff3d03] text-white font-bold text-lg hover:bg-[#e63703] shadow-xl shadow-[#ff3d03]/20 hover:shadow-[#ff3d03]/40 transition-all"
+                                >
+                                    Começar agora
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -259,8 +299,8 @@ export default function Welcome({ auth }: PageProps) {
                         </div>
                         <div className="pt-12">
                             <img
-                                src="/images/dashboard-mockup.png"
-                                alt="Dashboard Full"
+                                src="/images/landing/kanban-dashboard.png"
+                                alt="Painel de Pedidos ÓoDelivery"
                                 className="w-full h-auto"
                             />
                         </div>
@@ -335,9 +375,7 @@ export default function Welcome({ auth }: PageProps) {
                     <div className="grid md:grid-cols-4 gap-12 mb-16">
                         <div className="col-span-2 space-y-6">
                             <div className="flex items-center gap-2">
-                                <div className="bg-[#ff3d03] text-white p-1.5 rounded-lg">
-                                    <ShoppingBag className="w-6 h-6" fill="currentColor" />
-                                </div>
+                                <img src="/images/landing/logo-header.png" alt="ÓoDelivery" className="h-8 w-auto grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all" />
                                 <span className="text-2xl font-black text-gray-900 tracking-tight">ÓoDelivery</span>
                             </div>
                             <p className="text-gray-500 font-medium max-w-sm">

@@ -154,15 +154,8 @@ class OrderController extends Controller
         $order->update($validated);
 
         // Send WhatsApp notifications based on status change
-        $ooBot = app(\App\Services\OoBotService::class);
+        // handled by OrderObserver
 
-        match($validated['status']) {
-            'preparing' => $ooBot->sendOrderConfirmation($order),
-            'ready' => $ooBot->sendOrderReady($order),
-            'out_for_delivery' => $ooBot->sendOrderOutForDelivery($order),
-            'delivered' => $ooBot->sendOrderDelivered($order),
-            default => null,
-        };
 
         return back()->with('success', 'Status atualizado!');
     }

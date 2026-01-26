@@ -42,9 +42,60 @@ class OoBotService
     /**
      * Send order delivered message
      */
+    /**
+     * Send order delivered message
+     */
     public function sendOrderDelivered(Order $order): bool
     {
         return $this->sendOrderNotification($order, 'order_delivered');
+    }
+
+    /**
+     * Send auto-reply message
+     */
+    public function sendAutoReply(string $phone, int $tenantId): bool
+    {
+        try {
+            $tenant = \App\Models\Tenant::find($tenantId);
+
+            if (!$tenant)
+                return false;
+
+            // Reuse auto-messages setting or create specific one
+            if (!$tenant->settings?->whatsapp_auto_messages_enabled) {
+                return false;
+            }
+
+            $instance = $this->getInstance($tenant);
+
+            if (!$instance) {
+                return false;
+            }
+
+            // Default auto-reply message
+            $message = "Olá! Sou o atendente virtual do *{$tenant->name}*.\n\nNo momento não posso responder, mas já avisei nossa equipe. 👨‍💻\n\nSe for sobre um pedido, por favor informe o número ou aguarde um momento.";
+
+            // Log attempt
+            Log::info('ÓoBot - Sending Auto Reply', [
+                'tenant_id' => $tenantId,
+                'phone' => $phone
+            ]);
+
+            $result = $this->evolutionApi->sendTextMessage(
+                $instance->instance_name,
+                $phone,
+                $message
+            );
+
+            return $result['success'];
+
+        } catch (\Exception $e) {
+            Log::error('ÓoBot - Auto Reply Error', [
+                'tenant_id' => $tenantId,
+                'error' => $e->getMessage(),
+            ]);
+            return false;
+        }
     }
 
     /**

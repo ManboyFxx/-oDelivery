@@ -130,6 +130,11 @@ class Tenant extends Model
         return $this->hasMany(User::class)->where('role', 'motoboy');
     }
 
+    public function whatsAppInstances()
+    {
+        return $this->hasMany(WhatsAppInstance::class);
+    }
+
     // ==========================================
     // Subscription Status Helpers
     // ==========================================

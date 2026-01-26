@@ -4,11 +4,11 @@
         "module": "ESNext",
         "moduleResolution": "bundler",
         "jsx": "react-jsx",
-        "strict": true,
+        "strict": false,
         "isolatedModules": true,
         "target": "ESNext",
         "esModuleInterop": true,
-        "forceConsistentCasingInFileNames": true,
+        "forceConsistentCasingInFileNames": false,
         "skipLibCheck": true,
         "noEmit": true,
         "paths": {

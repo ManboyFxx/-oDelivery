@@ -150,9 +150,8 @@ export default function EmployeesIndex({ employees, current_user_id }: Props) {
                                     employees.map((employee) => (
                                         <tr
                                             key={employee.id}
-                                            className={`border-b border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors ${
-                                                employee.is_current_user ? 'bg-orange-50 dark:bg-orange-900/10' : ''
-                                            }`}
+                                            className={`border-b border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors ${employee.is_current_user ? 'bg-orange-50 dark:bg-orange-900/10' : ''
+                                                }`}
                                         >
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
@@ -196,24 +195,21 @@ export default function EmployeesIndex({ employees, current_user_id }: Props) {
                                                     >
                                                         <Edit2 className="w-5 h-5" />
                                                     </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            if (employee.is_current_user) {
-                                                                alert('Você não pode deletar sua própria conta.');
-                                                            } else {
-                                                                setDeleteConfirm(employee.id);
-                                                            }
-                                                        }}
-                                                        disabled={employee.is_current_user}
-                                                        className={`p-2 rounded-lg transition-colors ${
-                                                            employee.is_current_user
-                                                                ? 'opacity-50 cursor-not-allowed text-gray-400'
-                                                                : 'hover:bg-red-100 text-red-600'
-                                                        }`}
-                                                        title={employee.is_current_user ? 'Você não pode deletar sua própria conta' : 'Deletar'}
-                                                    >
-                                                        <Trash2 className="w-5 h-5" />
-                                                    </button>
+                                                    {/* Prevent self-deletion */}
+                                                    {!employee.is_current_user && (
+                                                        <button
+                                                            onClick={() => setDeleteConfirm(employee.id)}
+                                                            className="p-2 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
+                                                            title="Remover"
+                                                        >
+                                                            <Trash2 className="w-5 h-5" />
+                                                        </button>
+                                                    )}
+                                                    {employee.is_current_user && (
+                                                        <div className="p-2 opacity-30 cursor-not-allowed" title="Você não pode se remover">
+                                                            <Trash2 className="w-5 h-5" />
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>

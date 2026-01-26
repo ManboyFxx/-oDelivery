@@ -1,7 +1,10 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
 import OrderCard, { Order, OrderAction } from './Partials/OrderCard';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { router } from '@inertiajs/react';
+import { useAudio } from '@/Hooks/useAudio';
+import { useToast } from '@/Hooks/useToast';
 import { CancelOrderModal, ChangeModeModal, ChangePaymentModal, EditOrderModal } from './Partials/ActionModals';
 import { Circle, Clock, CheckCircle, Truck, Package } from 'lucide-react';
 
@@ -58,6 +61,78 @@ export default function OrdersIndex({ orders, motoboys = [], products = [] }: { 
         return orders.filter(o => targetStatuses.includes(o.status));
     };
 
+    // Audio & Polling
+    const { play, initializeAudio } = useAudio();
+    const { success, info } = useToast();
+    const [audioEnabled, setAudioEnabled] = useState(false);
+    // Track status of each order: { [id]: status }
+    const prevStatusesRef = useRef<Record<string, string>>({});
+
+    // Initialize ref on mount
+    useEffect(() => {
+        prevStatusesRef.current = orders.reduce((acc, o) => ({ ...acc, [o.id]: o.status }), {});
+    }, []); // Run once on mount to set initial state without triggering sounds
+
+    // Enable audio on first interaction
+    useEffect(() => {
+        const enableAudio = () => {
+            setAudioEnabled(true);
+            initializeAudio();
+        };
+        window.addEventListener('click', enableAudio, { once: true });
+        return () => window.removeEventListener('click', enableAudio);
+    }, [initializeAudio]);
+
+    // Poll for updates every 15s
+    useEffect(() => {
+        const interval = setInterval(() => {
+            router.reload({
+                only: ['orders'],
+                preserveScroll: true,
+            } as any);
+        }, 15000);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    // Watch for changes
+    useEffect(() => {
+        const prevStatuses = prevStatusesRef.current;
+        const currentStatuses = orders.reduce((acc, o) => ({ ...acc, [o.id]: o.status }), {} as Record<string, string>);
+
+        // Debug Polling
+        console.log('[OrdersPolling] Update received', {
+            count: orders.length,
+            audioEnabled
+        });
+
+        // Check for NEW orders
+        const hasNewOrders = orders.some(o => !prevStatuses[o.id] && o.status === 'new');
+
+        // Check for orders changing to READY
+        const hasReadyOrders = orders.some(o => {
+            const prev = prevStatuses[o.id];
+            return prev && prev !== 'ready' && o.status === 'ready';
+        });
+
+        if (hasNewOrders) {
+            console.log('[OrdersPolling] New order detected!');
+            // Sound handled globally in AuthenticatedLayout
+            // if (audioEnabled) play('new-order');
+            // Toast handled globally? No, polling in AuthLayout handles it. 
+            // So we suppress it here to avoid double toast/sound.
+        }
+
+        if (hasReadyOrders) {
+            console.log('[OrdersPolling] Ready order detected!');
+            // if (audioEnabled) play('ready');
+            // info('Pedido Pronto!', 'Um pedido está pronto para entrega/retirada.');
+        }
+
+        // Update ref
+        prevStatusesRef.current = currentStatuses;
+    }, [orders, audioEnabled, play, success, info]);
+
     // Modal State
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [modalType, setModalType] = useState<OrderAction | null>(null);
@@ -112,6 +187,13 @@ export default function OrdersIndex({ orders, motoboys = [], products = [] }: { 
                     </div>
                 </div>
             </div>
+
+            {/* Audio Context Banner (if needed, though we rely on document click) */}
+            {!audioEnabled && (
+                <div className="bg-yellow-50 text-yellow-800 text-sm p-2 text-center rounded-lg mb-2">
+                    Clique em qualquer lugar da página para habilitar os sons de notificação.
+                </div>
+            )}
 
             {/* Modern Kanban Board - Responsive Grid/Scroll Layout */}
             <div className="flex lg:grid lg:grid-cols-4 gap-4 flex-1 h-[calc(100vh-14rem)] overflow-x-auto lg:overflow-x-visible px-1 pb-2">

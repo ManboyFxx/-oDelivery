@@ -50,22 +50,22 @@ const alertToastVariants = cva(
             {
                 variant: "success",
                 styleVariant: "filled",
-                className: "bg-success text-success-foreground",
+                className: "bg-green-600 text-white",
             },
             {
                 variant: "warning",
                 styleVariant: "filled",
-                className: "bg-warning text-warning-foreground",
+                className: "bg-yellow-500 text-white",
             },
             {
                 variant: "info",
                 styleVariant: "filled",
-                className: "bg-info text-info-foreground",
+                className: "bg-blue-600 text-white",
             },
             {
                 variant: "error",
                 styleVariant: "filled",
-                className: "bg-destructive text-destructive-foreground",
+                className: "bg-red-600 text-white",
             },
         ],
         defaultVariants: {
@@ -92,10 +92,10 @@ const iconColorClasses: Record<string, Record<string, string>> = {
         error: "text-red-500",
     },
     filled: {
-        success: "text-success-foreground",
-        warning: "text-warning-foreground",
-        info: "text-info-foreground",
-        error: "text-destructive-foreground",
+        success: "text-white",
+        warning: "text-white",
+        info: "text-white",
+        error: "text-white",
     },
 };
 

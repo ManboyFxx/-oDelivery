@@ -119,6 +119,11 @@ class PdvController extends Controller
                     'unit_price' => $product->price,
                     'subtotal' => $product->price * $item['quantity'],
                 ]);
+
+                // Decrement stock if tracked
+                if ($product->track_stock) {
+                    $product->decrement('stock_quantity', $item['quantity']);
+                }
             }
 
             // 3. Create Payment Record

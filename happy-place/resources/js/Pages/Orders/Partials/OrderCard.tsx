@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { clsx } from 'clsx';
 import { Clock, Printer, Edit, CreditCard, MessageCircle, Check, X, MapPin, Bike, User, AlertCircle, AlertTriangle, Timer } from 'lucide-react';
 import { router } from '@inertiajs/react';
+import { useToast } from '@/Hooks/useToast';
 
 export interface Order {
     id: string;
@@ -65,6 +66,7 @@ export default function OrderCard({ order, motoboys, onAction }: Props) {
     const [elapsedTime, setElapsedTime] = useState('');
     const [selectedMotoboy, setSelectedMotoboy] = useState(order.motoboy?.id || '');
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(order.payments?.[0]?.method || 'cash');
+    const { success, info } = useToast();
 
     // Timer Logic
     useEffect(() => {
@@ -90,24 +92,50 @@ export default function OrderCard({ order, motoboys, onAction }: Props) {
 
     const handleAssignMotoboy = (motoboyId: string) => {
         if (!motoboyId) return;
+        const motoboy = motoboys.find(m => m.id === motoboyId);
         router.post(route('orders.assign-motoboy', order.id), {
             motoboy_id: motoboyId
+        }, {
+            onSuccess: () => {
+                success('Motoboy Atribuído', `${motoboy?.name || 'Motoboy'} foi atribuído ao pedido #${order.order_number}`);
+            }
         });
     };
 
     const handlePaymentMethodChange = (method: string) => {
         setSelectedPaymentMethod(method);
+        const methodLabel = paymentMethods.find(pm => pm.value === method)?.label || method;
         router.post(route('orders.payment', order.id), {
             payment_method: method
+        }, {
+            onSuccess: () => {
+                info('Pagamento Atualizado', `Método alterado para ${methodLabel}`);
+            }
         });
     };
 
     const handleStatusUpdate = (status: string) => {
-        router.post(route('orders.status', order.id), { status });
+        const statusLabels: Record<string, string> = {
+            'preparing': 'Em Preparo',
+            'ready': 'Pronto',
+            'waiting_motoboy': 'Aguardando Motoboy',
+            'motoboy_accepted': 'Saiu para Entrega',
+            'out_for_delivery': 'Saiu para Entrega',
+            'delivered': 'Entregue'
+        };
+        router.post(route('orders.status', order.id), { status }, {
+            onSuccess: () => {
+                success('Status Atualizado', `Pedido #${order.order_number} agora está: ${statusLabels[status] || status}`);
+            }
+        });
     };
 
     const handleStartPreparation = () => {
-        router.post(route('orders.start-preparation', order.id));
+        router.post(route('orders.start-preparation', order.id), {}, {
+            onSuccess: () => {
+                success('Preparo Iniciado!', `Pedido #${order.order_number} está sendo preparado.`);
+            }
+        });
     };
 
     // Action wrappers

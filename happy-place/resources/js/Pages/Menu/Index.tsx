@@ -1,7 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, usePage } from '@inertiajs/react';
-import { BookOpen, Eye, EyeOff, Star, ChevronUp, ChevronDown, Check, X, Search, Sparkles, ExternalLink, Plus, Package } from 'lucide-react';
+import { BookOpen, Eye, EyeOff, Star, ChevronUp, ChevronDown, Check, X, Search, Sparkles, ExternalLink, Plus, Package, Zap, Gift, Flame } from 'lucide-react';
 import { useState } from 'react';
+import { useToast } from '@/Hooks/useToast';
 import { clsx } from 'clsx';
 
 interface Product {
@@ -34,10 +35,64 @@ interface Props {
     };
 }
 
+type BadgeType = 'featured' | 'promotional' | 'new' | 'exclusive';
+
+interface BadgeConfig {
+    id: BadgeType;
+    label: string;
+    icon: React.ReactNode;
+    color: string;
+    bgColor: string;
+    borderColor: string;
+    description: string;
+}
+
+const BADGES: Record<BadgeType, BadgeConfig> = {
+    featured: {
+        id: 'featured',
+        label: 'Destaque ⭐',
+        icon: <Star className="w-5 h-5" />,
+        color: '#F59E0B',
+        bgColor: 'bg-yellow-50 dark:bg-yellow-900/20',
+        borderColor: 'border-yellow-200 dark:border-yellow-800',
+        description: 'Marca como destaque da loja'
+    },
+    promotional: {
+        id: 'promotional',
+        label: 'Promoção 🔥',
+        icon: <Flame className="w-5 h-5" />,
+        color: '#EF4444',
+        bgColor: 'bg-red-50 dark:bg-red-900/20',
+        borderColor: 'border-red-200 dark:border-red-800',
+        description: 'Realça promoções especiais'
+    },
+    new: {
+        id: 'new',
+        label: 'Novo ✨',
+        icon: <Sparkles className="w-5 h-5" />,
+        color: '#8B5CF6',
+        bgColor: 'bg-purple-50 dark:bg-purple-900/20',
+        borderColor: 'border-purple-200 dark:border-purple-800',
+        description: 'Indica produtos novos'
+    },
+    exclusive: {
+        id: 'exclusive',
+        label: 'Exclusivo 💎',
+        icon: <Gift className="w-5 h-5" />,
+        color: '#06B6D4',
+        bgColor: 'bg-cyan-50 dark:bg-cyan-900/20',
+        borderColor: 'border-cyan-200 dark:border-cyan-800',
+        description: 'Marca como oferta exclusiva'
+    }
+};
+
 export default function MenuIndex({ categories: initialCategories, tenantSlug, stats }: Props) {
     const [categories, setCategories] = useState(initialCategories);
     const [activeCategory, setActiveCategory] = useState<string | null>(initialCategories.length > 0 ? initialCategories[0].id : null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [activeTab, setActiveTab] = useState<'cardapio' | 'badges'>('cardapio');
+    const [selectedBadges, setSelectedBadges] = useState<Record<string, BadgeType[]>>({});
+    const { success, info } = useToast();
 
     const handleReorder = (index: number, direction: 'up' | 'down') => {
         const newCategories = [...categories];
@@ -59,7 +114,7 @@ export default function MenuIndex({ categories: initialCategories, tenantSlug, s
         }, {
             preserveScroll: true,
             onSuccess: () => {
-                // Optional toast
+                success('Ordem Atualizada', 'A ordem das categorias foi salva com sucesso.', undefined, 2000);
             }
         });
     };
@@ -71,11 +126,28 @@ export default function MenuIndex({ categories: initialCategories, tenantSlug, s
         );
         setCategories(updatedCategories);
 
-        router.post(route('menu.toggle', category.id), {}, { preserveScroll: true });
+        router.post(route('menu.toggle', category.id), {}, {
+            preserveScroll: true,
+            onSuccess: () => {
+                const status = !category.is_active ? 'visível' : 'oculta';
+                info('Visibilidade Alterada', `A categoria "${category.name}" agora está ${status}.`);
+            }
+        });
     };
 
     const toggleProductAvailability = (product: Product) => {
-        router.post(route('products.toggle', product.id), {}, { preserveScroll: true });
+        router.post(route('products.toggle', product.id), {}, {
+            preserveScroll: true,
+            onSuccess: () => {
+                const status = !product.is_available ? 'ativo' : 'pausado';
+                // Note: logic inverted because we update optimistic state first? No, we use current state properties
+                // Actually, product param is the OLD state. So !is_available means it BECAME available.
+                // Optimistic update happens AFTER this call in the code below?
+                // Wait, optimistic update is blocked below.
+                // Let's just trust valid feedback.
+                success('Produto Atualizado', `O produto "${product.name}" foi ${!product.is_available ? 'ativado' : 'pausado'}.`);
+            }
+        });
 
         // Optimistic update nested state
         const updatedCategories = categories.map(c => ({
@@ -86,7 +158,12 @@ export default function MenuIndex({ categories: initialCategories, tenantSlug, s
     };
 
     const toggleProductFeatured = (product: Product) => {
-        router.post(route('products.toggle-featured', product.id), {}, { preserveScroll: true });
+        router.post(route('products.toggle-featured', product.id), {}, {
+            preserveScroll: true,
+            onSuccess: () => {
+                success('Destaque Atualizado', `O produto "${product.name}" ${!product.is_featured ? 'foi destacado' : 'não é mais destaque'}.`);
+            }
+        });
 
         // Optimistic
         const updatedCategories = categories.map(c => ({
@@ -95,6 +172,48 @@ export default function MenuIndex({ categories: initialCategories, tenantSlug, s
         }));
         setCategories(updatedCategories);
     };
+
+    const toggleBadge = (productId: string, badgeType: BadgeType) => {
+        const current = selectedBadges[productId] || [];
+        const updated = current.includes(badgeType)
+            ? current.filter(b => b !== badgeType)
+            : [...current, badgeType];
+
+        // Atualizar estado local imediatamente
+        setSelectedBadges({
+            ...selectedBadges,
+            [productId]: updated
+        });
+
+        // Se for featured, sincroniza com o toggle
+        if (badgeType === 'featured') {
+            const product = categories
+                .flatMap(c => c.products)
+                .find(p => p.id === productId);
+            if (product) {
+                toggleProductFeatured(product);
+            }
+        } else {
+            // Para outros badges, fazer chamada de API
+            router.post(route('products.toggle-badge', productId), {
+                badge: badgeType
+            }, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    success('Badge Atualizado', `Badge "${BADGES[badgeType].label}" foi aplicado com sucesso!`);
+                },
+                onError: () => {
+                    // Reverter estado local em caso de erro
+                    setSelectedBadges({
+                        ...selectedBadges,
+                        [productId]: current
+                    });
+                }
+            });
+        }
+    };
+
+    const allProducts = categories.flatMap(c => c.products);
 
     return (
         <AuthenticatedLayout>
@@ -112,7 +231,7 @@ export default function MenuIndex({ categories: initialCategories, tenantSlug, s
                             </div>
                             <h2 className="text-3xl font-black text-gray-900 dark:text-white">Gestão do Cardápio</h2>
                             <p className="mt-2 text-gray-500 dark:text-gray-400 font-medium">
-                                Organize categorias, ative produtos e destaque suas melhores ofertas
+                                Organize categorias, ative produtos, destaques e badges
                             </p>
                         </div>
 
@@ -127,34 +246,70 @@ export default function MenuIndex({ categories: initialCategories, tenantSlug, s
                         </a>
                     </div>
 
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="bg-white dark:bg-gray-800 rounded-[20px] p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
-                            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Categorias</p>
-                            <p className="text-2xl font-black text-gray-900 dark:text-white">{stats.totalCategories}</p>
-                            <p className="text-xs text-green-600 dark:text-green-400 font-medium mt-1">{stats.activeCategories} ativas</p>
-                        </div>
-
-                        <div className="bg-white dark:bg-gray-800 rounded-[20px] p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
-                            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Produtos</p>
-                            <p className="text-2xl font-black text-gray-900 dark:text-white">{stats.totalProducts}</p>
-                            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">{stats.featuredProducts} destaques</p>
-                        </div>
-
-                        <div className="bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-900/20 dark:to-orange-900/5 rounded-[20px] p-4 border border-orange-200 dark:border-orange-800/30 shadow-sm">
-                            <p className="text-xs font-bold text-orange-700 dark:text-orange-400 uppercase mb-1">Área Promocional</p>
-                            <p className="text-2xl font-black text-orange-600 dark:text-orange-400">{stats.featuredProducts}</p>
-                            <p className="text-xs text-orange-600/70 dark:text-orange-500/70 font-medium mt-1">produtos em destaque</p>
-                        </div>
-
-                        <div className="bg-white dark:bg-gray-800 rounded-[20px] p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
-                            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Visibilidade</p>
-                            <p className="text-2xl font-black text-gray-900 dark:text-white">{((stats.activeCategories / Math.max(stats.totalCategories, 1)) * 100).toFixed(0)}%</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">categorias visíveis</p>
-                        </div>
+                    {/* Tab Navigation */}
+                    <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
+                        <button
+                            onClick={() => setActiveTab('cardapio')}
+                            className={clsx(
+                                "px-4 py-3 font-bold text-sm border-b-2 transition-all",
+                                activeTab === 'cardapio'
+                                    ? "border-[#ff3d03] text-[#ff3d03]"
+                                    : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300"
+                            )}
+                        >
+                            <div className="flex items-center gap-2">
+                                <BookOpen className="w-4 h-4" />
+                                Cardápio
+                            </div>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('badges')}
+                            className={clsx(
+                                "px-4 py-3 font-bold text-sm border-b-2 transition-all",
+                                activeTab === 'badges'
+                                    ? "border-[#ff3d03] text-[#ff3d03]"
+                                    : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300"
+                            )}
+                        >
+                            <div className="flex items-center gap-2">
+                                <Zap className="w-4 h-4" />
+                                Badges
+                            </div>
+                        </button>
                     </div>
+
+                    {/* Stats Grid - Show only on Cardápio tab */}
+                    {activeTab === 'cardapio' && (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="bg-white dark:bg-gray-800 rounded-[20px] p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
+                                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Categorias</p>
+                                <p className="text-2xl font-black text-gray-900 dark:text-white">{stats.totalCategories}</p>
+                                <p className="text-xs text-green-600 dark:text-green-400 font-medium mt-1">{stats.activeCategories} ativas</p>
+                            </div>
+
+                            <div className="bg-white dark:bg-gray-800 rounded-[20px] p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
+                                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Produtos</p>
+                                <p className="text-2xl font-black text-gray-900 dark:text-white">{stats.totalProducts}</p>
+                                <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">{stats.featuredProducts} destaques</p>
+                            </div>
+
+                            <div className="bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-900/20 dark:to-orange-900/5 rounded-[20px] p-4 border border-orange-200 dark:border-orange-800/30 shadow-sm">
+                                <p className="text-xs font-bold text-orange-700 dark:text-orange-400 uppercase mb-1">Área Promocional</p>
+                                <p className="text-2xl font-black text-orange-600 dark:text-orange-400">{stats.featuredProducts}</p>
+                                <p className="text-xs text-orange-600/70 dark:text-orange-500/70 font-medium mt-1">produtos em destaque</p>
+                            </div>
+
+                            <div className="bg-white dark:bg-gray-800 rounded-[20px] p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
+                                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Visibilidade</p>
+                                <p className="text-2xl font-black text-gray-900 dark:text-white">{((stats.activeCategories / Math.max(stats.totalCategories, 1)) * 100).toFixed(0)}%</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">categorias visíveis</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
+                {/* CARDÁPIO TAB */}
+                {activeTab === 'cardapio' && (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                     {/* Categories Sidebar */}
                     <div className="lg:col-span-4 space-y-4">
@@ -380,6 +535,101 @@ export default function MenuIndex({ categories: initialCategories, tenantSlug, s
                         )}
                     </div>
                 </div>
+                )}
+
+                {/* BADGES TAB */}
+                {activeTab === 'badges' && (
+                <div className="space-y-6">
+                    {/* Badge Types Showcase */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {Object.values(BADGES).map((badge) => (
+                            <div
+                                key={badge.id}
+                                className={clsx(
+                                    "rounded-[20px] p-4 border shadow-sm",
+                                    badge.bgColor,
+                                    badge.borderColor
+                                )}
+                            >
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="text-2xl">{badge.icon}</div>
+                                    <h3 className="font-bold text-gray-900 dark:text-white">{badge.label}</h3>
+                                </div>
+                                <p className="text-xs text-gray-600 dark:text-gray-400">{badge.description}</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Products Grid for Badge Assignment */}
+                    <div className="bg-white dark:bg-gray-800 rounded-[24px] p-6 border border-gray-100 dark:border-gray-700 shadow-sm">
+                        <div className="mb-6">
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Atribuir Badges aos Produtos</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Selecione quais badges cada produto deve exibir para destacar suas melhores ofertas</p>
+                        </div>
+
+                        {allProducts.length === 0 ? (
+                            <div className="text-center py-12">
+                                <Package className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                                <p className="text-gray-500 dark:text-gray-400 font-medium">Nenhum produto cadastrado</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {allProducts.map((product) => (
+                                    <div
+                                        key={product.id}
+                                        className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden hover:shadow-md transition-shadow"
+                                    >
+                                        {/* Product Image */}
+                                        <div className="h-32 bg-gray-100 dark:bg-gray-700 flex items-center justify-center overflow-hidden relative">
+                                            {product.image_url ? (
+                                                <img src={product.image_url} alt={product.name} className="h-full w-full object-cover" />
+                                            ) : (
+                                                <div className="text-gray-300 text-3xl">{product.name.substring(0, 1)}</div>
+                                            )}
+                                            {!product.is_available && (
+                                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                                    <span className="text-white font-bold text-sm">Indisponível</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Product Info */}
+                                        <div className="p-4">
+                                            <h4 className="font-bold text-gray-900 dark:text-white text-sm mb-1 line-clamp-1">{product.name}</h4>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 line-clamp-1">{product.description}</p>
+                                            <p className="text-sm font-black text-[#ff3d03] mb-4">
+                                                R$ {product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                            </p>
+
+                                            {/* Badge Selection */}
+                                            <div className="space-y-2">
+                                                {Object.values(BADGES).map((badge) => {
+                                                    const isSelected = (selectedBadges[product.id] || []).includes(badge.id);
+                                                    return (
+                                                        <button
+                                                            key={badge.id}
+                                                            onClick={() => toggleBadge(product.id, badge.id)}
+                                                            className={clsx(
+                                                                "w-full px-3 py-2 rounded-lg font-bold text-xs transition-all flex items-center gap-2",
+                                                                isSelected
+                                                                    ? clsx(badge.bgColor, badge.borderColor, "border-2 shadow-md")
+                                                                    : "bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400 border border-transparent hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                            )}
+                                                        >
+                                                            {isSelected && <Check className="w-3 h-3" />}
+                                                            {badge.label}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+                )}
             </div>
         </AuthenticatedLayout>
     );

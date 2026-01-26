@@ -1,6 +1,7 @@
 import { Link, router, useForm } from '@inertiajs/react'; // Added useForm
 import { Plus, Pencil, Trash2, Search, Image as ImageIcon, X, Upload, Check } from 'lucide-react';
 import { useState } from 'react';
+import { useToast } from '@/Hooks/useToast';
 import Modal from '@/Components/Modal';
 import TextInput from '@/Components/TextInput';
 import InputLabel from '@/Components/InputLabel';
@@ -49,6 +50,7 @@ export default function ProductsTab({ products, categories, complement_groups }:
     const [showModal, setShowModal] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const { success, error: showError, info } = useToast();
 
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
@@ -59,7 +61,9 @@ export default function ProductsTab({ products, categories, complement_groups }:
         image: null as File | null,
         complement_groups: [] as string[],
         track_stock: false,
-        stock_quantity: '' as string | number
+        stock_quantity: '' as string | number,
+        loyalty_redeemable: false,
+        loyalty_points_cost: 0
     });
 
     // Filter products locally for instant search (if pagination allows, otherwise server search is better but this matches previous behavior)
@@ -82,7 +86,9 @@ export default function ProductsTab({ products, categories, complement_groups }:
             image: null,
             complement_groups: [],
             track_stock: false,
-            stock_quantity: ''
+            stock_quantity: '',
+            loyalty_redeemable: false,
+            loyalty_points_cost: 0
         });
         setShowModal(true);
     };
@@ -99,7 +105,9 @@ export default function ProductsTab({ products, categories, complement_groups }:
             image: null,
             complement_groups: product.complement_groups?.map(g => g.id) || [],
             track_stock: product.track_stock,
-            stock_quantity: product.stock_quantity || ''
+            stock_quantity: product.stock_quantity || '',
+            loyalty_redeemable: (product as any).loyalty_redeemable || false,
+            loyalty_points_cost: (product as any).loyalty_points_cost || 0
         });
         setShowModal(true);
     };
@@ -111,11 +119,19 @@ export default function ProductsTab({ products, categories, complement_groups }:
                 _method: 'put',
                 ...data,
             }, {
-                onSuccess: () => setShowModal(false)
+                onSuccess: () => {
+                    success('Produto Atualizado', 'Produto atualizado com sucesso.');
+                    setShowModal(false);
+                },
+                onError: () => showError('Erro', 'Erro ao atualizar produto.')
             });
         } else {
             post(route('products.store'), {
-                onSuccess: () => setShowModal(false)
+                onSuccess: () => {
+                    success('Produto Criado', 'Produto cadastrado com sucesso.');
+                    setShowModal(false);
+                },
+                onError: () => showError('Erro', 'Erro ao criar produto.')
             });
         }
     };
@@ -130,13 +146,18 @@ export default function ProductsTab({ products, categories, complement_groups }:
 
     const handleDelete = (id: string) => {
         if (confirm('Tem certeza que deseja excluir este produto?')) {
-            router.delete(route('products.destroy', id));
+            router.delete(route('products.destroy', id), {
+                onSuccess: () => success('Produto Excluído', 'Produto removido com sucesso.')
+            });
         }
     };
 
     const handleToggleAvailability = (product: Product) => {
         router.post(route('products.toggle', product.id), {}, {
             preserveScroll: true,
+            onSuccess: () => {
+                success('Produto Atualizado', `O produto "${product.name}" foi ${!product.is_available ? 'ativado' : 'pausado'}.`);
+            }
         });
     };
 
@@ -462,6 +483,63 @@ export default function ProductsTab({ products, categories, complement_groups }:
                                 <InputError message={errors.complement_groups} className="mt-2" />
                             </div>
                         </div>
+                    </div>
+
+                    {/* Loyalty Redemption Section */}
+                    <div className="mt-6 bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/10 rounded-2xl p-4 border-2 border-orange-200 dark:border-orange-800">
+                        <div className="flex items-center gap-2 mb-3">
+                            <span className="text-xl">🎁</span>
+                            <h3 className="text-sm font-bold text-gray-900 dark:text-white">Programa de Fidelidade</h3>
+                        </div>
+
+                        {/* Toggle Redeemable */}
+                        <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-xl mb-3">
+                            <div>
+                                <label htmlFor="loyalty_redeemable" className="text-sm font-semibold text-gray-900 dark:text-white">
+                                    Permite resgate por pontos
+                                </label>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                    Cliente pode trocar pontos por este produto
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setData('loyalty_redeemable', !data.loyalty_redeemable)}
+                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-orange-600 focus:ring-offset-2 ${data.loyalty_redeemable ? 'bg-orange-600' : 'bg-gray-200 dark:bg-gray-700'
+                                    }`}
+                            >
+                                <span
+                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${data.loyalty_redeemable ? 'translate-x-5' : 'translate-x-0'
+                                        }`}
+                                />
+                            </button>
+                        </div>
+
+                        {/* Points Cost Input */}
+                        {data.loyalty_redeemable && (
+                            <div className="bg-white dark:bg-gray-800 rounded-xl p-3 animate-in fade-in slide-in-from-top-1">
+                                <label htmlFor="loyalty_points_cost" className="block text-xs font-medium text-gray-900 dark:text-white mb-1.5">
+                                    Pontos necessários para resgate
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        id="loyalty_points_cost"
+                                        type="number"
+                                        min="1"
+                                        value={data.loyalty_points_cost}
+                                        onChange={(e) => setData('loyalty_points_cost', parseInt(e.target.value) || 0)}
+                                        className="block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white py-2 pl-3 pr-12 text-sm shadow-sm focus:ring-2 focus:ring-orange-600 focus:border-transparent"
+                                        placeholder="Ex: 150"
+                                    />
+                                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                        <span className="text-gray-500 dark:text-gray-400 text-xs font-medium">pts</span>
+                                    </div>
+                                </div>
+                                <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                                    💡 Dica: Produtos de R$ 30 geralmente custam 100-150 pontos
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-white/5">

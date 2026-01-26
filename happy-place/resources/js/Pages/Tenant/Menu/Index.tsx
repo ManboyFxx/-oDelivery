@@ -1,7 +1,9 @@
 import { Head } from '@inertiajs/react';
-import { ShoppingBag, Phone, Instagram, Globe, MapPin, Clock, User, LogOut, Gift, History, X, Plus, Minus, ShoppingCart, ChevronRight, Trash2, Home, Edit2, Check, Info } from 'lucide-react';
+import { ShoppingBag, Phone, Instagram, Globe, MapPin, Clock, User, LogOut, Gift, History, X, Plus, Minus, ShoppingCart, ChevronRight, Trash2, Home, Edit2, Check, Info, Navigation, MessageCircle, Twitter, Facebook, Sparkles, Trophy, Star } from 'lucide-react';
 import Modal from '@/Components/Modal';
+import CheckoutModal from './CheckoutModal';
 import { useState, useEffect } from 'react';
+import { useAudio } from '@/Hooks/useAudio';
 import clsx from 'clsx';
 import axios from 'axios';
 
@@ -31,12 +33,22 @@ interface Product {
     complement_groups?: ComplementGroup[];
     track_stock: boolean;
     stock_quantity: number | null;
+    loyalty_redeemable?: boolean;
+    loyalty_points_cost?: number;
+    loyalty_earns_points?: boolean;
+    promotional_price?: string;
+    is_featured?: boolean;
+    is_available?: boolean;
 }
 
 interface Category {
     id: string;
     name: string;
     products: Product[];
+    category_type?: string;
+    description?: string;
+    is_active?: boolean;
+    sort_order?: number;
 }
 
 interface Customer {
@@ -44,6 +56,7 @@ interface Customer {
     name: string;
     phone: string;
     loyalty_points: number;
+    loyalty_tier?: string;
 }
 
 interface Address {
@@ -62,7 +75,13 @@ interface CartItem {
     product: Product;
     quantity: number;
     notes: string;
-    selectedComplements: { groupId: string; optionId: string; name: string; price: number }[];
+    selectedComplements: {
+        groupId: string;
+        optionId: string;
+        name: string;
+        price: number;
+        quantity: number;
+    }[];
     subtotal: number;
 }
 
@@ -72,9 +91,13 @@ const PriceTag = ({ price }: { price: string | number }) => (
     </span>
 );
 
-export default function PublicMenu({ store, categories, slug, authCustomer }: { store: any, categories: Category[], slug: string, authCustomer: Customer | null }) {
+export default function PublicMenu({ store, categories, slug, authCustomer, activePromotion }: { store: any, categories: Category[], slug: string, authCustomer: Customer | null, activePromotion?: any }) {
     const theme = store.theme_mode || 'modern-clean';
+    const { play, initializeAudio } = useAudio();
     const [activeCategory, setActiveCategory] = useState<string>('all');
+
+    // FORCE ENABLE LOYALTY REMOVED - respecting store settings
+    // store.loyalty_enabled = true;
 
     // Auth Modal
     const [showAuthModal, setShowAuthModal] = useState(false);
@@ -90,6 +113,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer }: { 
     const [quantity, setQuantity] = useState(1);
     const [notes, setNotes] = useState('');
     const [selectedComplements, setSelectedComplements] = useState<{ [groupId: string]: { [optionId: string]: number } }>({});
+    const [editingCartIndex, setEditingCartIndex] = useState<number | null>(null);
 
     // Cart
     const [cart, setCart] = useState<CartItem[]>([]);
@@ -101,6 +125,13 @@ export default function PublicMenu({ store, categories, slug, authCustomer }: { 
     const [addresses, setAddresses] = useState<Address[]>([]);
     const [showAddressForm, setShowAddressForm] = useState(false);
     const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+    const [orders, setOrders] = useState<any[]>([]);
+    const [ordersPage, setOrdersPage] = useState(1);
+    const [loadingOrders, setLoadingOrders] = useState(false);
+    const [hasMoreOrders, setHasMoreOrders] = useState(false);
+    // Checkout
+    const [showCheckout, setShowCheckout] = useState(false);
+
     const [addressForm, setAddressForm] = useState({
         street: '',
         number: '',
@@ -110,6 +141,19 @@ export default function PublicMenu({ store, categories, slug, authCustomer }: { 
         state: '',
         zip_code: ''
     });
+
+    // Initialize audio on first user interaction
+    useEffect(() => {
+        const handleFirstInteraction = () => {
+            initializeAudio();
+        };
+        window.addEventListener('click', handleFirstInteraction, { once: true });
+        window.addEventListener('touchstart', handleFirstInteraction, { once: true });
+        return () => {
+            window.removeEventListener('click', handleFirstInteraction);
+            window.removeEventListener('touchstart', handleFirstInteraction);
+        };
+    }, [initializeAudio]);
 
     // Load cart from localStorage
     useEffect(() => {
@@ -140,6 +184,34 @@ export default function PublicMenu({ store, categories, slug, authCustomer }: { 
         }
     };
 
+    const loadOrders = async (page: number = 1) => {
+        if (!customer) return;
+        setLoadingOrders(true);
+        try {
+            const response = await axios.get('/customer/orders', {
+                params: {
+                    page,
+                    customer_id: customer.id,
+                    tenant_id: store.settings.tenant_id
+                }
+            });
+            setOrders(response.data.orders);
+            setOrdersPage(page);
+            setHasMoreOrders(response.data.pagination.has_more);
+        } catch (error) {
+            console.error('Error loading orders:', error);
+        } finally {
+            setLoadingOrders(false);
+        }
+    };
+
+    // Load orders when switching to orders tab
+    useEffect(() => {
+        if (customerTab === 'orders' && customer && orders.length === 0) {
+            loadOrders(1);
+        }
+    }, [customerTab, customer]);
+
     const scrollToCategory = (id: string) => {
         setActiveCategory(id);
         const element = document.getElementById(id);
@@ -152,7 +224,10 @@ export default function PublicMenu({ store, categories, slug, authCustomer }: { 
         e.preventDefault();
         setLoading(true);
         try {
-            const response = await axios.post('/customer/check-phone', { phone });
+            const response = await axios.post('/customer/check-phone', {
+                phone,
+                tenant_slug: slug
+            });
             if (response.data.exists) {
                 setCustomer(response.data.customer);
                 setShowAuthModal(false);
@@ -171,14 +246,19 @@ export default function PublicMenu({ store, categories, slug, authCustomer }: { 
         e.preventDefault();
         setLoading(true);
         try {
-            const response = await axios.post('/customer/complete-registration', { phone, name });
+            const response = await axios.post('/customer/complete-registration', {
+                phone,
+                name,
+                tenant_slug: slug
+            });
             setCustomer(response.data.customer);
             setShowAuthModal(false);
             setPhone('');
             setName('');
             setAuthStep('phone');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error completing registration:', error);
+            alert(error.response?.data?.message || 'Erro ao completar cadastro. Tente novamente.');
         } finally {
             setLoading(false);
         }
@@ -198,6 +278,64 @@ export default function PublicMenu({ store, categories, slug, authCustomer }: { 
         setQuantity(1);
         setNotes('');
         setSelectedComplements({});
+        setEditingCartIndex(null);
+    };
+
+    const editCartItem = (index: number) => {
+        const item = cart[index];
+        setSelectedProduct(item.product);
+        setQuantity(item.quantity);
+        setNotes(item.notes);
+
+        // Reconstruct selectedComplements from cart item
+        const complementsMap: { [groupId: string]: { [optionId: string]: number } } = {};
+        item.selectedComplements.forEach(comp => {
+            if (!complementsMap[comp.groupId]) {
+                complementsMap[comp.groupId] = {};
+            }
+            complementsMap[comp.groupId][comp.optionId] = comp.quantity || 1;
+        });
+        setSelectedComplements(complementsMap);
+        setEditingCartIndex(index);
+        setShowCart(false);
+    };
+
+    const handleRedeem = async (product: Product) => {
+        if (!customer) {
+            setShowAuthModal(true);
+            return;
+        }
+
+        if (customer.loyalty_points < (product.loyalty_points_cost || 0)) {
+            alert(`Você não tem pontos suficientes. Necessário: ${product.loyalty_points_cost}, Disponível: ${customer.loyalty_points}`);
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const response = await axios.post('/customer/redeem-product', {
+                tenant_id: store.settings.tenant_id,
+                customer_id: customer.id,
+                product_id: product.id,
+                quantity: 1
+            });
+
+            if (response.data.success) {
+                // Update customer points
+                setCustomer({
+                    ...customer,
+                    loyalty_points: response.data.remaining_points
+                });
+
+                alert(`Parabéns! Você resgatou ${product.name}!\nPedido #${response.data.order_number} criado com sucesso.`);
+            }
+        } catch (error: any) {
+            console.error('Redemption error:', error);
+            const errorMessage = error.response?.data?.error || 'Erro ao processar resgate. Tente novamente.';
+            alert(errorMessage);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const closeProductModal = () => {
@@ -205,6 +343,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer }: { 
         setQuantity(1);
         setNotes('');
         setSelectedComplements({});
+        setEditingCartIndex(null);
     };
 
     const updateComplementQuantity = (groupId: string, optionId: string, delta: number, maxQuantity: number, maxSelections: number) => {
@@ -325,7 +464,15 @@ export default function PublicMenu({ store, categories, slug, authCustomer }: { 
             subtotal: calculateProductTotal()
         };
 
-        setCart(prev => [...prev, newItem]);
+        if (editingCartIndex !== null) {
+            // Update existing item
+            setCart(prev => prev.map((item, idx) => idx === editingCartIndex ? newItem : item));
+        } else {
+            // Add new item
+            setCart(prev => [...prev, newItem]);
+        }
+
+        play('success');
         closeProductModal();
     };
 
@@ -615,7 +762,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer }: { 
                                     onClick={addToCart}
                                     className="flex-1 bg-[#ff3d03] hover:bg-[#e63700] text-white font-bold py-4 rounded-xl transition-colors flex items-center justify-center gap-2"
                                 >
-                                    Adicionar • <PriceTag price={calculateProductTotal()} />
+                                    {editingCartIndex !== null ? 'Atualizar' : 'Adicionar'} • <PriceTag price={calculateProductTotal()} />
                                 </button>
                             </div>
                         </div>
@@ -661,12 +808,20 @@ export default function PublicMenu({ store, categories, slug, authCustomer }: { 
                                                         <p className="text-xs text-gray-500 mt-1 italic">Obs: {item.notes}</p>
                                                     )}
                                                 </div>
-                                                <button
-                                                    onClick={() => removeFromCart(index)}
-                                                    className="text-red-500 hover:text-red-700"
-                                                >
-                                                    <Trash2 className="h-5 w-5" />
-                                                </button>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => editCartItem(index)}
+                                                        className="text-blue-500 hover:text-blue-700"
+                                                    >
+                                                        <Edit2 className="h-5 w-5" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => removeFromCart(index)}
+                                                        className="text-red-500 hover:text-red-700"
+                                                    >
+                                                        <Trash2 className="h-5 w-5" />
+                                                    </button>
+                                                </div>
                                             </div>
                                             <div className="text-right font-bold text-[#ff3d03]">
                                                 <PriceTag price={item.subtotal} />
@@ -680,7 +835,17 @@ export default function PublicMenu({ store, categories, slug, authCustomer }: { 
                                         <span>Total</span>
                                         <PriceTag price={getCartTotal()} />
                                     </div>
-                                    <button className="w-full bg-[#ff3d03] hover:bg-[#e63700] text-white font-bold py-4 rounded-xl transition-colors">
+                                    <button
+                                        onClick={() => {
+                                            if (!customer) {
+                                                setShowAuthModal(true);
+                                            } else {
+                                                setShowCart(false);
+                                                setShowCheckout(true);
+                                            }
+                                        }}
+                                        className="w-full bg-[#ff3d03] hover:bg-[#e63700] text-white font-bold py-4 rounded-xl transition-colors"
+                                    >
                                         Finalizar Pedido
                                     </button>
                                 </div>
@@ -751,17 +916,89 @@ export default function PublicMenu({ store, categories, slug, authCustomer }: { 
                                         <p className="text-sm text-gray-600">{customer.phone}</p>
                                     </div>
 
-                                    {/* Loyalty Points */}
-                                    {store.loyalty_enabled && (
-                                        <div className="bg-gradient-to-r from-[#ff3d03] to-orange-600 rounded-xl p-6 text-white">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <Gift className="h-5 w-5" />
-                                                <span className="text-sm font-medium">Pontos de Fidelidade</span>
-                                            </div>
-                                            <p className="text-5xl font-black">{customer.loyalty_points}</p>
-                                            <p className="text-xs text-white/80 mt-2">Acumule pontos e troque por prêmios!</p>
+                                    {/* Loyalty Points Banner */}
+                                    <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-6 text-white relative overflow-hidden shadow-xl">
+                                        <div className="absolute top-0 right-0 p-8 opacity-10">
+                                            <Trophy size={140} />
                                         </div>
-                                    )}
+
+                                        <div className="relative z-10">
+                                            <div className="flex items-center gap-2 mb-4">
+                                                <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
+                                                    <Gift className="h-5 w-5 text-[#ff3d03]" />
+                                                </div>
+                                                <span className="text-sm font-bold text-gray-300 uppercase tracking-widest">Fidelidade</span>
+
+                                                <div className={clsx(
+                                                    "ml-auto px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 border",
+                                                    (customer.loyalty_tier || 'bronze') === 'diamond' ? "bg-cyan-500/20 text-cyan-200 border-cyan-500/30" :
+                                                        (customer.loyalty_tier || 'bronze') === 'gold' ? "bg-yellow-500/20 text-yellow-200 border-yellow-500/30" :
+                                                            (customer.loyalty_tier || 'bronze') === 'silver' ? "bg-gray-500/20 text-gray-200 border-gray-500/30" :
+                                                                "bg-orange-500/20 text-orange-200 border-orange-500/30"
+                                                )}>
+                                                    <Trophy className="h-3 w-3" />
+                                                    {customer.loyalty_tier === 'diamond' ? 'Diamante' :
+                                                        customer.loyalty_tier === 'gold' ? 'Ouro' :
+                                                            customer.loyalty_tier === 'silver' ? 'Prata' : 'Bronze'}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-baseline gap-2">
+                                                <span className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#ff3d03] to-orange-400">
+                                                    {customer.loyalty_points || 0}
+                                                </span>
+                                                <span className="text-lg font-bold text-gray-400">pontos</span>
+                                            </div>
+                                            <p className="text-xs text-gray-400 mt-2">Use seus pontos para resgatar produtos grátis!</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Progress to Next Tier */}
+                                    {(() => {
+                                        const tiers = [
+                                            { name: 'Bronze', min: 0, max: 99, icon: '🥉' },
+                                            { name: 'Prata', min: 100, max: 499, icon: '🥈' },
+                                            { name: 'Ouro', min: 500, max: 999, icon: '🥇' },
+                                            { name: 'Diamante', min: 1000, max: Infinity, icon: '💎' },
+                                        ];
+
+                                        const current = customer.loyalty_points || 0;
+                                        const currentTier = tiers.find(t => current >= t.min && current <= t.max) || tiers[0];
+                                        const nextTier = tiers.find(t => t.min > current);
+
+                                        if (!nextTier) {
+                                            return (
+                                                <div className="bg-gradient-to-r from-cyan-50 to-blue-50 rounded-xl p-4 border border-cyan-200">
+                                                    <p className="text-sm font-bold text-cyan-900 text-center flex items-center justify-center gap-2">
+                                                        <Sparkles className="h-4 w-4" />
+                                                        Você atingiu o nível máximo!
+                                                    </p>
+                                                </div>
+                                            );
+                                        }
+
+                                        const pointsToNext = nextTier.min - current;
+                                        const progress = ((current - currentTier.min) / (nextTier.min - currentTier.min)) * 100;
+
+                                        return (
+                                            <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Próximo Nível</span>
+                                                    <span className="text-xs font-bold text-gray-900 flex items-center gap-1">
+                                                        Faltam {pointsToNext} pts para {nextTier.icon} {nextTier.name}
+                                                    </span>
+                                                </div>
+                                                <div className="w-full bg-gray-100 rounded-full h-4 overflow-hidden shadow-inner">
+                                                    <div
+                                                        className="bg-gradient-to-r from-[#ff3d03] to-orange-500 h-full rounded-full transition-all duration-1000 ease-out relative"
+                                                        style={{ width: `${Math.min(progress, 100)}%` }}
+                                                    >
+                                                        <div className="absolute inset-0 bg-white/20 animate-[pulse_2s_infinite]" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
 
                                     <button
                                         onClick={handleLogout}
@@ -953,9 +1190,91 @@ export default function PublicMenu({ store, categories, slug, authCustomer }: { 
                             )}
 
                             {customerTab === 'orders' && (
-                                <div className="text-center py-12 text-gray-400">
-                                    <History className="h-16 w-16 mx-auto mb-4" />
-                                    <p className="text-sm">Nenhum pedido ainda</p>
+                                <div className="space-y-4">
+                                    {loadingOrders ? (
+                                        <div className="text-center py-12 text-gray-400">
+                                            <div className="animate-spin">
+                                                <History className="h-8 w-8 mx-auto" />
+                                            </div>
+                                            <p className="text-sm mt-2">Carregando pedidos...</p>
+                                        </div>
+                                    ) : orders.length === 0 ? (
+                                        <div className="text-center py-12 text-gray-400">
+                                            <History className="h-16 w-16 mx-auto mb-4" />
+                                            <p className="text-sm">Nenhum pedido ainda</p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            {orders.map((order) => {
+                                                const statusConfig: { [key: string]: { label: string; color: string } } = {
+                                                    new: { label: 'Novo', color: 'blue' },
+                                                    confirmed: { label: 'Confirmado', color: 'purple' },
+                                                    preparing: { label: 'Preparando', color: 'orange' },
+                                                    ready: { label: 'Pronto', color: 'green' },
+                                                    delivered: { label: 'Entregue', color: 'green' },
+                                                    completed: { label: 'Completo', color: 'green' },
+                                                    cancelled: { label: 'Cancelado', color: 'red' },
+                                                };
+                                                const config = statusConfig[order.status] || statusConfig.new;
+
+                                                return (
+                                                    <div key={order.id} className="bg-white border border-gray-100 rounded-xl p-4 hover:shadow-md transition-shadow">
+                                                        <div className="flex items-start justify-between">
+                                                            <div className="flex-1">
+                                                                <div className="flex items-center gap-2 mb-2">
+                                                                    <span className="font-bold text-lg">#{order.order_number}</span>
+                                                                    <span className={`px-2 py-1 rounded-full text-xs font-bold bg-${config.color}-100 text-${config.color}-700`}>
+                                                                        {config.label}
+                                                                    </span>
+                                                                </div>
+
+                                                                <p className="text-sm text-gray-600">
+                                                                    {new Date(order.created_at).toLocaleDateString('pt-BR', {
+                                                                        day: '2-digit',
+                                                                        month: 'short',
+                                                                        year: 'numeric',
+                                                                        hour: '2-digit',
+                                                                        minute: '2-digit'
+                                                                    })}
+                                                                </p>
+
+                                                                {order.loyalty_points_earned > 0 && (
+                                                                    <div className="flex items-center gap-1 mt-2 text-orange-600">
+                                                                        <Gift className="h-4 w-4" />
+                                                                        <span className="text-sm font-bold">+{order.loyalty_points_earned} pts</span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            <div className="text-right">
+                                                                <p className="font-bold text-lg text-gray-900">R$ {Number(order.total).toFixed(2).replace('.', ',')}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+
+                                            {/* Pagination */}
+                                            <div className="flex gap-2 mt-4 justify-center pt-4 border-t">
+                                                {ordersPage > 1 && (
+                                                    <button
+                                                        onClick={() => loadOrders(ordersPage - 1)}
+                                                        className="px-4 py-2 text-sm font-bold bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                                                    >
+                                                        Anterior
+                                                    </button>
+                                                )}
+                                                {hasMoreOrders && (
+                                                    <button
+                                                        onClick={() => loadOrders(ordersPage + 1)}
+                                                        className="px-4 py-2 text-sm font-bold bg-[#ff3d03] text-white rounded-lg hover:bg-[#e63700] transition-colors"
+                                                    >
+                                                        Próximos
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -975,67 +1294,187 @@ export default function PublicMenu({ store, categories, slug, authCustomer }: { 
 
                     {/* Floating Store Card */}
                     <div className="max-w-5xl mx-auto px-4 relative -mt-20">
-                        <div className="bg-white rounded-3xl p-6 shadow-xl flex flex-col md:flex-row items-center gap-6 relative z-10">
-                            {/* Logo */}
-                            <div className="relative shrink-0">
-                                <div className="h-32 w-32 rounded-2xl overflow-hidden border-4 border-white shadow-lg relative">
-                                    <div className="h-full w-full bg-[#1a1b1e] p-2 flex items-center justify-center">
-                                        <img src={store.logo_url || "/images/logo.png"} className="h-full w-full object-contain" />
-                                    </div>
-                                </div>
-                                {store.is_open ? (
-                                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md flex items-center gap-1">
-                                        <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
-                                        ABERTO
-                                    </div>
-                                ) : (
-                                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md flex items-center gap-1">
-                                        <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-                                        FECHADO
-                                    </div>
-                                )}
+                        {/* --- NEW RICHER HEADER --- */}
+                        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 grid md:grid-cols-[1fr_auto] gap-6 items-start relative overflow-hidden">
+                            {/* Decorative Background Elements */}
+                            <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none">
+                                <ShoppingBag size={300} strokeWidth={1} />
                             </div>
 
-                            {/* Info */}
-                            <div className="flex-1 text-center md:text-left">
-                                <h1 className="text-3xl font-black text-gray-800 mb-2">{store.name}</h1>
-                                <div className="flex items-center justify-center md:justify-start gap-2 text-gray-500 text-sm bg-gray-100 px-3 py-1.5 rounded-lg inline-flex">
-                                    <Clock className="h-4 w-4" />
-                                    <span>{store.operating_hours_formatted}</span>
+                            {/* Store Info Column */}
+                            <div className="flex flex-col sm:flex-row gap-6 relative z-10">
+                                {/* Logo */}
+                                <div className="shrink-0 flex flex-col items-center sm:items-start gap-2">
+                                    <div className="h-24 w-24 rounded-2xl overflow-hidden shadow-lg border-2 border-white ring-1 ring-gray-100 bg-white">
+                                        {store.logo_url ? (
+                                            <img src={store.logo_url} className="h-full w-full object-cover" alt={store.name} />
+                                        ) : (
+                                            <div className="h-full w-full flex items-center justify-center bg-gray-50 text-gray-400">
+                                                <ShoppingBag size={32} />
+                                            </div>
+                                        )}
+                                    </div>
+                                    {/* Opening Status Badge */}
+                                    <div className={clsx(
+                                        "px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm",
+                                        store.is_open ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                                    )}>
+                                        <span className={clsx("w-2 h-2 rounded-full", store.is_open ? "bg-green-600 animate-pulse" : "bg-red-600")} />
+                                        {store.is_open ? "Aberto Agora" : "Fechado"}
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* User Section */}
-                            <div className="flex gap-3 items-center">
-                                <button
-                                    onClick={() => setShowInfoModal(true)}
-                                    className="h-10 w-10 bg-white text-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-50 transition-colors shadow-lg shadow-gray-200/50"
-                                >
-                                    <Info className="h-5 w-5" />
-                                </button>
-                                {customer ? (
-                                    <button
-                                        onClick={() => setShowCustomerArea(true)}
-                                        className="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-xl hover:bg-gray-100 transition-colors"
-                                    >
-                                        <div className="text-right">
-                                            <p className="text-xs font-bold text-gray-800">{customer.name}</p>
-                                            {store.loyalty_enabled && (
-                                                <p className="text-[10px] text-[#ff3d03] flex items-center gap-1">
-                                                    <Gift className="h-3 w-3" />
-                                                    {customer.loyalty_points} pontos
-                                                </p>
+                                {/* Text Info */}
+                                <div className="flex-1 text-center sm:text-left space-y-3">
+                                    <div>
+                                        <h1 className="text-2xl sm:text-3xl font-black text-gray-900 leading-tight">
+                                            {store.name}
+                                        </h1>
+                                        {store.description && (
+                                            <p className="text-gray-500 text-sm mt-1 max-w-lg mx-auto sm:mx-0">
+                                                {store.description}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Location & Navigation Buttons */}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-center sm:justify-start gap-2 text-gray-600 text-sm">
+                                            <MapPin className="h-4 w-4 shrink-0 text-[#ff3d03]" />
+                                            <span className="line-clamp-1">{store.address}</span>
+                                        </div>
+
+                                        <div className="flex flex-wrap justify-center sm:justify-start gap-2">
+                                            {/* Waze */}
+                                            <a
+                                                href={`https://waze.com/ul?q=${encodeURIComponent(store.address)}`}
+                                                target="_blank"
+                                                className="flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-bold hover:bg-blue-100 transition-colors border border-blue-100"
+                                            >
+                                                <Navigation className="h-3.5 w-3.5 fill-current" />
+                                                Waze
+                                            </a>
+                                            {/* Google Maps */}
+                                            <a
+                                                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(store.address)}`}
+                                                target="_blank"
+                                                className="flex items-center gap-2 px-3 py-2 bg-white text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-50 transition-colors border border-gray-200"
+                                            >
+                                                <MapPin className="h-3.5 w-3.5" />
+                                                Maps
+                                            </a>
+                                            {/* WhatsApp */}
+                                            {store.whatsapp && (
+                                                <a
+                                                    href={`https://wa.me/${store.whatsapp.replace(/\D/g, '')}`}
+                                                    target="_blank"
+                                                    className="flex items-center gap-2 px-3 py-2 bg-green-50 text-green-700 rounded-xl text-xs font-bold hover:bg-green-100 transition-colors border border-green-100"
+                                                >
+                                                    <MessageCircle className="h-3.5 w-3.5" />
+                                                    WhatsApp
+                                                </a>
+                                            )}
+                                            {/* Phone */}
+                                            {store.phone && (
+                                                <a href={`tel:${store.phone.replace(/\D/g, '')}`} className="flex items-center gap-2 px-3 py-2 bg-gray-50 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-100 transition-colors border border-gray-200">
+                                                    <Phone className="h-3.5 w-3.5" />
+                                                    Ligar
+                                                </a>
                                             )}
                                         </div>
-                                        <ChevronRight className="h-4 w-4 text-gray-400" />
-                                    </button>
-                                ) : (
-                                    <button
-                                        onClick={() => setShowAuthModal(true)}
-                                        className="h-10 w-10 bg-[#ff3d03] text-white rounded-lg flex items-center justify-center hover:scale-110 transition-transform shadow-lg shadow-orange-500/20"
+                                    </div>
+
+                                    {/* Social Icons Row */}
+                                    <div className="flex justify-center sm:justify-start gap-2 pt-1 border-t border-gray-50 mt-2">
+                                        {store.instagram && (
+                                            <a href={`https://instagram.com/${store.instagram.replace('@', '')}`} target="_blank" className="p-2 text-gray-400 hover:text-[#E1306C] hover:bg-pink-50 rounded-lg transition-colors">
+                                                <Instagram className="h-5 w-5" />
+                                            </a>
+                                        )}
+                                        {store.facebook && (
+                                            <a href={store.facebook} target="_blank" className="p-2 text-gray-400 hover:text-[#1877F2] hover:bg-blue-50 rounded-lg transition-colors">
+                                                <Facebook className="h-5 w-5" />
+                                            </a>
+                                        )}
+                                        {store.website && (
+                                            <a href={store.website} target="_blank" className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                                                <Globe className="h-5 w-5" />
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Customer Profile / Loyalty Card */}
+                            <div className="w-full md:w-80 shrink-0 relative z-10">
+                                {customer ? (
+                                    <div
+                                        onClick={() => setShowCustomerArea(true)}
+                                        className="h-full bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-5 text-white shadow-lg cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all relative overflow-hidden group"
                                     >
-                                        <User className="h-5 w-5" />
-                                    </button>
+                                        {/* Glow Effect */}
+                                        <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#ff3d03] opacity-20 blur-3xl group-hover:opacity-30 transition-opacity" />
+
+                                        <div className="relative z-10">
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div>
+                                                    <p className="text-gray-300 text-xs font-medium mb-0.5">Bem-vindo(a),</p>
+                                                    <p className="font-bold text-lg truncate max-w-[150px]">{customer.name.split(' ')[0]}</p>
+                                                </div>
+                                                {/* Tier Badge with Fallback */}
+                                                {(customer.loyalty_tier || 'bronze') && (
+                                                    <div className={clsx(
+                                                        "px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1 border",
+                                                        (customer.loyalty_tier || 'bronze') === 'diamond' ? "bg-cyan-500/20 text-cyan-200 border-cyan-500/30" :
+                                                            (customer.loyalty_tier || 'bronze') === 'gold' ? "bg-yellow-500/20 text-yellow-200 border-yellow-500/30" :
+                                                                (customer.loyalty_tier || 'bronze') === 'silver' ? "bg-gray-500/20 text-gray-200 border-gray-500/30" :
+                                                                    "bg-orange-500/20 text-orange-200 border-orange-500/30"
+                                                    )}>
+                                                        <Trophy className="h-3 w-3" />
+                                                        {customer.loyalty_tier === 'diamond' ? 'Diamante' :
+                                                            customer.loyalty_tier === 'gold' ? 'Ouro' :
+                                                                customer.loyalty_tier === 'silver' ? 'Prata' : 'Bronze'}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Points Display Always Visible */}
+                                            <div>
+                                                <div className="flex items-end gap-2 mb-2">
+                                                    <span className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#ff3d03] to-orange-400">
+                                                        {customer.loyalty_points || 0}
+                                                    </span>
+                                                    <span className="text-sm font-medium text-gray-400 mb-1.5">pontos</span>
+                                                </div>
+                                                {/* Mini Progress Bar */}
+                                                <div className="w-full bg-gray-700/50 rounded-full h-1.5 overflow-hidden">
+                                                    <div className="bg-gradient-to-r from-[#ff3d03] to-orange-500 h-full max-w-full block" style={{ width: '0%' }} />
+                                                </div>
+                                                <div className="flex justify-between items-center mt-2">
+                                                    <span className="text-[10px] text-gray-400">Ver recompensas</span>
+                                                    <div className="p-1 bg-white/10 rounded-full hover:bg-white/20 transition-colors">
+                                                        <ChevronRight className="h-4 w-4 text-white" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="h-full bg-gray-50 rounded-2xl p-5 border border-gray-100 flex flex-col justify-center items-center text-center gap-3">
+                                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm text-[#ff3d03]">
+                                            <User className="h-6 w-6" />
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-gray-900">Cliente Fidelidade?</p>
+                                            <p className="text-xs text-gray-500">Entre para acumular pontos!</p>
+                                        </div>
+                                        <button
+                                            onClick={() => setShowAuthModal(true)}
+                                            className="w-full py-2 bg-[#ff3d03] hover:bg-[#e63700] text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-orange-500/20"
+                                        >
+                                            Entrar / Cadastrar
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -1049,6 +1488,31 @@ export default function PublicMenu({ store, categories, slug, authCustomer }: { 
                                 <div className="flex-1">
                                     <p className="font-bold text-red-700">🔒 Fechado no momento</p>
                                     <p className="text-sm text-red-600">{store.operating_hours_formatted}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Promotion Banner */}
+                    {activePromotion && (
+                        <div className="max-w-5xl mx-auto px-4 mt-6">
+                            <div
+                                className="rounded-2xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow"
+                                style={{
+                                    background: `linear-gradient(135deg, ${activePromotion.banner_gradient_start || '#ff3d03'}, ${activePromotion.banner_gradient_end || '#ff6b35'})`,
+                                }}
+                            >
+                                <div className="flex items-center gap-4">
+                                    {activePromotion.banner_icon && (
+                                        <span className="text-4xl flex-shrink-0">{activePromotion.banner_icon}</span>
+                                    )}
+                                    <div className="flex-1">
+                                        <h3 className="font-black text-2xl mb-1">{activePromotion.name}</h3>
+                                        <p className="text-white/90 text-sm mb-2">{activePromotion.description}</p>
+                                        <p className="text-sm font-bold text-white/95">
+                                            🔥 Ganhe {activePromotion.multiplier}x mais pontos em todas as compras!
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1068,7 +1532,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer }: { 
                             >
                                 Todos
                             </button>
-                            {categories.map((cat) => (
+                            {categories.filter(cat => cat.category_type !== 'loyalty_rewards').map((cat) => (
                                 <button
                                     key={cat.id}
                                     onClick={() => scrollToCategory(cat.id)}
@@ -1082,74 +1546,364 @@ export default function PublicMenu({ store, categories, slug, authCustomer }: { 
                                     {cat.name}
                                 </button>
                             ))}
+                            {categories.some(cat => cat.category_type === 'loyalty_rewards' && cat.products?.length > 0) && (
+                                <button
+                                    onClick={() => setActiveCategory('rewards')}
+                                    className={clsx(
+                                        "px-6 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap flex items-center gap-2",
+                                        activeCategory === 'rewards'
+                                            ? "bg-[#ff3d03] text-white shadow-lg shadow-orange-500/30"
+                                            : "text-gray-500 hover:bg-gray-50"
+                                    )}
+                                >
+                                    <Gift className="h-4 w-4" />
+                                    Recompensas
+                                </button>
+                            )}
                         </div>
                     </div>
 
                     {/* Products Grid */}
                     <div className="max-w-5xl mx-auto px-4 mt-8 space-y-12 pb-24">
-                        {categories.map((cat) => (
-                            <div key={cat.id} id={cat.id} className="scroll-mt-40">
-                                <div className="flex items-center justify-between mb-6">
-                                    <h2 className="text-xl font-black text-gray-800 uppercase tracking-wide border-l-4 border-[#ff3d03] pl-3">
-                                        {cat.name}
-                                    </h2>
-                                    <span className="text-sm font-medium text-gray-400">{cat.products.length} itens</span>
-                                </div>
+                        {/* Featured Products Section */}
+                        {activeCategory === 'all' && (
+                            (() => {
+                                const featuredProducts = categories
+                                    .flatMap(cat => cat.products)
+                                    .filter(p => p.is_featured && p.is_available !== false);
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {cat.products.map((product) => {
-                                        const isOutOfStock = product.track_stock && (product.stock_quantity || 0) <= 0;
+                                if (featuredProducts.length === 0) return null;
 
-                                        return (
-                                            <div key={product.id} className={`bg-white rounded-2xl overflow-hidden shadow-sm transition-all duration-300 group border border-gray-100 flex flex-col ${isOutOfStock ? 'opacity-70 grayscale' : 'hover:shadow-xl'}`}>
-                                                <div className="h-48 w-full bg-gray-100 relative overflow-hidden">
-                                                    {product.image_url ? (
-                                                        <img src={product.image_url} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                                    ) : (
-                                                        <div className="h-full w-full flex items-center justify-center bg-gray-50 text-gray-300">
-                                                            <ShoppingBag className="h-12 w-12" />
+                                return (
+                                    <div className="scroll-mt-40 mb-12">
+                                        <div className="flex items-center justify-between mb-6">
+                                            <h2 className="text-xl font-black text-gray-800 uppercase tracking-wide border-l-4 border-yellow-400 pl-3 flex items-center gap-2">
+                                                ⭐ Destaques
+                                            </h2>
+                                            <span className="text-sm font-medium text-gray-400">{featuredProducts.length} itens</span>
+                                        </div>
+
+                                        <div className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide snap-x -mx-4 px-4 md:mx-0 md:px-0">
+                                            {featuredProducts.map((product) => {
+                                                const isOutOfStock = product.track_stock && (product.stock_quantity || 0) <= 0;
+                                                const hasPromo = product.promotional_price && Number(product.promotional_price) < Number(product.price);
+
+                                                return (
+                                                    <div key={`featured-${product.id}`} className={`snap-center shrink-0 min-w-[260px] w-[260px] bg-white rounded-xl overflow-hidden shadow-md border border-yellow-100 flex flex-col ${isOutOfStock ? 'opacity-70 grayscale' : 'hover:shadow-lg hover:border-yellow-300 transition-all duration-300'}`}>
+                                                        <div className="h-32 w-full bg-gray-100 relative overflow-hidden">
+                                                            {product.image_url ? (
+                                                                <img src={product.image_url} className="h-full w-full object-cover hover:scale-105 transition-transform duration-500" />
+                                                            ) : (
+                                                                <div className="h-full w-full flex items-center justify-center bg-gray-50 text-gray-300">
+                                                                    <ShoppingBag className="h-12 w-12" />
+                                                                </div>
+                                                            )}
+                                                            {/* Badges Container */}
+                                                            <div className="absolute top-2 left-2 right-2 flex flex-wrap gap-2 z-20">
+                                                                {/* Loyalty Redemption Badge */}
+                                                                {product.loyalty_redeemable && product.loyalty_points_cost > 0 && (
+                                                                    <div className="bg-gradient-to-r from-yellow-400 via-orange-500 to-pink-500 text-white px-2.5 py-1 rounded-lg text-[10px] font-black shadow-lg shadow-orange-500/50 flex items-center gap-1">
+                                                                        <Gift className="h-3 w-3" />
+                                                                        {product.loyalty_points_cost} PTS
+                                                                    </div>
+                                                                )}
+                                                                {/* Other Badges */}
+                                                                {product.is_promotional && (
+                                                                    <div className="bg-red-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold shadow-lg shadow-red-500/50">
+                                                                        🔥 PROMOÇÃO
+                                                                    </div>
+                                                                )}
+                                                                {product.is_new && (
+                                                                    <div className="bg-purple-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold shadow-lg shadow-purple-500/50">
+                                                                        ✨ NOVO
+                                                                    </div>
+                                                                )}
+                                                                {product.is_exclusive && (
+                                                                    <div className="bg-cyan-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold shadow-lg shadow-cyan-500/50">
+                                                                        💎 EXCLUSIVO
+                                                                    </div>
+                                                                )}
+                                                                {product.is_featured && (
+                                                                    <div className="bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full text-[10px] font-bold shadow-sm">
+                                                                        ⭐ DESTAQUE
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            {isOutOfStock && (
+                                                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
+                                                                    <span className="bg-red-600 text-white font-black text-xs uppercase tracking-widest px-3 py-1.5 rounded-lg -rotate-3 border-2 border-white shadow-lg">
+                                                                        Esgotado
+                                                                    </span>
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                    )}
 
-                                                    {isOutOfStock && (
-                                                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
-                                                            <span className="bg-red-600 text-white font-black text-xs uppercase tracking-widest px-3 py-1.5 rounded-lg -rotate-3 border-2 border-white shadow-lg">
-                                                                Esgotado
-                                                            </span>
+                                                        <div className="p-3 flex-1 flex flex-col">
+                                                            <h3 className="font-bold text-gray-900 text-sm mb-1 line-clamp-1">{product.name}</h3>
+                                                            <p className="text-xs text-gray-500 line-clamp-2 mb-3 flex-1">
+                                                                {product.description}
+                                                            </p>
+
+                                                            <div className="mt-auto pt-2 border-t border-gray-100">
+                                                                <div className="flex items-center justify-between mb-3">
+                                                                    <div className="flex flex-col">
+                                                                        {hasPromo && (
+                                                                            <span className="text-xs text-gray-400 line-through">
+                                                                                R$ {Number(product.price).toFixed(2).replace('.', ',')}
+                                                                            </span>
+                                                                        )}
+                                                                        <div className="text-[#ff3d03] font-bold text-base">
+                                                                            R$ {Number(hasPromo ? product.promotional_price : product.price).toFixed(2).replace('.', ',')}
+                                                                        </div>
+                                                                    </div>
+                                                                    <button
+                                                                        onClick={() => !isOutOfStock && openProductModal(product)}
+                                                                        disabled={isOutOfStock}
+                                                                        className={`px-3 py-1.5 rounded-lg font-bold text-xs shadow-md active:scale-95 transition-transform
+                                                                            ${isOutOfStock
+                                                                                ? 'bg-gray-200 text-gray-500 cursor-not-allowed shadow-none'
+                                                                                : 'bg-[#ff3d03] text-white hover:bg-[#e63700] shadow-orange-500/20'
+                                                                            }`}
+                                                                    >
+                                                                        {isOutOfStock ? 'Indisponível' : 'Adicionar'}
+                                                                    </button>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                    )}
-                                                </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })()
+                        )}
+                        {activeCategory === 'rewards' ? (
+                            // Rewards Products View
+                            (() => {
+                                const rewardsCategory = categories.find(cat => cat.category_type === 'loyalty_rewards');
+                                const rewardProducts = rewardsCategory?.products || [];
 
-                                                <div className="p-5 flex-1 flex flex-col">
-                                                    <h3 className="font-extrabold text-gray-900 text-lg mb-2">{product.name}</h3>
-                                                    <p className="text-sm text-gray-500 line-clamp-2 mb-4 flex-1">
-                                                        {product.description || 'Uma explosão de sabor. Ingredientes selecionados para uma experiência única.'}
-                                                    </p>
+                                if (rewardProducts.length === 0) {
+                                    return (
+                                        <div className="text-center py-12">
+                                            <Gift className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                                            <p className="text-gray-500 font-medium">Nenhuma recompensa disponível no momento</p>
+                                        </div>
+                                    );
+                                }
 
-                                                    <div className="mt-auto pt-4 border-t border-gray-100">
-                                                        <div className="flex items-center justify-between mb-3">
-                                                            <span className="text-xs text-gray-400">A partir de</span>
-                                                            <PriceTag price={product.price} />
+                                return (
+                                    <div key="rewards" className="scroll-mt-40">
+                                        <div className="flex items-center justify-between mb-6">
+                                            <h2 className="text-xl font-black text-gray-800 uppercase tracking-wide border-l-4 border-[#ff3d03] pl-3">
+                                                🎁 Recompensas
+                                            </h2>
+                                            <span className="text-sm font-medium text-gray-400">{rewardProducts.length} resgates</span>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            {rewardProducts.map((product) => {
+                                                const canRedeem = customer && customer.loyalty_points >= (product.loyalty_points_cost || 0);
+                                                const insufficientPoints = customer && customer.loyalty_points < (product.loyalty_points_cost || 0);
+
+                                                return (
+                                                    <div key={product.id} className="relative overflow-hidden rounded-2xl border-2 border-orange-300 bg-gradient-to-br from-orange-50 to-amber-50 flex flex-col shadow-lg hover:shadow-xl transition-shadow">
+                                                        {/* Badge */}
+                                                        <div className="absolute top-2 right-2 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold z-10 flex items-center gap-1">
+                                                            <Gift className="h-3 w-3" />
+                                                            RESGATE
                                                         </div>
-                                                        <button
-                                                            onClick={() => !isOutOfStock && openProductModal(product)}
-                                                            disabled={isOutOfStock}
-                                                            className={`w-full font-bold py-3 rounded-xl transition-colors shadow-lg active:scale-95 text-sm uppercase tracking-wide
-                                                                ${isOutOfStock
-                                                                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed shadow-none'
-                                                                    : 'bg-[#ff3d03] hover:bg-[#e63700] text-white shadow-orange-500/20'
-                                                                }`}
-                                                        >
-                                                            {isOutOfStock ? 'Indisponível' : 'Adicionar'}
-                                                        </button>
+
+                                                        {/* Image */}
+                                                        <div className="h-48 w-full bg-gray-100 relative overflow-hidden">
+                                                            {product.image_url ? (
+                                                                <img src={product.image_url} className="h-full w-full object-cover hover:scale-105 transition-transform duration-500" />
+                                                            ) : (
+                                                                <div className="h-full w-full flex items-center justify-center bg-gray-50 text-gray-300">
+                                                                    <ShoppingBag className="h-12 w-12" />
+                                                                </div>
+                                                            )}
+                                                            {/* Additional Badges */}
+                                                            <div className="absolute top-2 left-2 flex flex-wrap gap-2 z-20">
+                                                                {product.is_promotional && (
+                                                                    <div className="bg-red-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold shadow-lg shadow-red-500/50">
+                                                                        🔥 PROMOÇÃO
+                                                                    </div>
+                                                                )}
+                                                                {product.is_new && (
+                                                                    <div className="bg-purple-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold shadow-lg shadow-purple-500/50">
+                                                                        ✨ NOVO
+                                                                    </div>
+                                                                )}
+                                                                {product.is_exclusive && (
+                                                                    <div className="bg-cyan-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold shadow-lg shadow-cyan-500/50">
+                                                                        💎 EXCLUSIVO
+                                                                    </div>
+                                                                )}
+                                                                {product.is_featured && (
+                                                                    <div className="bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full text-[10px] font-bold shadow-sm">
+                                                                        ⭐ DESTAQUE
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Content */}
+                                                        <div className="p-4 flex-1 flex flex-col">
+                                                            <h3 className="font-bold text-lg text-gray-900 mb-2">{product.name}</h3>
+                                                            <p className="text-sm text-gray-600 line-clamp-2 mb-4 flex-1">
+                                                                {product.description || 'Recompensa exclusiva'}
+                                                            </p>
+
+                                                            {/* Points Cost */}
+                                                            <div className="mt-auto pt-4 border-t border-orange-200">
+                                                                <div className="flex items-center justify-between mb-3">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Gift className="h-5 w-5 text-orange-500" />
+                                                                        <span className="text-2xl font-black text-orange-600">
+                                                                            {product.loyalty_points_cost}
+                                                                        </span>
+                                                                    </div>
+                                                                    <span className="text-xs text-gray-500">pts</span>
+                                                                </div>
+
+                                                                {/* Customer Points Display */}
+                                                                {customer && (
+                                                                    <p className="text-xs text-gray-500 mb-3">
+                                                                        Seu saldo: <span className="font-bold text-orange-600">{customer.loyalty_points}</span> pontos
+                                                                    </p>
+                                                                )}
+
+                                                                <button
+                                                                    onClick={() => {
+                                                                        if (!customer) setShowAuthModal(true);
+                                                                        else handleRedeem(product);
+                                                                    }}
+                                                                    disabled={insufficientPoints}
+                                                                    className={`w-full font-bold py-3 rounded-xl transition-colors text-sm uppercase tracking-wide
+                                                                        ${insufficientPoints
+                                                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                                            : 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg active:scale-95'
+                                                                        }`}
+                                                                >
+                                                                    {!customer
+                                                                        ? 'Faça Login'
+                                                                        : canRedeem
+                                                                            ? 'Resgatar'
+                                                                            : `Faltam ${(product.loyalty_points_cost || 0) - customer.loyalty_points} pontos`
+                                                                    }
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })()
+                        ) : (
+                            // Regular Products View
+                            categories.filter(cat => cat.category_type !== 'loyalty_rewards').map((cat) => (
+                                <div key={cat.id} id={cat.id} className="scroll-mt-40">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h2 className="text-xl font-black text-gray-800 uppercase tracking-wide border-l-4 border-[#ff3d03] pl-3">
+                                            {cat.name}
+                                        </h2>
+                                        <span className="text-sm font-medium text-gray-400">{cat.products.length} itens</span>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {cat.products.map((product) => {
+                                            const isOutOfStock = product.track_stock && (product.stock_quantity || 0) <= 0;
+
+                                            return (
+                                                <div key={product.id} className={`bg-white rounded-2xl overflow-hidden shadow-sm transition-all duration-300 group border border-gray-100 flex flex-col ${isOutOfStock ? 'opacity-70 grayscale' : 'hover:shadow-xl'}`}>
+                                                    <div className="h-48 w-full bg-gray-100 relative overflow-hidden">
+                                                        {product.image_url ? (
+                                                            <img src={product.image_url} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                                        ) : (
+                                                            <div className="h-full w-full flex items-center justify-center bg-gray-50 text-gray-300">
+                                                                <ShoppingBag className="h-12 w-12" />
+                                                            </div>
+                                                        )}
+
+                                                        {/* Badges Container */}
+                                                        <div className="absolute top-3 left-3 right-3 flex flex-wrap gap-2 z-20">
+                                                            {product.is_promotional && (
+                                                                <div className="bg-red-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold shadow-lg shadow-red-500/50">
+                                                                    🔥 PROMOÇÃO
+                                                                </div>
+                                                            )}
+                                                            {product.is_new && (
+                                                                <div className="bg-purple-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold shadow-lg shadow-purple-500/50">
+                                                                    ✨ NOVO
+                                                                </div>
+                                                            )}
+                                                            {product.is_exclusive && (
+                                                                <div className="bg-cyan-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold shadow-lg shadow-cyan-500/50">
+                                                                    💎 EXCLUSIVO
+                                                                </div>
+                                                            )}
+                                                            {product.is_featured && (
+                                                                <div className="bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full text-[10px] font-bold shadow-sm">
+                                                                    ⭐ DESTAQUE
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {isOutOfStock && (
+                                                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
+                                                                <span className="bg-red-600 text-white font-black text-xs uppercase tracking-widest px-3 py-1.5 rounded-lg -rotate-3 border-2 border-white shadow-lg">
+                                                                    Esgotado
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="p-5 flex-1 flex flex-col">
+                                                        <h3 className="font-extrabold text-gray-900 text-lg mb-2">{product.name}</h3>
+                                                        <p className="text-sm text-gray-500 line-clamp-2 mb-4 flex-1">
+                                                            {product.description || 'Uma explosão de sabor. Ingredientes selecionados para uma experiência única.'}
+                                                        </p>
+
+                                                        <div className="mt-auto pt-4 border-t border-gray-100">
+                                                            <div className="flex items-center justify-between mb-3">
+                                                                <div className="flex flex-col">
+                                                                    {product.promotional_price && Number(product.promotional_price) < Number(product.price) && (
+                                                                        <span className="text-xs text-gray-400 line-through">
+                                                                            R$ {Number(product.price).toFixed(2).replace('.', ',')}
+                                                                        </span>
+                                                                    )}
+                                                                    <div className="flex items-center gap-1">
+                                                                        <span className="text-xs text-gray-400">{product.promotional_price ? 'Por' : 'A partir de'}</span>
+                                                                        <div className="text-[#ff3d03] font-bold">
+                                                                            R$ {Number(product.promotional_price ?? product.price).toFixed(2).replace('.', ',')}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => !isOutOfStock && openProductModal(product)}
+                                                                disabled={isOutOfStock}
+                                                                className={`w-full font-bold py-3 rounded-xl transition-colors shadow-lg active:scale-95 text-sm uppercase tracking-wide
+                                                                    ${isOutOfStock
+                                                                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed shadow-none'
+                                                                        : 'bg-[#ff3d03] hover:bg-[#e63700] text-white shadow-orange-500/20'
+                                                                    }`}
+                                                            >
+                                                                {isOutOfStock ? 'Indisponível' : 'Adicionar'}
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        );
-                                    })}
+                                            );
+                                        })}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
 
                     {/* Floating Cart Button */}
@@ -1280,7 +2034,30 @@ export default function PublicMenu({ store, categories, slug, authCustomer }: { 
                         )}
                     </div>
                 </div>
-            </Modal>
+            </Modal >
+
+            {/* Checkout Modal */}
+            {
+                customer && (
+                    <CheckoutModal
+                        show={showCheckout}
+                        onClose={() => setShowCheckout(false)}
+                        cart={cart}
+                        store={store}
+                        customer={customer}
+                        total={getCartTotal()}
+                        addresses={addresses}
+                        onSuccess={(orderId) => {
+                            setCart([]); // Clear cart
+                            setShowCheckout(false);
+                            alert(`Pedido #${orderId} realizado com sucesso! enviamos a confirmação no seu WhatsApp.`);
+                            setCustomerTab('orders'); // Go to orders tab
+                            setShowCustomerArea(true);
+                        }}
+                    />
+                )
+            }
+
         </div >
     );
 }

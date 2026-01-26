@@ -36,7 +36,7 @@ export default function Login({
                 {/* Visual Side (Left) */}
                 <div className="hidden lg:flex lg:w-3/5 relative overflow-hidden bg-gray-900 items-center justify-center p-20">
                     <img
-                        src="/images/hero-restaurant.jpg"
+                        src="/images/auth-background.jpg"
                         alt="Background"
                         className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay"
                     />
@@ -44,7 +44,7 @@ export default function Login({
 
                     <div className="relative z-10 max-w-xl space-y-12">
                         <div className="mb-20 flex justify-center">
-                            <img src="/images/logo-full.png" alt="ÓoDelivery" className="h-40 w-auto brightness-0 invert drop-shadow-2xl" />
+                            <img src="/images/landing/header-icon.png" alt="ÓoDelivery" className="h-40 w-auto drop-shadow-2xl" />
                         </div>
 
                         <div className="space-y-6">
@@ -84,8 +84,8 @@ export default function Login({
                 <div className="w-full lg:w-2/5 flex flex-col justify-center px-8 sm:px-16 lg:px-24 bg-white">
                     <div className="max-w-md w-full mx-auto">
                         <div className="text-center mb-10">
-                            <Link href="/">
-                                <img src="/images/logo-full.png" alt="ÓoDelivery" className="h-32 w-auto drop-shadow-sm" />
+                            <Link href="/" className="text-4xl font-black text-[#ff3d03] tracking-tight hover:opacity-90 transition-opacity">
+                                ÓoDelivery.
                             </Link>
                         </div>
 

@@ -1,0 +1,162 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\WhatsAppInstance;
+use App\Services\EvolutionApiService;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+
+class AdminWhatsAppController extends Controller
+{
+    public function __construct(
+        private EvolutionApiService $evolutionApi
+    ) {
+    }
+
+    public function index()
+    {
+        // Get the shared instance
+        $instance = WhatsAppInstance::where('instance_type', 'shared')->first();
+        $logs = \App\Models\WhatsAppMessageLog::with('tenant:id,name')
+            ->latest()
+            ->take(10)
+            ->get();
+
+        // Check if global credentials exist and get them
+        $credential = \App\Models\ApiCredential::where('service', 'evolution')
+            ->whereNull('tenant_id')
+            ->where('is_active', true)
+            ->latest()
+            ->first();
+
+        $config = [
+            'url' => '',
+            'apikey' => '',
+        ];
+
+        if ($credential) {
+            $val = $credential->decrypted_value;
+            if (is_array($val)) {
+                $config['url'] = $val['url'] ?? '';
+                $config['apikey'] = $val['apikey'] ?? ''; // In frontend we might mask this
+            } else {
+                $config['apikey'] = $val; // Legacy string format
+                $config['url'] = config('services.evolution.url') ?? '';
+            }
+        } else {
+            $config['url'] = config('services.evolution.url') ?? '';
+            // Don't send config api key for security if possible, or send masked
+        }
+
+        return Inertia::render('Admin/WhatsApp/Index', [
+            'instance' => $instance,
+            'logs' => $logs,
+            'currentConfig' => $config,
+        ]);
+    }
+
+    public function connect(Request $request)
+    {
+        $validated = $request->validate([
+            'instance_name' => 'required|string|max:255',
+        ]);
+
+        $instanceName = $validated['instance_name'];
+
+        try {
+            // Check if exists in DB
+            $instance = WhatsAppInstance::where('instance_type', 'shared')->first();
+
+            if ($instance) {
+                // Update name if changed
+                if ($instance->instance_name !== $instanceName) {
+                    $instance->update(['instance_name' => $instanceName]);
+                }
+            } else {
+                // Create logic
+                // Try to create in Evolution first
+                try {
+                    $this->evolutionApi->createInstance($instanceName);
+                } catch (\Exception $e) {
+                    // Ignore if already exists, or handle gracefuly
+                }
+
+                $instance = WhatsAppInstance::create([
+                    'instance_name' => $instanceName,
+                    'instance_type' => 'shared',
+                    'status' => 'connecting',
+                ]);
+            }
+
+            return back()->with('success', 'Instância inicializada. Escaneie o QR Code.');
+
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Erro ao conectar: ' . $e->getMessage()]);
+        }
+    }
+
+    public function getQrCode()
+    {
+        $instance = WhatsAppInstance::where('instance_type', 'shared')->first();
+        if (!$instance)
+            return response()->json(['error' => 'Instância não encontrada'], 404);
+
+        try {
+            $qrCode = $this->evolutionApi->getQrCode($instance->instance_name);
+
+            if ($qrCode) {
+                $instance->update(['qr_code' => $qrCode]);
+                return response()->json(['qr_code' => $qrCode]);
+            }
+
+            return response()->json(['error' => 'QR Code indisponível'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function checkStatus()
+    {
+        $instance = WhatsAppInstance::where('instance_type', 'shared')->first();
+        if (!$instance)
+            return response()->json(['status' => 'disconnected']);
+
+        try {
+            $status = $this->evolutionApi->getInstanceStatus($instance->instance_name);
+
+            if (($status['state'] ?? '') === 'open') {
+                $instance->markAsConnected($status['instance']['owner'] ?? '');
+            } else {
+                // Only update to disconnected if not connecting
+                if ($instance->status !== 'connecting') {
+                    $instance->markAsDisconnected();
+                }
+            }
+
+            return response()->json([
+                'status' => $instance->fresh()->status,
+                'phone_number' => $instance->phone_number
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function disconnect()
+    {
+        $instance = WhatsAppInstance::where('instance_type', 'shared')->first();
+        if (!$instance)
+            return back()->with('error', 'Instância não encontrada');
+
+        try {
+            $this->evolutionApi->deleteInstance($instance->instance_name);
+            $instance->delete(); // Or just mark as disconnected
+            return back()->with('success', 'Instância desconectada.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Erro ao desconectar: ' . $e->getMessage());
+        }
+    }
+}

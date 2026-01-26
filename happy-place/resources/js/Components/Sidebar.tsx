@@ -1,4 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
+import { useAudio } from '@/Hooks/useAudio';
+import { Volume2 } from 'lucide-react';
 import {
     Award,
     BookOpen,
@@ -97,6 +99,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
             title: 'Gestão',
             items: [
                 { name: 'Clientes', href: route('customers.index'), route: 'customers.index', icon: Users, current: isCurrent('/customers') },
+                { name: 'Equipe', href: route('employees.index'), route: 'employees.index', icon: UserCog, current: isCurrent('/employees') },
                 { name: 'Fidelidade', href: route('loyalty.index'), route: 'loyalty.index', icon: Trophy, current: isCurrent('/loyalty') },
                 { name: 'Estoque', href: route('stock.index'), route: 'stock.index', icon: Box, current: isCurrent('/estoque') },
                 { name: 'Financeiro', href: route('financial.index'), route: 'financial.index', icon: BarChart3, current: isCurrent('/financeiro') },
@@ -129,6 +132,8 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
             title: 'Sistema',
             items: [
                 { name: 'API Keys', href: route('admin.api-keys.index'), route: 'admin.api-keys.index', icon: Key, current: isCurrent('/admin/api-keys') },
+                { name: 'WhatsApp Master', href: route('admin.whatsapp.index'), route: 'admin.whatsapp.index', icon: MessageSquare, current: isCurrent('/admin/whatsapp') && !isCurrent('/admin/whatsapp/templates') },
+                { name: 'Templates Padrão', href: route('admin.whatsapp.templates.index'), route: 'admin.whatsapp.templates.index', icon: BookOpen, current: isCurrent('/admin/whatsapp/templates') },
                 { name: 'Logs de Segurança', href: route('admin.logs.security'), route: 'admin.logs.security', icon: ShieldCheck, current: isCurrent('/admin/logs') },
             ]
         }

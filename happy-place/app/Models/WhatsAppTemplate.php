@@ -34,7 +34,7 @@ class WhatsAppTemplate extends Model
         $message = $this->message;
 
         foreach ($data as $key => $value) {
-            $message = str_replace("{{{$key}}}", $value, $message);
+            $message = str_replace("{{$key}}", $value, $message);
         }
 
         return $message;

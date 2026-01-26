@@ -22,11 +22,13 @@ class Customer extends Model
         'phone',
         'email',
         'loyalty_points',
+        'loyalty_tier',
         'push_subscription',
     ];
 
     protected $casts = [
         'loyalty_points' => 'integer',
+        'loyalty_tier' => 'string',
     ];
 
     /**
@@ -108,5 +110,45 @@ class Customer extends Model
         ]);
 
         return true;
+    }
+
+    /**
+     * Update loyalty tier based on current points
+     */
+    public function updateLoyaltyTier(): void
+    {
+        $points = $this->loyalty_points;
+
+        $tier = match (true) {
+            $points >= 1000 => 'diamond',
+            $points >= 500 => 'gold',
+            $points >= 100 => 'silver',
+            default => 'bronze',
+        };
+
+        if ($this->loyalty_tier !== $tier) {
+            $this->loyalty_tier = $tier;
+            $this->save();
+
+            // Log tier upgrade for potential notifications
+            \Log::info("Customer {$this->id} tier upgraded to {$tier}", [
+                'customer_id' => $this->id,
+                'tier' => $tier,
+                'points' => $points,
+            ]);
+        }
+    }
+
+    /**
+     * Get tier bonus multiplier (1.0 for bronze, 1.05 for silver, 1.10 for gold, 1.15 for diamond)
+     */
+    public function getTierBonusMultiplier(): float
+    {
+        return match ($this->loyalty_tier ?? 'bronze') {
+            'diamond' => 1.15,
+            'gold' => 1.10,
+            'silver' => 1.05,
+            default => 1.0,
+        };
     }
 }

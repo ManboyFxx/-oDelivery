@@ -110,7 +110,7 @@ class StoreSetting extends Model
      */
     public function isOpenNow()
     {
-        // 1. Check Manual Override
+        // 1. Check Manual Override (highest priority)
         if ($this->status_override === 'open') {
             return true;
         }
@@ -119,62 +119,87 @@ class StoreSetting extends Model
         }
 
         // 2. Check Pause Timer
-        if ($this->paused_until && now()->lessThan($this->paused_until)) {
+        if ($this->is_delivery_paused && $this->paused_until && now()->lessThan($this->paused_until)) {
             return false;
         }
 
         // 3. Business Hours Logic
-        if (!$this->business_hours) {
-            return false;
+        // If business_hours not configured, DEFAULT TO OPEN (not closed!)
+        if (!$this->business_hours || !is_array($this->business_hours) || empty($this->business_hours)) {
+            return true; // ✅ Se não configurado, abre por padrão
         }
 
-        $timezone = $this->tenant->timezone ?? 'America/Sao_Paulo';
-        $now = now($timezone);
-        $hours = $this->business_hours;
+        try {
+            $timezone = $this->tenant->timezone ?? 'America/Sao_Paulo';
+            $now = now($timezone);
+            $hours = $this->business_hours;
 
-        $dayOfWeek = strtolower($now->format('l'));
-        $dayMap = [
-            'monday' => 'monday',
-            'tuesday' => 'tuesday',
-            'wednesday' => 'wednesday',
-            'thursday' => 'thursday',
-            'friday' => 'friday',
-            'saturday' => 'saturday',
-            'sunday' => 'sunday',
-        ];
+            // Get current day name in lowercase
+            $dayOfWeek = strtolower($now->format('l'));
 
-        $day = $dayMap[$dayOfWeek] ?? null;
-        if (!$day || !isset($hours[$day])) {
-            return false;
+            // Map English day names
+            $dayMap = [
+                'monday' => 'monday',
+                'tuesday' => 'tuesday',
+                'wednesday' => 'wednesday',
+                'thursday' => 'thursday',
+                'friday' => 'friday',
+                'saturday' => 'saturday',
+                'sunday' => 'sunday',
+            ];
+
+            $day = $dayMap[$dayOfWeek] ?? null;
+
+            // If day not found in config, default to OPEN
+            if (!$day || !isset($hours[$day])) {
+                return true;
+            }
+
+            $dayData = $hours[$day];
+            $isOpen = $dayData['isOpen'] ?? $dayData['is_open'] ?? true; // Default to true
+
+            // If day is marked as closed, return false
+            if (!$isOpen) {
+                return false;
+            }
+
+            // Get opening and closing times
+            $openTimeStr = $dayData['open'] ?? $dayData['open_time'] ?? null;
+            $closeTimeStr = $dayData['close'] ?? $dayData['close_time'] ?? null;
+
+            // If times not specified, assume open all day
+            if (!$openTimeStr || !$closeTimeStr) {
+                return true;
+            }
+
+            // Parse times
+            $openTime = \Carbon\Carbon::createFromFormat('H:i', $openTimeStr, $timezone);
+            $closeTime = \Carbon\Carbon::createFromFormat('H:i', $closeTimeStr, $timezone);
+
+            if (!$openTime || !$closeTime) {
+                return true; // Default to open if time parsing fails
+            }
+
+            // Set dates to match current day
+            $openTime->setDate($now->year, $now->month, $now->day);
+            $closeTime->setDate($now->year, $now->month, $now->day);
+
+            // Handle overnight hours (e.g., 22:00 to 02:00 next day)
+            if ($closeTime->lessThanOrEqualTo($openTime)) {
+                $closeTime->addDay();
+            }
+
+            // Check if current time is between opening and closing time
+            return $now->betweenIncluded($openTime, $closeTime);
+
+        } catch (\Exception $e) {
+            // If any error occurs, default to OPEN
+            \Illuminate\Support\Facades\Log::warning('Error checking store open status', [
+                'tenant_id' => $this->tenant_id,
+                'error' => $e->getMessage(),
+            ]);
+            return true;
         }
-
-        $dayData = $hours[$day];
-        $isOpen = $dayData['isOpen'] ?? $dayData['is_open'] ?? false;
-
-        if (!$isOpen) {
-            return false;
-        }
-
-        $openTimeStr = $dayData['open'] ?? $dayData['open_time'] ?? null;
-        $closeTimeStr = $dayData['close'] ?? $dayData['close_time'] ?? null;
-
-        $openTime = @\Carbon\Carbon::createFromFormat('H:i', $openTimeStr ?? '', $timezone);
-        $closeTime = @\Carbon\Carbon::createFromFormat('H:i', $closeTimeStr ?? '', $timezone);
-
-        if (!$openTime || !$closeTime) {
-            return false;
-        }
-
-        // Set dates to match $now's date to avoid issues with createFromFormat defaulting differently
-        $openTime->setDate($now->year, $now->month, $now->day);
-        $closeTime->setDate($now->year, $now->month, $now->day);
-
-        // Handle overnight hours (e.g. 18:00 to 02:00)
-        if ($closeTime->lessThan($openTime)) {
-            $closeTime->addDay();
-        }
-
-        return $now->between($openTime, $closeTime);
     }
 
     /**
@@ -184,5 +209,92 @@ class StoreSetting extends Model
     {
         $service = new \App\Services\SettingsService();
         return $service->formatOperatingHours($this->business_hours);
+    }
+
+    /**
+     * Set business hours with proper validation and formatting
+     */
+    public function setBusinessHours($hours)
+    {
+        if (!$hours) {
+            $this->business_hours = null;
+            return;
+        }
+
+        // If already an array, ensure proper format
+        if (is_array($hours)) {
+            $formatted = $this->formatBusinessHours($hours);
+            $this->business_hours = $formatted;
+            return;
+        }
+
+        // If JSON string, decode and format
+        if (is_string($hours)) {
+            try {
+                $decoded = json_decode($hours, true);
+                if (is_array($decoded)) {
+                    $formatted = $this->formatBusinessHours($decoded);
+                    $this->business_hours = $formatted;
+                    return;
+                }
+            } catch (\Exception $e) {
+                // Invalid JSON, set to null
+                $this->business_hours = null;
+                return;
+            }
+        }
+
+        $this->business_hours = null;
+    }
+
+    /**
+     * Format business hours to standard structure
+     */
+    private function formatBusinessHours($hours)
+    {
+        $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        $formatted = [];
+
+        foreach ($days as $day) {
+            $dayData = $hours[$day] ?? null;
+
+            if (!$dayData) {
+                $formatted[$day] = [
+                    'is_open' => false,
+                    'open_time' => '09:00',
+                    'close_time' => '23:00',
+                ];
+                continue;
+            }
+
+            // Normalize keys (support both is_open/isOpen, open/open_time, etc)
+            $isOpen = $dayData['isOpen'] ?? $dayData['is_open'] ?? $dayData['closed'] ?? false;
+            $openTime = $dayData['open'] ?? $dayData['open_time'] ?? '09:00';
+            $closeTime = $dayData['close'] ?? $dayData['close_time'] ?? '23:00';
+
+            // Validate time format HH:MM
+            if (!$this->isValidTimeFormat($openTime)) {
+                $openTime = '09:00';
+            }
+            if (!$this->isValidTimeFormat($closeTime)) {
+                $closeTime = '23:00';
+            }
+
+            $formatted[$day] = [
+                'is_open' => (bool)$isOpen,
+                'open_time' => $openTime,
+                'close_time' => $closeTime,
+            ];
+        }
+
+        return $formatted;
+    }
+
+    /**
+     * Validate time format HH:MM
+     */
+    private function isValidTimeFormat($time)
+    {
+        return preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $time) === 1;
     }
 }

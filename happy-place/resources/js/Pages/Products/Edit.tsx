@@ -14,6 +14,8 @@ interface Product {
     price: string;
     category_id: string;
     image_url?: string;
+    loyalty_redeemable: boolean;
+    loyalty_points_cost: number;
 }
 
 interface Group {
@@ -32,6 +34,8 @@ export default function Edit({ product, categories, complement_groups = [] }: { 
         category_id: product.category_id || '',
         complement_groups: product.complement_groups ? product.complement_groups.map((g: any) => g.id) : [] as string[],
         image: null as File | null,
+        loyalty_redeemable: product.loyalty_redeemable || false,
+        loyalty_points_cost: product.loyalty_points_cost || 0,
     });
 
     const [imagePreview, setImagePreview] = useState<string | null>(product.image_url || null);
@@ -164,6 +168,63 @@ export default function Edit({ product, categories, complement_groups = [] }: { 
                             />
                         </div>
                         <p className="mt-3 text-sm leading-6 text-gray-600 dark:text-gray-400">Uma breve descrição do prato ou bebida.</p>
+                    </div>
+
+                    {/* Loyalty Redemption Section */}
+                    <div className="bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/10 rounded-2xl p-6 border-2 border-orange-200 dark:border-orange-800">
+                        <div className="flex items-center gap-2 mb-4">
+                            <span className="text-2xl">🎁</span>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Programa de Fidelidade</h3>
+                        </div>
+
+                        {/* Toggle Redeemable */}
+                        <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-xl mb-4">
+                            <div>
+                                <label htmlFor="loyalty_redeemable" className="font-semibold text-gray-900 dark:text-white">
+                                    Permite resgate por pontos
+                                </label>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                    Cliente pode trocar pontos por este produto
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setData('loyalty_redeemable', !data.loyalty_redeemable)}
+                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-orange-600 focus:ring-offset-2 ${data.loyalty_redeemable ? 'bg-orange-600' : 'bg-gray-200 dark:bg-gray-700'
+                                    }`}
+                            >
+                                <span
+                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${data.loyalty_redeemable ? 'translate-x-5' : 'translate-x-0'
+                                        }`}
+                                />
+                            </button>
+                        </div>
+
+                        {/* Points Cost Input */}
+                        {data.loyalty_redeemable && (
+                            <div className="bg-white dark:bg-gray-800 rounded-xl p-4">
+                                <label htmlFor="loyalty_points_cost" className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                                    Pontos necessários para resgate
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        id="loyalty_points_cost"
+                                        type="number"
+                                        min="1"
+                                        value={data.loyalty_points_cost}
+                                        onChange={(e) => setData('loyalty_points_cost', parseInt(e.target.value) || 0)}
+                                        className="block w-full rounded-lg border-0 py-2.5 pl-4 pr-12 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-orange-600 sm:text-sm dark:bg-gray-700 dark:text-white dark:ring-gray-600"
+                                        placeholder="Ex: 150"
+                                    />
+                                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                        <span className="text-gray-500 dark:text-gray-400 text-sm font-medium">pts</span>
+                                    </div>
+                                </div>
+                                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                    💡 Dica: Produtos de R$ 30 geralmente custam 100-150 pontos
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     {/* Complement Groups */}

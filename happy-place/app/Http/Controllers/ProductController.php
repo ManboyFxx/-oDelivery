@@ -49,6 +49,8 @@ class ProductController extends Controller
             'is_available' => 'boolean',
             'track_stock' => 'boolean',
             'stock_quantity' => 'nullable|integer',
+            'loyalty_redeemable' => 'boolean',
+            'loyalty_points_cost' => 'nullable|integer|min:1',
         ]);
 
         if ($request->hasFile('image')) {
@@ -61,6 +63,7 @@ class ProductController extends Controller
         // Ensure boolean casting
         $validated['is_available'] = $request->boolean('is_available');
         $validated['track_stock'] = $request->boolean('track_stock');
+        $validated['loyalty_redeemable'] = $request->boolean('loyalty_redeemable');
 
         $product = Product::create($validated);
 
@@ -97,6 +100,8 @@ class ProductController extends Controller
             'is_available' => 'boolean',
             'track_stock' => 'boolean',
             'stock_quantity' => 'nullable|integer',
+            'loyalty_redeemable' => 'boolean',
+            'loyalty_points_cost' => 'nullable|integer|min:1',
         ]);
 
         if ($request->hasFile('image')) {
@@ -107,6 +112,7 @@ class ProductController extends Controller
         // Ensure boolean casting
         $validated['is_available'] = $request->boolean('is_available');
         $validated['track_stock'] = $request->boolean('track_stock');
+        $validated['loyalty_redeemable'] = $request->boolean('loyalty_redeemable');
 
         // Handle explicit null for stock if not tracking? No, keeping it is fine.
 
@@ -141,5 +147,26 @@ class ProductController extends Controller
         ]);
 
         return back()->with('success', 'Destaque do produto atualizado!');
+    }
+
+    public function toggleBadge(Request $request, Product $product)
+    {
+        $badge = $request->validate([
+            'badge' => 'required|in:promotional,new,exclusive'
+        ])['badge'];
+
+        $fieldMap = [
+            'promotional' => 'is_promotional',
+            'new' => 'is_new',
+            'exclusive' => 'is_exclusive'
+        ];
+
+        $field = $fieldMap[$badge];
+
+        $product->update([
+            $field => !$product->$field
+        ]);
+
+        return back()->with('success', 'Badge do produto atualizado!');
     }
 }

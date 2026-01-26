@@ -8,9 +8,19 @@ import {
     CheckCircle,
     Globe,
     ExternalLink,
-    Filter
+    Filter,
+    Edit,
+    Wifi,
+    WifiOff
 } from 'lucide-react';
 import { useState } from 'react';
+import SmartActionModal from '@/Components/Admin/SmartActionModal';
+
+interface WhatsAppInstance {
+    id: string;
+    status: string;
+    phone_number?: string;
+}
 
 interface Tenant {
     id: string;
@@ -21,6 +31,7 @@ interface Tenant {
     plan: string;
     is_active: boolean;
     created_at: string;
+    whats_app_instances?: WhatsAppInstance[];
 }
 
 interface Props {
@@ -35,17 +46,56 @@ interface Props {
 
 export default function AdminTenantsIndex({ tenants, filters }: Props) {
     const [search, setSearch] = useState(filters.search || '');
+    const [modalState, setModalState] = useState<{
+        isOpen: boolean;
+        type: 'suspend' | 'restore' | 'plan' | null;
+        tenant: Tenant | null;
+    }>({ isOpen: false, type: null, tenant: null });
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         router.get(route('admin.tenants.index'), { search }, { preserveState: true });
     };
 
-    const toggleStatus = (tenant: Tenant) => {
-        if (confirm(`Tem certeza que deseja ${tenant.is_active ? 'suspender' : 'reativar'} esta loja?`)) {
-            const routeName = tenant.is_active ? 'admin.tenants.suspend' : 'admin.tenants.restore';
-            router.post(route(routeName, tenant.id));
+    const openModal = (type: 'suspend' | 'restore' | 'plan', tenant: Tenant) => {
+        setModalState({ isOpen: true, type, tenant });
+    };
+
+    const closeModal = () => {
+        setModalState({ isOpen: false, type: null, tenant: null });
+    };
+
+    const handleConfirm = (data: any) => {
+        if (!modalState.tenant) return;
+
+        if (modalState.type === 'suspend') {
+            router.post(route('admin.tenants.suspend', modalState.tenant.id), {
+                reason: data.reason || null
+            }, {
+                onSuccess: closeModal
+            });
+        } else if (modalState.type === 'restore') {
+            router.post(route('admin.tenants.restore', modalState.tenant.id), {}, {
+                onSuccess: closeModal
+            });
+        } else if (modalState.type === 'plan') {
+            router.put(route('admin.tenants.update-plan', modalState.tenant.id), {
+                plan: data.plan
+            }, {
+                onSuccess: closeModal
+            });
         }
+    };
+
+    const getWhatsAppStatus = (tenant: Tenant) => {
+        if (!tenant.whats_app_instances || tenant.whats_app_instances.length === 0) {
+            return { status: 'none', label: 'Sem Instância', color: 'text-gray-400' };
+        }
+        const instance = tenant.whats_app_instances[0];
+        if (instance.status === 'connected') {
+            return { status: 'connected', label: 'Conectado', color: 'text-green-600' };
+        }
+        return { status: 'disconnected', label: 'Desconectado', color: 'text-red-600' };
     };
 
     return (
@@ -101,6 +151,7 @@ export default function AdminTenantsIndex({ tenants, filters }: Props) {
                                     <th className="text-left py-5 px-6 text-xs font-bold text-gray-400 uppercase tracking-wider">Contato</th>
                                     <th className="text-left py-5 px-6 text-xs font-bold text-gray-400 uppercase tracking-wider">Plano</th>
                                     <th className="text-left py-5 px-6 text-xs font-bold text-gray-400 uppercase tracking-wider">Status</th>
+                                    <th className="text-left py-5 px-6 text-xs font-bold text-gray-400 uppercase tracking-wider">WhatsApp</th>
                                     <th className="text-right py-5 px-6 text-xs font-bold text-gray-400 uppercase tracking-wider">Ações</th>
                                 </tr>
                             </thead>
@@ -145,13 +196,41 @@ export default function AdminTenantsIndex({ tenants, filters }: Props) {
                                                 </span>
                                             )}
                                         </td>
+                                        <td className="py-5 px-6">
+                                            <div className="flex items-center gap-2">
+                                                {(() => {
+                                                    const whatsapp = getWhatsAppStatus(tenant);
+                                                    return (
+                                                        <div className="flex items-center gap-1.5 text-xs">
+                                                            {whatsapp.status === 'connected' ? (
+                                                                <Wifi className={`h-3.5 w-3.5 ${whatsapp.color}`} />
+                                                            ) : whatsapp.status === 'disconnected' ? (
+                                                                <WifiOff className={`h-3.5 w-3.5 ${whatsapp.color}`} />
+                                                            ) : (
+                                                                <WifiOff className={`h-3.5 w-3.5 ${whatsapp.color}`} />
+                                                            )}
+                                                            <span className={`font-medium ${whatsapp.color}`}>
+                                                                {whatsapp.label}
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                })()}
+                                            </div>
+                                        </td>
                                         <td className="py-5 px-6 text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 <button
-                                                    onClick={() => toggleStatus(tenant)}
+                                                    onClick={() => openModal('plan', tenant)}
+                                                    className="p-2 rounded-xl hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors"
+                                                    title="Editar Plano"
+                                                >
+                                                    <Edit className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => openModal(tenant.is_active ? 'suspend' : 'restore', tenant)}
                                                     className={`p-2 rounded-xl transition-colors ${tenant.is_active
-                                                            ? 'hover:bg-red-50 text-gray-400 hover:text-red-600'
-                                                            : 'hover:bg-green-50 text-gray-400 hover:text-green-600'
+                                                        ? 'hover:bg-red-50 text-gray-400 hover:text-red-600'
+                                                        : 'hover:bg-green-50 text-gray-400 hover:text-green-600'
                                                         }`}
                                                     title={tenant.is_active ? "Suspender Loja" : "Reativar Loja"}
                                                 >
@@ -178,6 +257,57 @@ export default function AdminTenantsIndex({ tenants, filters }: Props) {
                         </div>
                     )}
                 </div>
+
+                {/* Smart Action Modal */}
+                <SmartActionModal
+                    isOpen={modalState.isOpen}
+                    onClose={closeModal}
+                    onConfirm={handleConfirm}
+                    title={
+                        modalState.type === 'suspend' ? 'Suspender Loja' :
+                            modalState.type === 'restore' ? 'Reativar Loja' :
+                                'Alterar Plano'
+                    }
+                    description={
+                        modalState.type === 'suspend' ? `Tem certeza que deseja suspender "${modalState.tenant?.name}"? A loja ficará inacessível até ser reativada.` :
+                            modalState.type === 'restore' ? `Tem certeza que deseja reativar "${modalState.tenant?.name}"?` :
+                                `Selecione o novo plano para "${modalState.tenant?.name}":`
+                    }
+                    type={
+                        modalState.type === 'suspend' ? 'danger' :
+                            modalState.type === 'restore' ? 'success' :
+                                'info'
+                    }
+                    fields={
+                        modalState.type === 'suspend' ? [
+                            {
+                                name: 'reason',
+                                label: 'Motivo da Suspensão (Opcional)',
+                                type: 'textarea',
+                                placeholder: 'Ex: Pagamento em atraso, violação de termos...'
+                            }
+                        ] : modalState.type === 'plan' ? [
+                            {
+                                name: 'plan',
+                                label: 'Plano',
+                                type: 'select',
+                                required: true,
+                                options: [
+                                    { label: 'Gratuito', value: 'free' },
+                                    { label: 'Básico', value: 'basic' },
+                                    { label: 'Pro', value: 'pro' },
+                                    { label: 'Trial', value: 'trial' },
+                                    { label: 'Enterprise', value: 'enterprise' }
+                                ]
+                            }
+                        ] : []
+                    }
+                    confirmText={
+                        modalState.type === 'suspend' ? 'Suspender' :
+                            modalState.type === 'restore' ? 'Reativar' :
+                                'Atualizar Plano'
+                    }
+                />
             </div>
         </AuthenticatedLayout>
     );

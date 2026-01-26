@@ -23,7 +23,7 @@ class WhatsAppWebhookController extends Controller
         ]);
 
         // Process different types of events
-        match($data['event'] ?? null) {
+        match ($data['event'] ?? null) {
             'connection.update' => $this->handleConnectionUpdate($data),
             'messages.upsert' => $this->handleNewMessage($data),
             'qrcode.updated' => $this->handleQrCodeUpdate($data),
@@ -93,10 +93,25 @@ class WhatsAppWebhookController extends Controller
             'timestamp' => now(),
         ]);
 
-        // Future implementation: Process message for chatbot
-        // - Check if customer exists
-        // - Parse message intent
-        // - Send auto-reply or forward to admin
+        // Check if message is from user (not from me)
+        if ($data['data']['key']['fromMe'] ?? false) {
+            return;
+        }
+
+        // Get tenant by instance name
+        $instance = WhatsAppInstance::where('instance_name', $instanceName)->first();
+        if (!$instance || !$instance->tenant_id) {
+            return;
+        }
+
+        $phone = $data['data']['key']['remoteJid'] ?? null;
+        if (!$phone) {
+            return;
+        }
+
+        // Send Auto Reply
+        $ooBot = app(\App\Services\OoBotService::class);
+        $ooBot->sendAutoReply($phone, $instance->tenant_id);
     }
 
     /**
