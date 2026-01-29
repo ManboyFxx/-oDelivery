@@ -37,23 +37,32 @@ jobs:
         working-directory: ./happy-place
         run: npm run build
 
-      - name: 📂 Sync files
+      - name: 🤐 Zip Release
+        uses: TheDoctor0/zip-release@0.7.1
+        with:
+          type: 'zip'
+          filename: 'deploy.zip'
+          directory: './happy-place'
+          path: '.'
+          exclusions: '*.git* /*node_modules/* /*tests/* /*storage/*.key'
+
+      - name: 📂 Upload Zip and Unzip Script
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./happy-place/
           server-dir: ./
+          local-dir: ./happy-place/
+          include: |
+            deploy.zip
+            unzip_deploy.php
+          # We only upload these two files specifically, filtering out everything else to speed up
           exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            **/tests/**
-            .env.example
-            .env.local
-            .editorconfig
-            .gitattributes
-            .gitignore
-            README.md
-            deploy_hostinger.md
+            **
+
+      - name: 🚀 Trigger Unzip on Server
+        run: |
+          echo "Triggering unzip on server..."
+          curl -L "http://oodelivery.online/unzip_deploy.php"
+
