@@ -16,14 +16,36 @@ class CustomerRedemptionController extends Controller
      */
     public function redeemProduct(Request $request)
     {
+        // ✅ Obter customer da SESSION
+        $customerId = session('customer_id');
+        if (!$customerId) {
+            abort(401, 'Não autenticado');
+        }
+
+        $customer = Customer::findOrFail($customerId);
+
+        // ✅ Obter tenant do MIDDLEWARE
+        $tenant = $request->attributes->get('tenant');
+
+        // ✅ Validar que customer pertence ao tenant
+        if ($customer->tenant_id !== $tenant->id) {
+            abort(403, 'Acesso negado');
+        }
+
+        // ✅ Validar request (SEM tenant_id e customer_id)
         $validated = $request->validate([
-            'tenant_id' => 'required|exists:tenants,id',
-            'customer_id' => 'required|exists:customers,id',
             'product_id' => 'required|exists:products,id',
             'quantity' => 'integer|min:1|max:1',
         ]);
 
-        $product = Product::findOrFail($validated['product_id']);
+        // ✅ Forçar tenant_id e customer_id
+        $validated['tenant_id'] = $tenant->id;
+        $validated['customer_id'] = $customer->id;
+
+        // ✅ Validar produto pertence ao tenant
+        $product = Product::where('id', $validated['product_id'])
+            ->where('tenant_id', $tenant->id)
+            ->firstOrFail();
 
         // Validate product is redeemable
         if (!$product->loyalty_redeemable) {
@@ -31,17 +53,11 @@ class CustomerRedemptionController extends Controller
         }
 
         // Validate product belongs to the tenant
-        if ($product->tenant_id !== $validated['tenant_id']) {
+        if ($product->tenant_id !== $tenant->id) {
             return response()->json(['error' => 'Produto não encontrado nesta loja'], 404);
         }
 
-        // Get customer
-        $customer = Customer::findOrFail($validated['customer_id']);
-
-        // Validate customer belongs to the tenant
-        if ($customer->tenant_id !== $validated['tenant_id']) {
-            return response()->json(['error' => 'Cliente não encontrado nesta loja'], 404);
-        }
+        // ✅ Customer já validado acima, não precisa buscar novamente
 
         $quantity = $validated['quantity'] ?? 1;
         $pointsCost = $product->loyalty_points_cost * $quantity;
@@ -62,7 +78,7 @@ class CustomerRedemptionController extends Controller
 
             // Create redemption order
             $maxOrderNumber = Order::where('tenant_id', $validated['tenant_id'])->max('order_number');
-            $nextOrderNumber = (int)($maxOrderNumber ?? 0) + 1;
+            $nextOrderNumber = (int) ($maxOrderNumber ?? 0) + 1;
 
             $order = Order::create([
                 'tenant_id' => $validated['tenant_id'],

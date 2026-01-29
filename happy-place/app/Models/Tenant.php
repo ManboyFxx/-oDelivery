@@ -216,11 +216,6 @@ class Tenant extends Model
      */
     public function getEffectivePlan(): string
     {
-        // During trial, user has access to 'basic' features
-        if ($this->isTrialActive() && $this->plan === 'free') {
-            return 'basic';
-        }
-
         return $this->plan ?? 'free';
     }
 
@@ -366,6 +361,12 @@ class Tenant extends Model
      */
     public function upgradeTo(string $plan, string $billingCycle = 'monthly', float $amount = 0): void
     {
+        // Prevent unauthorized upgrades to 'pro' plan
+        // 'pro' (Personalizado) should only be set manually by super_admin
+        if ($plan === 'pro') {
+            throw new \Exception('O plano Personalizado requer aprovação manual. Entre em contato com o suporte.');
+        }
+
         $oldPlan = $this->plan;
 
         $this->update([
@@ -386,6 +387,16 @@ class Tenant extends Model
      */
     public function downgradeToFree(): void
     {
+        // ✅ Validar antes de fazer downgrade
+        $validation = $this->canDowngradeTo('free');
+
+        if (!$validation['can_downgrade']) {
+            throw new \Exception(
+                'Não é possível fazer downgrade. ' .
+                implode(' ', array_column($validation['issues'], 'action'))
+            );
+        }
+
         $oldPlan = $this->plan;
 
         // Apply free plan limits
@@ -406,9 +417,177 @@ class Tenant extends Model
     }
 
     /**
+     * Check if tenant can downgrade to a specific plan without data loss.
+     */
+    public function canDowngradeTo(string $targetPlan): array
+    {
+        $targetLimits = PlanLimit::findByPlan($targetPlan);
+
+        if (!$targetLimits) {
+            return [
+                'can_downgrade' => false,
+                'issues' => [['resource' => 'plan', 'message' => 'Plano não encontrado']]
+            ];
+        }
+
+        $issues = [];
+
+        // Verificar produtos
+        if ($targetLimits->max_products !== null) {
+            $currentProducts = $this->products()->count();
+            if ($currentProducts > $targetLimits->max_products) {
+                $excess = $currentProducts - $targetLimits->max_products;
+                $issues[] = [
+                    'resource' => 'products',
+                    'current' => $currentProducts,
+                    'limit' => $targetLimits->max_products,
+                    'excess' => $excess,
+                    'action' => "Você precisa desativar {$excess} produto(s) antes de fazer downgrade."
+                ];
+            }
+        }
+
+        // Verificar usuários
+        if ($targetLimits->max_users !== null) {
+            $currentUsers = $this->users()->count();
+            if ($currentUsers > $targetLimits->max_users) {
+                $excess = $currentUsers - $targetLimits->max_users;
+                $issues[] = [
+                    'resource' => 'users',
+                    'current' => $currentUsers,
+                    'limit' => $targetLimits->max_users,
+                    'excess' => $excess,
+                    'action' => "Você precisa remover {$excess} usuário(s) antes de fazer downgrade."
+                ];
+            }
+        }
+
+        // Verificar categorias
+        if ($targetLimits->max_categories !== null) {
+            $currentCategories = $this->categories()->count();
+            if ($currentCategories > $targetLimits->max_categories) {
+                $excess = $currentCategories - $targetLimits->max_categories;
+                $issues[] = [
+                    'resource' => 'categories',
+                    'current' => $currentCategories,
+                    'limit' => $targetLimits->max_categories,
+                    'excess' => $excess,
+                    'action' => "Você precisa remover {$excess} categoria(s) antes de fazer downgrade."
+                ];
+            }
+        }
+
+        // Verificar cupons ativos
+        if ($targetLimits->max_coupons !== null) {
+            $currentCoupons = $this->coupons()->where('is_active', true)->count();
+            if ($currentCoupons > $targetLimits->max_coupons) {
+                $excess = $currentCoupons - $targetLimits->max_coupons;
+                $issues[] = [
+                    'resource' => 'coupons',
+                    'current' => $currentCoupons,
+                    'limit' => $targetLimits->max_coupons,
+                    'excess' => $excess,
+                    'action' => "Você precisa desativar {$excess} cupom/cupons antes de fazer downgrade."
+                ];
+            }
+        }
+
+        return [
+            'can_downgrade' => empty($issues),
+            'issues' => $issues
+        ];
+    }
+
+    /**
+     * Get usage percentage for a specific resource.
+     */
+    public function getUsagePercentage(string $resource): float
+    {
+        $limit = $this->getLimit($resource);
+
+        if ($limit === null) {
+            return 0; // Ilimitado
+        }
+
+        $current = match ($resource) {
+            'max_products' => $this->products()->count(),
+            'max_users' => $this->users()->count(),
+            'max_storage_mb' => $this->storage_used_mb ?? 0,
+            'max_orders_per_month' => $this->getCurrentMonthOrders(),
+            'max_categories' => $this->categories()->count(),
+            'max_coupons' => $this->coupons()->where('is_active', true)->count(),
+            default => 0
+        };
+
+        return $limit > 0 ? ($current / $limit) * 100 : 0;
+    }
+
+    /**
+     * Check if should warn about reaching limit (80% threshold).
+     */
+    public function shouldWarnAboutLimit(string $resource): bool
+    {
+        $usage = $this->getUsagePercentage($resource);
+        return $usage >= 80;
+    }
+
+    /**
+     * Get all resources approaching limits.
+     */
+    public function getResourceWarnings(): array
+    {
+        $warnings = [];
+        $resources = ['max_products', 'max_users', 'max_storage_mb', 'max_orders_per_month', 'max_categories', 'max_coupons'];
+
+        foreach ($resources as $resource) {
+            if ($this->shouldWarnAboutLimit($resource)) {
+                $usage = $this->getUsagePercentage($resource);
+                $limit = $this->getLimit($resource);
+
+                $warnings[] = [
+                    'resource' => $resource,
+                    'usage_percent' => round($usage, 1),
+                    'current' => $this->getCurrentUsage($resource),
+                    'limit' => $limit,
+                    'message' => "Você está usando " . round($usage, 1) . "% do limite de {$resource}."
+                ];
+            }
+        }
+
+        return $warnings;
+    }
+
+    /**
+     * Get current usage for a resource.
+     */
+    private function getCurrentUsage(string $resource): int
+    {
+        return match ($resource) {
+            'max_products' => $this->products()->count(),
+            'max_users' => $this->users()->count(),
+            'max_storage_mb' => $this->storage_used_mb ?? 0,
+            'max_orders_per_month' => $this->getCurrentMonthOrders(),
+            'max_categories' => $this->categories()->count(),
+            'max_coupons' => $this->coupons()->where('is_active', true)->count(),
+            default => 0
+        };
+    }
+
+    /**
+     * Get current month orders count.
+     */
+    private function getCurrentMonthOrders(): int
+    {
+        return $this->orders()
+            ->whereYear('created_at', now()->year)
+            ->whereMonth('created_at', now()->month)
+            ->count();
+    }
+
+    /**
      * Cancel subscription.
      */
-    public function cancelSubscription(string $reason = null): void
+    public function cancelSubscription(?string $reason = null): void
     {
         $this->update([
             'subscription_status' => 'canceled',

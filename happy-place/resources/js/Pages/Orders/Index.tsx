@@ -188,12 +188,6 @@ export default function OrdersIndex({ orders, motoboys = [], products = [] }: { 
                 </div>
             </div>
 
-            {/* Audio Context Banner (if needed, though we rely on document click) */}
-            {!audioEnabled && (
-                <div className="bg-yellow-50 text-yellow-800 text-sm p-2 text-center rounded-lg mb-2">
-                    Clique em qualquer lugar da página para habilitar os sons de notificação.
-                </div>
-            )}
 
             {/* Modern Kanban Board - Responsive Grid/Scroll Layout */}
             <div className="flex lg:grid lg:grid-cols-4 gap-4 flex-1 h-[calc(100vh-14rem)] overflow-x-auto lg:overflow-x-visible px-1 pb-2">

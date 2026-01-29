@@ -48,12 +48,26 @@ class CustomerAuthController extends Controller
             ->first();
 
         if ($customer) {
+            // ✅ Regenerar session ID para prevenir fixation
+            $request->session()->regenerate();
+
             // Auto-login
-            session(['customer_id' => $customer->id]);
+            session([
+                'customer_id' => $customer->id,
+                'customer_tenant_id' => $customer->tenant_id, // ✅ Armazenar para validação
+                'current_tenant_slug' => $tenantSlug
+            ]);
 
             return response()->json([
                 'exists' => true,
-                'customer' => $customer,
+                'customer' => [
+                    // ✅ Sanitizar dados expostos
+                    'id' => $customer->id,
+                    'name' => $customer->name,
+                    'loyalty_points' => $customer->loyalty_points,
+                    'loyalty_tier' => $customer->loyalty_tier,
+                    // ❌ NÃO expor: phone, email, tenant_id
+                ],
             ]);
         }
 
@@ -100,10 +114,22 @@ class CustomerAuthController extends Controller
 
         if ($existingCustomer) {
             // Already exists, just login
-            session(['customer_id' => $existingCustomer->id]);
+            $request->session()->regenerate();
+
+            session([
+                'customer_id' => $existingCustomer->id,
+                'customer_tenant_id' => $existingCustomer->tenant_id,
+                'current_tenant_slug' => $tenantSlug
+            ]);
+
             return response()->json([
                 'message' => 'Login realizado com sucesso!',
-                'customer' => $existingCustomer,
+                'customer' => [
+                    'id' => $existingCustomer->id,
+                    'name' => $existingCustomer->name,
+                    'loyalty_points' => $existingCustomer->loyalty_points,
+                    'loyalty_tier' => $existingCustomer->loyalty_tier,
+                ],
             ]);
         }
 
@@ -115,11 +141,23 @@ class CustomerAuthController extends Controller
             'loyalty_tier' => 'bronze', // Default tier for new customers
         ]);
 
-        session(['customer_id' => $customer->id]);
+        // ✅ Regenerar session após criar conta
+        $request->session()->regenerate();
+
+        session([
+            'customer_id' => $customer->id,
+            'customer_tenant_id' => $customer->tenant_id,
+            'current_tenant_slug' => $tenantSlug
+        ]);
 
         return response()->json([
             'message' => 'Cadastro realizado com sucesso!',
-            'customer' => $customer,
+            'customer' => [
+                'id' => $customer->id,
+                'name' => $customer->name,
+                'loyalty_points' => $customer->loyalty_points,
+                'loyalty_tier' => $customer->loyalty_tier,
+            ],
         ]);
     }
 
@@ -145,6 +183,14 @@ class CustomerAuthController extends Controller
             }
         ])->find($customerId);
 
-        return response()->json($customer);
+        // ✅ Sanitizar dados
+        return response()->json([
+            'id' => $customer->id,
+            'name' => $customer->name,
+            'loyalty_points' => $customer->loyalty_points,
+            'loyalty_tier' => $customer->loyalty_tier,
+            'orders' => $customer->orders,
+            // ❌ NÃO expor: phone, email, tenant_id
+        ]);
     }
 }

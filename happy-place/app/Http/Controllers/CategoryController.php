@@ -28,6 +28,13 @@ class CategoryController extends Controller
             return redirect()->back()->withErrors(['tenant_id' => 'Erro: Usuário sem estabelecimento vinculado.']);
         }
 
+        $tenant = auth()->user()->tenant;
+
+        // Check Plan Limits
+        if (!$tenant->canAdd('categories')) {
+            return redirect()->back()->withErrors(['error' => 'Você atingiu o limite de categorias do seu plano. Faça upgrade para adicionar mais.']);
+        }
+
         Category::create([
             'tenant_id' => $tenantId,
             ...$validated

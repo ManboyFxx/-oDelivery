@@ -6,8 +6,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -50,11 +49,11 @@ return new class extends Migration
                 'display_name' => 'Gratuito',
                 'price_monthly' => 0,
                 'price_yearly' => 0,
-                'max_products' => 15,
-                'max_users' => 1,
-                'max_orders_per_month' => 50,
-                'max_categories' => 5,
-                'max_coupons' => 1,
+                'max_products' => 50,
+                'max_users' => 3,
+                'max_orders_per_month' => 3000,
+                'max_categories' => null, // unlimited
+                'max_coupons' => null, // unlimited
                 'max_motoboys' => 0,
                 'max_storage_mb' => 100,
                 'max_units' => 1,
@@ -62,6 +61,8 @@ return new class extends Migration
                     'digital_menu',
                     'whatsapp_orders',
                     'basic_reports',
+                    'loyalty_basic',
+                    'multiple_payments',
                 ]),
                 'show_watermark' => true,
                 'is_active' => true,

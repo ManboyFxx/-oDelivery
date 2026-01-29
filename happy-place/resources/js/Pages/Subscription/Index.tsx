@@ -8,16 +8,22 @@ import {
     HelpCircle,
     AlertTriangle,
     ArrowUpRight,
-    Star
+    Star,
+    X
 } from 'lucide-react';
 import clsx from 'clsx';
+
+interface Feature {
+    text: string;
+    included: boolean;
+}
 
 interface Plan {
     id: string;
     name: string;
-    price: number;
+    price: number | null;
     interval: string;
-    features: string[];
+    features: Feature[];
     current: boolean;
 }
 
@@ -37,6 +43,10 @@ export default function SubscriptionIndex({ auth, tenant, plans }: Props) {
     };
 
     const handleUpgrade = (planId: string) => {
+        if (planId === 'price_pro') {
+            window.open('https://wa.me/5511999999999?text=Olá! Tenho interesse no plano Personalizado do ÓoDelivery.', '_blank');
+            return;
+        }
         window.location.href = route('subscription.checkout', planId);
     };
 
@@ -94,13 +104,10 @@ export default function SubscriptionIndex({ auth, tenant, plans }: Props) {
                                 <div>
                                     <p className="text-xs font-bold text-gray-500 uppercase">Status</p>
                                     <p className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                        {tenant.subscription_status === 'active' || tenant.subscription_status === 'trialing'
+                                        {tenant.subscription_status === 'active'
                                             ? <span className="text-green-500">Ativo</span>
                                             : <span className="text-red-500">Inativo / Cancelado</span>
                                         }
-                                        {tenant.subscription_status === 'trialing' && (
-                                            <span className="px-2 py-0.5 rounded-md bg-orange-100 text-orange-700 text-[10px] font-bold">TRIAL</span>
-                                        )}
                                     </p>
                                 </div>
                             </div>
@@ -143,11 +150,11 @@ export default function SubscriptionIndex({ auth, tenant, plans }: Props) {
                                         {plan.id === 'price_pro' && "A solução mais completa com tudo que você precisa"}
                                     </p>
                                     <div className="flex items-baseline gap-1">
-                                        {plan.price > 0 && <span className={clsx("text-sm font-bold", isPro ? "text-gray-400" : "text-gray-500")}>R$</span>}
+                                        {plan.price !== null && plan.price > 0 && <span className={clsx("text-sm font-bold", isPro ? "text-gray-400" : "text-gray-500")}>R$</span>}
                                         <span className={clsx("text-4xl font-black", isPro ? "text-white" : "text-gray-900")}>
-                                            {plan.price > 0 ? plan.price.toString().replace('.', ',') : '0'}
+                                            {plan.price !== null ? (plan.price > 0 ? plan.price.toString().replace('.', ',') : '0') : 'Sob Consulta'}
                                         </span>
-                                        <span className={clsx("text-sm font-medium", isPro ? "text-gray-400" : "text-gray-500")}>/{plan.interval}</span>
+                                        {plan.price !== null && <span className={clsx("text-sm font-medium", isPro ? "text-gray-400" : "text-gray-500")}>/{plan.interval}</span>}
                                     </div>
                                 </div>
 
@@ -156,12 +163,23 @@ export default function SubscriptionIndex({ auth, tenant, plans }: Props) {
                                         <li key={idx} className="flex items-start gap-3">
                                             <div className={clsx(
                                                 "mt-0.5 h-5 w-5 rounded-full flex items-center justify-center shrink-0",
-                                                isPro ? "bg-white/10" : "bg-green-100"
+                                                feature.included
+                                                    ? (isPro ? "bg-white/10" : "bg-green-100")
+                                                    : "bg-gray-100"
                                             )}>
-                                                <Check className={clsx("h-3 w-3", isPro ? "text-green-400" : "text-green-600")} />
+                                                {feature.included ? (
+                                                    <Check className={clsx("h-3 w-3", isPro ? "text-green-400" : "text-green-600")} />
+                                                ) : (
+                                                    <X className="h-3 w-3 text-gray-400" />
+                                                )}
                                             </div>
-                                            <span className={clsx("text-sm font-medium", isPro ? "text-gray-300" : "text-gray-600")}>
-                                                {feature}
+                                            <span className={clsx(
+                                                "text-sm font-medium",
+                                                feature.included
+                                                    ? (isPro ? "text-gray-300" : "text-gray-600")
+                                                    : "text-gray-400 line-through"
+                                            )}>
+                                                {feature.text}
                                             </span>
                                         </li>
                                     ))}

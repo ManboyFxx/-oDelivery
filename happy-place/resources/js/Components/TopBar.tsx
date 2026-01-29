@@ -4,7 +4,7 @@ import Dropdown from '@/Components/Dropdown';
 import { Link, usePage } from '@inertiajs/react';
 import StoreStatusControls from '@/Components/StoreStatusControls';
 
-export default function TopBar({ user, onMenuClick }: { user: any; onMenuClick?: () => void }) {
+export default function TopBar({ user, onMenuClick, hasUnread = false, onRead }: { user: any; onMenuClick?: () => void; hasUnread?: boolean; onRead?: () => void }) {
     const [isDarkMode, setIsDarkMode] = useState(() => {
         if (typeof window !== 'undefined') {
             return localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -61,9 +61,14 @@ export default function TopBar({ user, onMenuClick }: { user: any; onMenuClick?:
                         {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
                     </button>
 
-                    <button className="relative rounded-xl p-2.5 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors">
-                        <Bell className="h-5 w-5" />
-                        <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-[#ff3d03] ring-2 ring-white dark:ring-[#0f1012]"></span>
+                    <button
+                        onClick={onRead}
+                        className="relative rounded-xl p-2.5 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors group"
+                    >
+                        <Bell className={`h-5 w-5 ${hasUnread ? 'text-[#ff3d03] animate-bounce' : ''}`} />
+                        {hasUnread && (
+                            <span className="absolute right-2.5 top-2.5 h-2.5 w-2.5 rounded-full bg-[#ff3d03] ring-2 ring-white dark:ring-[#0f1012] animate-pulse shadow-[0_0_8px_rgba(255,61,3,0.6)]"></span>
+                        )}
                     </button>
                 </div>
 

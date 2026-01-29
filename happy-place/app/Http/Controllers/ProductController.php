@@ -7,8 +7,21 @@ use App\Models\Category;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
-class ProductController extends Controller
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+
+class ProductController extends Controller implements HasMiddleware
 {
+    /**
+     * Get the middleware that should be assigned to the controller.
+     */
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('plan.limit:products', only: ['store']),
+        ];
+    }
+
     public function index()
     {
         $tenant = auth()->user()->tenant;
@@ -59,6 +72,12 @@ class ProductController extends Controller
         }
 
         $validated['tenant_id'] = auth()->user()->tenant_id;
+        $tenant = auth()->user()->tenant;
+
+        // Check Plan Limits
+        if (!$tenant->canAdd('products')) {
+            return back()->withErrors(['error' => 'Você atingiu o limite de produtos do seu plano. Faça upgrade para adicionar mais.']);
+        }
 
         // Ensure boolean casting
         $validated['is_available'] = $request->boolean('is_available');

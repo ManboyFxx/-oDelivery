@@ -26,7 +26,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'plan.limit' => \App\Http\Middleware\CheckPlanLimits::class,
             'feature' => \App\Http\Middleware\CheckFeature::class,
             'tenant.required' => \App\Http\Middleware\EnsureTenantExists::class,
+            'tenant.scope' => \App\Http\Middleware\TenantScopeMiddleware::class,
             'two-factor' => \App\Http\Middleware\EnsureTwoFactorEnabled::class,
+            'throttle.plan' => \App\Http\Middleware\ThrottleByPlan::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

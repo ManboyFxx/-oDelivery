@@ -32,6 +32,14 @@ class CouponController extends Controller
             'valid_until' => 'nullable|date',
         ]);
 
+        $tenant = auth()->user()->tenant;
+
+        // Check Plan Limits
+        if (!$tenant->canAdd('coupons')) {
+            return redirect()->route('coupons.index')->withErrors(['error' => 'Você atingiu o limite de cupons ativos do seu plano.']);
+        }
+
+        $validated['tenant_id'] = $tenant->id;
         Coupon::create($validated);
 
         return redirect()->route('coupons.index')->with('success', 'Cupom criado com sucesso!');

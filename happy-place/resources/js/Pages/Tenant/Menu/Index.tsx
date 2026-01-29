@@ -39,6 +39,9 @@ interface Product {
     promotional_price?: string;
     is_featured?: boolean;
     is_available?: boolean;
+    is_promotional?: boolean;
+    is_new?: boolean;
+    is_exclusive?: boolean;
 }
 
 interface Category {
@@ -1295,7 +1298,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                     {/* Floating Store Card */}
                     <div className="max-w-5xl mx-auto px-4 relative -mt-20">
                         {/* --- NEW RICHER HEADER --- */}
-                        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 grid md:grid-cols-[1fr_auto] gap-6 items-start relative overflow-hidden">
+                        <div className="bg-white rounded-3xl p-4 md:p-6 shadow-sm border border-gray-100 grid md:grid-cols-[1fr_auto] gap-4 md:gap-6 items-start relative overflow-hidden">
                             {/* Decorative Background Elements */}
                             <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none">
                                 <ShoppingBag size={300} strokeWidth={1} />
@@ -1305,7 +1308,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                             <div className="flex flex-col sm:flex-row gap-6 relative z-10">
                                 {/* Logo */}
                                 <div className="shrink-0 flex flex-col items-center sm:items-start gap-2">
-                                    <div className="h-24 w-24 rounded-2xl overflow-hidden shadow-lg border-2 border-white ring-1 ring-gray-100 bg-white">
+                                    <div className="h-20 w-20 md:h-24 md:w-24 rounded-2xl overflow-hidden shadow-lg border-2 border-white ring-1 ring-gray-100 bg-white">
                                         {store.logo_url ? (
                                             <img src={store.logo_url} className="h-full w-full object-cover" alt={store.name} />
                                         ) : (
@@ -1325,9 +1328,9 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                                 </div>
 
                                 {/* Text Info */}
-                                <div className="flex-1 text-center sm:text-left space-y-3">
+                                <div className="flex-1 text-center sm:text-left space-y-2 md:space-y-3">
                                     <div>
-                                        <h1 className="text-2xl sm:text-3xl font-black text-gray-900 leading-tight">
+                                        <h1 className="text-xl md:text-2xl sm:text-3xl font-black text-gray-900 leading-tight">
                                             {store.name}
                                         </h1>
                                         {store.description && (
@@ -1349,7 +1352,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                                             <a
                                                 href={`https://waze.com/ul?q=${encodeURIComponent(store.address)}`}
                                                 target="_blank"
-                                                className="flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-bold hover:bg-blue-100 transition-colors border border-blue-100"
+                                                className="flex items-center gap-2 px-2 py-1.5 md:px-3 md:py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-bold hover:bg-blue-100 transition-colors border border-blue-100"
                                             >
                                                 <Navigation className="h-3.5 w-3.5 fill-current" />
                                                 Waze
@@ -1358,7 +1361,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                                             <a
                                                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(store.address)}`}
                                                 target="_blank"
-                                                className="flex items-center gap-2 px-3 py-2 bg-white text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-50 transition-colors border border-gray-200"
+                                                className="flex items-center gap-2 px-2 py-1.5 md:px-3 md:py-2 bg-white text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-50 transition-colors border border-gray-200"
                                             >
                                                 <MapPin className="h-3.5 w-3.5" />
                                                 Maps
@@ -1368,7 +1371,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                                                 <a
                                                     href={`https://wa.me/${store.whatsapp.replace(/\D/g, '')}`}
                                                     target="_blank"
-                                                    className="flex items-center gap-2 px-3 py-2 bg-green-50 text-green-700 rounded-xl text-xs font-bold hover:bg-green-100 transition-colors border border-green-100"
+                                                    className="flex items-center gap-2 px-2 py-1.5 md:px-3 md:py-2 bg-green-50 text-green-700 rounded-xl text-xs font-bold hover:bg-green-100 transition-colors border border-green-100"
                                                 >
                                                     <MessageCircle className="h-3.5 w-3.5" />
                                                     WhatsApp
@@ -1376,7 +1379,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                                             )}
                                             {/* Phone */}
                                             {store.phone && (
-                                                <a href={`tel:${store.phone.replace(/\D/g, '')}`} className="flex items-center gap-2 px-3 py-2 bg-gray-50 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-100 transition-colors border border-gray-200">
+                                                <a href={`tel:${store.phone.replace(/\D/g, '')}`} className="flex items-center gap-2 px-2 py-1.5 md:px-3 md:py-2 bg-gray-50 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-100 transition-colors border border-gray-200">
                                                     <Phone className="h-3.5 w-3.5" />
                                                     Ligar
                                                 </a>
@@ -1410,7 +1413,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                                 {customer ? (
                                     <div
                                         onClick={() => setShowCustomerArea(true)}
-                                        className="h-full bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-5 text-white shadow-lg cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all relative overflow-hidden group"
+                                        className="h-full bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-4 md:p-5 text-white shadow-lg cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all relative overflow-hidden group"
                                     >
                                         {/* Glow Effect */}
                                         <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#ff3d03] opacity-20 blur-3xl group-hover:opacity-30 transition-opacity" />
@@ -1460,8 +1463,8 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="h-full bg-gray-50 rounded-2xl p-5 border border-gray-100 flex flex-col justify-center items-center text-center gap-3">
-                                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm text-[#ff3d03]">
+                                    <div className="h-full bg-gray-50 rounded-2xl p-4 md:p-5 border border-gray-100 flex flex-col justify-center items-center text-center gap-2 md:gap-3">
+                                        <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-sm text-[#ff3d03]">
                                             <User className="h-6 w-6" />
                                         </div>
                                         <div>
@@ -1702,7 +1705,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                                             <span className="text-sm font-medium text-gray-400">{rewardProducts.length} resgates</span>
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
                                             {rewardProducts.map((product) => {
                                                 const canRedeem = customer && customer.loyalty_points >= (product.loyalty_points_cost || 0);
                                                 const insufficientPoints = customer && customer.loyalty_points < (product.loyalty_points_cost || 0);
@@ -1716,7 +1719,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                                                         </div>
 
                                                         {/* Image */}
-                                                        <div className="h-48 w-full bg-gray-100 relative overflow-hidden">
+                                                        <div className="h-32 md:h-48 w-full bg-gray-100 relative overflow-hidden">
                                                             {product.image_url ? (
                                                                 <img src={product.image_url} className="h-full w-full object-cover hover:scale-105 transition-transform duration-500" />
                                                             ) : (
@@ -1750,9 +1753,9 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                                                         </div>
 
                                                         {/* Content */}
-                                                        <div className="p-4 flex-1 flex flex-col">
-                                                            <h3 className="font-bold text-lg text-gray-900 mb-2">{product.name}</h3>
-                                                            <p className="text-sm text-gray-600 line-clamp-2 mb-4 flex-1">
+                                                        <div className="p-3 md:p-4 flex-1 flex flex-col">
+                                                            <h3 className="font-bold text-sm md:text-lg text-gray-900 mb-1 md:mb-2">{product.name}</h3>
+                                                            <p className="text-xs md:text-sm text-gray-600 line-clamp-2 mb-2 md:mb-4 flex-1">
                                                                 {product.description || 'Recompensa exclusiva'}
                                                             </p>
 
@@ -1781,7 +1784,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                                                                         else handleRedeem(product);
                                                                     }}
                                                                     disabled={insufficientPoints}
-                                                                    className={`w-full font-bold py-3 rounded-xl transition-colors text-sm uppercase tracking-wide
+                                                                    className={`w-full font-bold py-2 md:py-3 rounded-xl transition-colors text-xs md:text-sm uppercase tracking-wide
                                                                         ${insufficientPoints
                                                                             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                                                             : 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg active:scale-95'
@@ -1814,13 +1817,13 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                                         <span className="text-sm font-medium text-gray-400">{cat.products.length} itens</span>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
                                         {cat.products.map((product) => {
                                             const isOutOfStock = product.track_stock && (product.stock_quantity || 0) <= 0;
 
                                             return (
                                                 <div key={product.id} className={`bg-white rounded-2xl overflow-hidden shadow-sm transition-all duration-300 group border border-gray-100 flex flex-col ${isOutOfStock ? 'opacity-70 grayscale' : 'hover:shadow-xl'}`}>
-                                                    <div className="h-48 w-full bg-gray-100 relative overflow-hidden">
+                                                    <div className="h-32 md:h-48 w-full bg-gray-100 relative overflow-hidden">
                                                         {product.image_url ? (
                                                             <img src={product.image_url} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                                         ) : (
@@ -1862,9 +1865,9 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                                                         )}
                                                     </div>
 
-                                                    <div className="p-5 flex-1 flex flex-col">
-                                                        <h3 className="font-extrabold text-gray-900 text-lg mb-2">{product.name}</h3>
-                                                        <p className="text-sm text-gray-500 line-clamp-2 mb-4 flex-1">
+                                                    <div className="p-3 md:p-5 flex-1 flex flex-col">
+                                                        <h3 className="font-extrabold text-gray-900 text-sm md:text-lg mb-1 md:mb-2">{product.name}</h3>
+                                                        <p className="text-xs md:text-sm text-gray-500 line-clamp-2 mb-2 md:mb-4 flex-1">
                                                             {product.description || 'Uma explosão de sabor. Ingredientes selecionados para uma experiência única.'}
                                                         </p>
 
@@ -1887,7 +1890,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                                                             <button
                                                                 onClick={() => !isOutOfStock && openProductModal(product)}
                                                                 disabled={isOutOfStock}
-                                                                className={`w-full font-bold py-3 rounded-xl transition-colors shadow-lg active:scale-95 text-sm uppercase tracking-wide
+                                                                className={`w-full font-bold py-2 md:py-3 rounded-xl transition-colors shadow-lg active:scale-95 text-xs md:text-sm uppercase tracking-wide
                                                                     ${isOutOfStock
                                                                         ? 'bg-gray-200 text-gray-500 cursor-not-allowed shadow-none'
                                                                         : 'bg-[#ff3d03] hover:bg-[#e63700] text-white shadow-orange-500/20'

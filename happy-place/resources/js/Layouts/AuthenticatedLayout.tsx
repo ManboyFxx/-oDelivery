@@ -11,9 +11,11 @@ import { router } from '@inertiajs/react';
 
 import { PageProps } from '@/types';
 
-export default function Authenticated({ user, header, children }: { user?: any, header?: ReactNode, children: ReactNode }) {
-    const { auth, tenant } = usePage<PageProps>().props;
+export default function Authenticated({ user, header, children, tenant: propTenant }: { user?: any, header?: ReactNode, children: ReactNode, tenant?: any }) {
+    const { auth, tenant: contextTenant } = usePage<PageProps>().props;
+    const tenant = propTenant || contextTenant;
     const authUser = auth.user;
+    const [hasUnread, setHasUnread] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     // Global Audio & Toast Logic
@@ -72,16 +74,19 @@ export default function Authenticated({ user, header, children }: { user?: any, 
                 if (data.hasNewOrders) {
                     play('new-order');
                     success('Novo Pedido!', 'Chegou um novo pedido!');
+                    setHasUnread(true);
                 }
 
                 if (data.hasReadyOrders) {
                     play('ready');
                     info('Pedido Pronto!', 'Um pedido está pronto.');
+                    setHasUnread(true);
                 }
 
                 if (data.hasCanceledOrders) {
                     play('error');
                     error('Pedido Cancelado', 'Um pedido foi cancelado.');
+                    setHasUnread(true);
                 }
 
             } catch (err) {
@@ -108,7 +113,7 @@ export default function Authenticated({ user, header, children }: { user?: any, 
 
             {/* Main Content */}
             <div className="flex flex-1 flex-col overflow-hidden">
-                <TopBar user={user || authUser} onMenuClick={() => setIsMobileMenuOpen(true)} />
+                <TopBar user={user || authUser} onMenuClick={() => setIsMobileMenuOpen(true)} hasUnread={hasUnread} onRead={() => setHasUnread(false)} />
                 {header && (
                     <header className="bg-white dark:bg-premium-card shadow">
                         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">

@@ -250,7 +250,7 @@ export default function SettingsIndex({ auth, settings, success, paymentMethods 
 
     const handleLogoRemove = () => {
         setLogoPreview(null);
-        router.post(route('settings.remove-logo'), {}, {
+        router.delete(route('settings.remove-logo'), {
             preserveScroll: true,
             onSuccess: () => router.reload({ only: ['settings', 'success'] }),
         });
@@ -258,7 +258,7 @@ export default function SettingsIndex({ auth, settings, success, paymentMethods 
 
     const handleBannerRemove = () => {
         setBannerPreview(null);
-        router.post(route('settings.remove-banner'), {}, {
+        router.delete(route('settings.remove-banner'), {
             preserveScroll: true,
             onSuccess: () => router.reload({ only: ['settings', 'success'] }),
         });

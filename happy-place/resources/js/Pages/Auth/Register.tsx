@@ -169,7 +169,7 @@ export default function Register() {
                             <h1 className="text-3xl font-black text-gray-900 tracking-tighter leading-none">
                                 Crie sua conta <span className="text-[#ff3d03]">gratuita.</span>
                             </h1>
-                            <p className="text-gray-500 font-medium mt-3 text-sm">
+                            <p className="text-gray-600 font-medium mt-3 text-sm">
                                 14 dias grátis do plano Básico. Sem cartão de crédito.
                             </p>
                         </div>
@@ -177,7 +177,7 @@ export default function Register() {
                         <form onSubmit={submit} className="space-y-5">
                             {/* Store Name */}
                             <div className="space-y-1.5">
-                                <InputLabel htmlFor="store_name" value="Nome do Estabelecimento" className="text-xs font-bold uppercase tracking-wider text-gray-500" />
+                                <InputLabel htmlFor="store_name" value="Nome do Estabelecimento" className="text-xs font-bold uppercase tracking-wider text-gray-900" />
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 transition-colors group-focus-within:text-[#ff3d03]">
                                         <Building2 className="h-5 w-5" />
@@ -187,7 +187,7 @@ export default function Register() {
                                         type="text"
                                         name="store_name"
                                         value={data.store_name}
-                                        className="block w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 focus:border-[#ff3d03] focus:ring-4 focus:ring-[#ff3d03]/10 rounded-xl text-gray-900 font-semibold placeholder-gray-300 transition-all"
+                                        className="block w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 focus:border-[#ff3d03] focus:ring-4 focus:ring-[#ff3d03]/10 rounded-xl text-gray-900 font-semibold placeholder-gray-600 transition-all"
                                         autoComplete="organization"
                                         onChange={(e) => handleStoreNameChange(e.target.value)}
                                         placeholder="Ex: Pizzaria do João"
@@ -199,7 +199,7 @@ export default function Register() {
 
                             {/* Slug */}
                             <div className="space-y-1.5">
-                                <InputLabel htmlFor="slug" value="Seu Link Personalizado" className="text-xs font-bold uppercase tracking-wider text-gray-500" />
+                                <InputLabel htmlFor="slug" value="Seu Link Personalizado" className="text-xs font-bold uppercase tracking-wider text-gray-900" />
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 transition-colors group-focus-within:text-[#ff3d03]">
                                         <Link2 className="h-5 w-5" />
@@ -209,7 +209,7 @@ export default function Register() {
                                         type="text"
                                         name="slug"
                                         value={data.slug}
-                                        className={`block w-full pl-12 pr-12 py-3.5 bg-white border focus:ring-4 rounded-xl text-gray-900 font-semibold placeholder-gray-300 transition-all ${slugStatus.available === true
+                                        className={`block w-full pl-12 pr-12 py-3.5 bg-white border focus:ring-4 rounded-xl text-gray-900 font-semibold placeholder-gray-600 transition-all ${slugStatus.available === true
                                             ? 'border-green-500 focus:border-green-500 focus:ring-green-500/10'
                                             : slugStatus.available === false
                                                 ? 'border-red-400 focus:border-red-400 focus:ring-red-500/10'
@@ -234,7 +234,7 @@ export default function Register() {
                                     </div>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <p className="text-xs text-gray-400">
+                                    <p className="text-xs text-gray-500">
                                         oodelivery.com.br/<span className="font-semibold text-gray-600">{data.slug || 'seu-link'}</span>
                                     </p>
                                     {slugStatus.message && (
@@ -258,7 +258,7 @@ export default function Register() {
                             {/* Responsible Name and WhatsApp */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
-                                    <InputLabel htmlFor="name" value="Seu Nome" className="text-xs font-bold uppercase tracking-wider text-gray-500" />
+                                    <InputLabel htmlFor="name" value="Seu Nome" className="text-xs font-bold uppercase tracking-wider text-gray-900" />
                                     <div className="relative group">
                                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 transition-colors group-focus-within:text-[#ff3d03]">
                                             <User className="h-5 w-5" />
@@ -268,7 +268,7 @@ export default function Register() {
                                             type="text"
                                             name="name"
                                             value={data.name}
-                                            className="block w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 focus:border-[#ff3d03] focus:ring-4 focus:ring-[#ff3d03]/10 rounded-xl text-gray-900 font-semibold placeholder-gray-300 transition-all"
+                                            className="block w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 focus:border-[#ff3d03] focus:ring-4 focus:ring-[#ff3d03]/10 rounded-xl text-gray-900 font-semibold placeholder-gray-600 transition-all"
                                             autoComplete="name"
                                             onChange={(e) => setData('name', e.target.value)}
                                             placeholder="João Silva"
@@ -279,7 +279,7 @@ export default function Register() {
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <InputLabel htmlFor="whatsapp" value="WhatsApp" className="text-xs font-bold uppercase tracking-wider text-gray-500" />
+                                    <InputLabel htmlFor="whatsapp" value="WhatsApp" className="text-xs font-bold uppercase tracking-wider text-gray-900" />
                                     <div className="relative group">
                                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 transition-colors group-focus-within:text-[#ff3d03]">
                                             <Phone className="h-5 w-5" />
@@ -289,7 +289,7 @@ export default function Register() {
                                             type="tel"
                                             name="whatsapp"
                                             value={data.whatsapp}
-                                            className="block w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 focus:border-[#ff3d03] focus:ring-4 focus:ring-[#ff3d03]/10 rounded-xl text-gray-900 font-semibold placeholder-gray-300 transition-all"
+                                            className="block w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 focus:border-[#ff3d03] focus:ring-4 focus:ring-[#ff3d03]/10 rounded-xl text-gray-900 font-semibold placeholder-gray-500 transition-all"
                                             autoComplete="tel"
                                             onChange={(e) => handleWhatsAppChange(e.target.value)}
                                             placeholder="(11) 99999-9999"
@@ -302,7 +302,7 @@ export default function Register() {
 
                             {/* Email */}
                             <div className="space-y-1.5">
-                                <InputLabel htmlFor="email" value="E-mail" className="text-xs font-bold uppercase tracking-wider text-gray-500" />
+                                <InputLabel htmlFor="email" value="E-mail" className="text-xs font-bold uppercase tracking-wider text-gray-900" />
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 transition-colors group-focus-within:text-[#ff3d03]">
                                         <Mail className="h-5 w-5" />
@@ -312,7 +312,7 @@ export default function Register() {
                                         type="email"
                                         name="email"
                                         value={data.email}
-                                        className="block w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 focus:border-[#ff3d03] focus:ring-4 focus:ring-[#ff3d03]/10 rounded-xl text-gray-900 font-semibold placeholder-gray-300 transition-all"
+                                        className="block w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 focus:border-[#ff3d03] focus:ring-4 focus:ring-[#ff3d03]/10 rounded-xl text-gray-900 font-semibold placeholder-gray-500 transition-all"
                                         autoComplete="username"
                                         onChange={(e) => setData('email', e.target.value)}
                                         placeholder="seu@email.com"
@@ -325,7 +325,7 @@ export default function Register() {
                             {/* Password */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
-                                    <InputLabel htmlFor="password" value="Senha" className="text-xs font-bold uppercase tracking-wider text-gray-500" />
+                                    <InputLabel htmlFor="password" value="Senha" className="text-xs font-bold uppercase tracking-wider text-gray-900" />
                                     <div className="relative group">
                                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 transition-colors group-focus-within:text-[#ff3d03]">
                                             <Lock className="h-5 w-5" />
@@ -335,7 +335,7 @@ export default function Register() {
                                             type="password"
                                             name="password"
                                             value={data.password}
-                                            className="block w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 focus:border-[#ff3d03] focus:ring-4 focus:ring-[#ff3d03]/10 rounded-xl text-gray-900 font-semibold placeholder-gray-300 transition-all"
+                                            className="block w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 focus:border-[#ff3d03] focus:ring-4 focus:ring-[#ff3d03]/10 rounded-xl text-gray-900 font-semibold placeholder-gray-500 transition-all"
                                             autoComplete="new-password"
                                             onChange={(e) => setData('password', e.target.value)}
                                             placeholder="••••••••"
@@ -346,7 +346,7 @@ export default function Register() {
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <InputLabel htmlFor="password_confirmation" value="Confirmar" className="text-xs font-bold uppercase tracking-wider text-gray-500" />
+                                    <InputLabel htmlFor="password_confirmation" value="Confirmar" className="text-xs font-bold uppercase tracking-wider text-gray-900" />
                                     <div className="relative group">
                                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 transition-colors group-focus-within:text-[#ff3d03]">
                                             <Lock className="h-5 w-5" />
@@ -356,7 +356,7 @@ export default function Register() {
                                             type="password"
                                             name="password_confirmation"
                                             value={data.password_confirmation}
-                                            className="block w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 focus:border-[#ff3d03] focus:ring-4 focus:ring-[#ff3d03]/10 rounded-xl text-gray-900 font-semibold placeholder-gray-300 transition-all"
+                                            className="block w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 focus:border-[#ff3d03] focus:ring-4 focus:ring-[#ff3d03]/10 rounded-xl text-gray-900 font-semibold placeholder-gray-500 transition-all"
                                             autoComplete="new-password"
                                             onChange={(e) => setData('password_confirmation', e.target.value)}
                                             placeholder="••••••••"
@@ -384,7 +384,7 @@ export default function Register() {
                                 )}
                             </PrimaryButton>
 
-                            <p className="text-xs text-center text-gray-400 mt-4">
+                            <p className="text-xs text-center text-gray-500 mt-4">
                                 Ao criar sua conta, você concorda com nossos{' '}
                                 <a href="/termos" className="text-[#ff3d03] hover:underline">Termos de Uso</a>
                                 {' '}e{' '}
@@ -393,7 +393,7 @@ export default function Register() {
                         </form>
 
                         <div className="mt-8 text-center">
-                            <p className="text-gray-500 font-medium text-sm">
+                            <p className="text-gray-600 font-medium text-sm">
                                 Já possui uma conta?{' '}
                                 <Link
                                     href={route('login')}

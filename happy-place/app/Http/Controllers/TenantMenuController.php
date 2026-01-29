@@ -91,10 +91,57 @@ class TenantMenuController extends Controller
             ->where('end_date', '>=', now())
             ->first();
 
+        // ✅ Sanitizar categorias e produtos
+        $sanitizedCategories = $categories->map(function ($category) {
+            return [
+                'id' => $category->id,
+                'name' => $category->name,
+                'sort_order' => $category->sort_order,
+                'category_type' => $category->category_type,
+                'products' => $category->products->map(function ($product) {
+                    return [
+                        'id' => $product->id,
+                        'name' => $product->name,
+                        'description' => $product->description,
+                        'price' => $product->price,
+                        'promotional_price' => $product->promotional_price,
+                        'image_url' => $product->image_url,
+                        'is_available' => $product->is_available,
+                        'is_featured' => $product->is_featured,
+                        'is_promotional' => $product->is_promotional,
+                        'is_new' => $product->is_new,
+                        'is_exclusive' => $product->is_exclusive,
+                        'loyalty_earns_points' => $product->loyalty_earns_points,
+                        'loyalty_redeemable' => $product->loyalty_redeemable,
+                        'loyalty_points_cost' => $product->loyalty_points_cost,
+                        'complementGroups' => $product->complementGroups,
+                        // ❌ NÃO expor: tenant_id, category_id, track_stock, stock_quantity
+                    ];
+                }),
+            ];
+        });
+
+        // ✅ Sanitizar customer
+        $sanitizedCustomer = $customer ? [
+            'id' => $customer->id,
+            'name' => $customer->name,
+            'loyalty_points' => $customer->loyalty_points,
+            'loyalty_tier' => $customer->loyalty_tier,
+            // ❌ NÃO expor: phone, email, tenant_id
+        ] : null;
+
+        // ✅ Sanitizar settings
+        $sanitizedSettings = [
+            'loyalty_enabled' => $settings->loyalty_enabled ?? true,
+            'points_per_currency' => $settings->points_per_currency ?? 1,
+            'currency_per_point' => $settings->currency_per_point ?? 0.10,
+            // ❌ NÃO expor: printer_paper_width, auto_print_on_confirm, etc.
+        ];
+
         return Inertia::render('Tenant/Menu/Index', [
             'slug' => $slug,
-            'categories' => $categories,
-            'authCustomer' => $customer,
+            'categories' => $sanitizedCategories,
+            'authCustomer' => $sanitizedCustomer,
             'activePromotion' => $activePromotion,
             'store' => [
                 'name' => $settings->store_name ?? 'ÓoDelivery Demo',
@@ -114,7 +161,7 @@ class TenantMenuController extends Controller
                 'estimated_delivery_time' => $settings->estimated_delivery_time ?? 30,
                 'delivery_zones' => $deliveryZones,
                 'payment_methods' => $paymentMethods,
-                'settings' => $settings,
+                'settings' => $sanitizedSettings, // ✅ Usar versão sanitizada
             ]
         ]);
     }

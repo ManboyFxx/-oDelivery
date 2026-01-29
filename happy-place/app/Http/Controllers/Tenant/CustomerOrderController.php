@@ -21,18 +21,34 @@ class CustomerOrderController extends Controller
      */
     public function index(Request $request)
     {
-        $customer = Customer::findOrFail($request->get('customer_id'));
+        // ✅ Obter customer da SESSION (não do request)
+        $customerId = session('customer_id');
+        if (!$customerId) {
+            return response()->json(['error' => 'Não autenticado'], 401);
+        }
 
-        // Validate customer belongs to this tenant
-        if ($customer->tenant_id !== $request->get('tenant_id')) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+        $customer = Customer::findOrFail($customerId);
+
+        // ✅ Obter tenant do MIDDLEWARE (não do request)
+        $tenant = $request->attributes->get('tenant');
+
+        // ✅ Validar que customer pertence ao tenant
+        if ($customer->tenant_id !== $tenant->id) {
+            \Log::warning('Tentativa de acesso cross-tenant em orders', [
+                'customer_id' => $customer->id,
+                'customer_tenant' => $customer->tenant_id,
+                'requested_tenant' => $tenant->id,
+                'ip' => $request->ip()
+            ]);
+            abort(403, 'Acesso negado');
         }
 
         $page = $request->get('page', 1);
         $perPage = 10;
 
+        // ✅ Double-check: filtrar por customer_id E tenant_id
         $orders = Order::where('customer_id', $customer->id)
-            ->where('tenant_id', $request->get('tenant_id'))
+            ->where('tenant_id', $tenant->id)
             ->orderBy('created_at', 'desc')
             ->paginate($perPage, ['*'], 'page', $page);
 
@@ -49,9 +65,30 @@ class CustomerOrderController extends Controller
 
     public function store(Request $request)
     {
+        // ✅ Validar customer via SESSION
+        $customerId = session('customer_id');
+        if (!$customerId) {
+            abort(401, 'Não autenticado');
+        }
+
+        $customer = Customer::findOrFail($customerId);
+
+        // ✅ Obter tenant do MIDDLEWARE
+        $tenant = $request->attributes->get('tenant');
+
+        // ✅ Validar que customer pertence ao tenant
+        if ($customer->tenant_id !== $tenant->id) {
+            \Log::warning('Tentativa de checkout cross-tenant', [
+                'customer_id' => $customer->id,
+                'customer_tenant' => $customer->tenant_id,
+                'requested_tenant' => $tenant->id,
+                'ip' => $request->ip()
+            ]);
+            abort(403, 'Acesso negado');
+        }
+
+        // ✅ Validar request (SEM tenant_id e customer_id)
         $validated = $request->validate([
-            'tenant_id' => 'required|exists:tenants,id',
-            'customer_id' => 'required|exists:customers,id',
             'mode' => 'required|in:delivery,pickup',
             'address_id' => 'required_if:mode,delivery|nullable|exists:customer_addresses,id',
             'payment_method' => 'required|in:cash,credit_card,debit_card,pix',
@@ -66,7 +103,10 @@ class CustomerOrderController extends Controller
             'items.*.complements.*.quantity' => 'required|integer|min:1',
         ]);
 
-        $tenant = \App\Models\Tenant::find($validated['tenant_id']);
+        // ✅ Forçar tenant_id e customer_id da SESSION/MIDDLEWARE
+        $validated['tenant_id'] = $tenant->id;
+        $validated['customer_id'] = $customer->id;
+
         $settings = \App\Models\StoreSetting::where('tenant_id', $tenant->id)->first();
 
         // Transaction to ensure data integrity
@@ -77,7 +117,10 @@ class CustomerOrderController extends Controller
 
             // 1. Process Items and Calculate Subtotal
             foreach ($validated['items'] as $itemData) {
-                $product = Product::find($itemData['product_id']);
+                // ✅ Validar que produto pertence ao tenant
+                $product = Product::where('id', $itemData['product_id'])
+                    ->where('tenant_id', $tenant->id)
+                    ->firstOrFail();
 
                 // Verify stock if enabled
                 if ($product->track_stock && ($product->stock_quantity < $itemData['quantity'])) {
@@ -160,7 +203,10 @@ class CustomerOrderController extends Controller
             $discount = 0;
             $coupon = null;
             if ($validated['coupon_id']) {
-                $coupon = Coupon::find($validated['coupon_id']);
+                // ✅ Validar que coupon pertence ao tenant
+                $coupon = Coupon::where('id', $validated['coupon_id'])
+                    ->where('tenant_id', $tenant->id)
+                    ->first();
                 if ($coupon && $coupon->isValid()) {
                     $discount = $coupon->calculateDiscount($total);
                 }
@@ -258,6 +304,9 @@ class CustomerOrderController extends Controller
             // Note: OrderObserver already handles 'created' event if registered?
             // Usually Observables fire on 'created'. 'OrderCreated' event is for Broadcast/WebSockets.
             // Let's ensure Observer is active.
+
+            // ✅ Regenerar session após ação sensível
+            session()->regenerate();
 
             return response()->json([
                 'message' => 'Pedido realizado com sucesso!',

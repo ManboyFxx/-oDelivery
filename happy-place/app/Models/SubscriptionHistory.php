@@ -47,19 +47,6 @@ class SubscriptionHistory extends Model
         return $query->where('action', $action);
     }
 
-    /**
-     * Create a trial started entry.
-     */
-    public static function recordTrialStart(Tenant $tenant): self
-    {
-        return static::create([
-            'tenant_id' => $tenant->id,
-            'plan_from' => null,
-            'plan_to' => 'basic', // Trial gives basic features
-            'action' => 'trial_started',
-            'notes' => 'Trial de 14 dias iniciado',
-        ]);
-    }
 
     /**
      * Create an upgrade entry.
@@ -92,7 +79,7 @@ class SubscriptionHistory extends Model
     /**
      * Create a cancellation entry.
      */
-    public static function recordCancellation(Tenant $tenant, string $reason = null): self
+    public static function recordCancellation(Tenant $tenant, ?string $reason = null): self
     {
         return static::create([
             'tenant_id' => $tenant->id,

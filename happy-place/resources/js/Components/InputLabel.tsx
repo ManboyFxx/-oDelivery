@@ -1,4 +1,5 @@
 import { LabelHTMLAttributes } from 'react';
+import { twMerge } from 'tailwind-merge';
 
 export default function InputLabel({
     value,
@@ -9,10 +10,10 @@ export default function InputLabel({
     return (
         <label
             {...props}
-            className={
-                `block text-sm font-medium text-gray-700 dark:text-gray-300 ` +
+            className={twMerge(
+                `block text-sm font-medium text-gray-700 dark:text-gray-300`,
                 className
-            }
+            )}
         >
             {value ? value : children}
         </label>

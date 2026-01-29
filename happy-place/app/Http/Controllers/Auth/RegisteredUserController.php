@@ -23,13 +23,49 @@ class RegisteredUserController extends Controller
      * Slugs reservados que não podem ser usados
      */
     private const RESERVED_SLUGS = [
-        'admin', 'api', 'app', 'www', 'blog', 'help', 'support', 'pricing',
-        'terms', 'privacy', 'login', 'register', 'dashboard', 'settings',
-        'menu', 'pedidos', 'orders', 'checkout', 'cart', 'null', 'undefined',
-        'planos', 'plans', 'customer', 'customers', 'profile', 'account',
-        'kitchen', 'pdv', 'products', 'categories', 'coupons', 'tables',
-        'motoboys', 'financial', 'financeiro', 'fidelidade', 'loyalty',
-        'cardapio', 'estoque', 'stock', 'ingredients', 'complements',
+        'admin',
+        'api',
+        'app',
+        'www',
+        'blog',
+        'help',
+        'support',
+        'pricing',
+        'terms',
+        'privacy',
+        'login',
+        'register',
+        'dashboard',
+        'settings',
+        'menu',
+        'pedidos',
+        'orders',
+        'checkout',
+        'cart',
+        'null',
+        'undefined',
+        'planos',
+        'plans',
+        'customer',
+        'customers',
+        'profile',
+        'account',
+        'kitchen',
+        'pdv',
+        'products',
+        'categories',
+        'coupons',
+        'tables',
+        'motoboys',
+        'financial',
+        'financeiro',
+        'fidelidade',
+        'loyalty',
+        'cardapio',
+        'estoque',
+        'stock',
+        'ingredients',
+        'complements',
     ];
 
     /**
@@ -144,11 +180,10 @@ class RegisteredUserController extends Controller
                 'phone' => $request->whatsapp,
                 'whatsapp' => $request->whatsapp,
                 'plan' => 'free',
-                'trial_ends_at' => now()->addDays(14),
                 'is_active' => true,
                 'is_open' => false,
-                'max_users' => 5, // Limites do trial (igual ao Básico)
-                'max_products' => 100,
+                'max_users' => 3, // Free plan limit
+                'max_products' => 50, // Free plan limit
             ]);
 
             // 2. Criar o User associado ao Tenant

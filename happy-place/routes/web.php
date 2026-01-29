@@ -46,24 +46,35 @@ Route::get('/ooprint', function () {
     return Inertia::render('Welcome/OoPrint');
 })->name('ooprint');
 
-// Customer Auth Routes (Public - Phone Only)
+Route::get('/termos', function () {
+    return Inertia::render('Terms');
+})->name('terms');
+
+// Customer Auth Routes (Public - Phone Only) - ✅ COM RATE LIMITING
 Route::post('/check-slug', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'checkSlug'])->name('check-slug');
 
-Route::post('/customer/check-phone', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'checkPhone']);
-Route::post('/customer/complete-registration', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'completeRegistration']);
-Route::post('/customer/logout', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'logout']);
-Route::get('/customer/me', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'me']);
+Route::middleware('throttle:5,1')->group(function () {
+    Route::post('/customer/check-phone', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'checkPhone']);
+    Route::post('/customer/complete-registration', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'completeRegistration']);
+});
 
-// Customer Address Routes
-Route::get('/customer/addresses', [\App\Http\Controllers\Tenant\CustomerAddressController::class, 'index']);
-Route::post('/customer/addresses', [\App\Http\Controllers\Tenant\CustomerAddressController::class, 'store']);
-Route::put('/customer/addresses/{id}', [\App\Http\Controllers\Tenant\CustomerAddressController::class, 'update']);
-Route::delete('/customer/addresses/{id}', [\App\Http\Controllers\Tenant\CustomerAddressController::class, 'destroy']);
-Route::post('/customer/addresses/{id}/set-default', [\App\Http\Controllers\Tenant\CustomerAddressController::class, 'setDefault']);
-Route::get('/customer/orders', [\App\Http\Controllers\Tenant\CustomerOrderController::class, 'index']);
-Route::post('/customer/checkout', [\App\Http\Controllers\Tenant\CustomerOrderController::class, 'store']);
-Route::post('/customer/redeem-product', [CustomerRedemptionController::class, 'redeemProduct']);
-Route::post('/customer/validate-coupon', [\App\Http\Controllers\CouponValidationController::class, 'validate']);
+// Customer Actions - ✅ COM RATE LIMITING E TENANT SCOPE
+Route::middleware(['throttle:10,1', 'tenant.scope'])->group(function () {
+    Route::post('/customer/logout', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'logout']);
+    Route::get('/customer/me', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'me']);
+
+    // Customer Address Routes
+    Route::get('/customer/addresses', [\App\Http\Controllers\Tenant\CustomerAddressController::class, 'index']);
+    Route::post('/customer/addresses', [\App\Http\Controllers\Tenant\CustomerAddressController::class, 'store']);
+    Route::put('/customer/addresses/{id}', [\App\Http\Controllers\Tenant\CustomerAddressController::class, 'update']);
+    Route::delete('/customer/addresses/{id}', [\App\Http\Controllers\Tenant\CustomerAddressController::class, 'destroy']);
+    Route::post('/customer/addresses/{id}/set-default', [\App\Http\Controllers\Tenant\CustomerAddressController::class, 'setDefault']);
+
+    Route::get('/customer/orders', [\App\Http\Controllers\Tenant\CustomerOrderController::class, 'index']);
+    Route::post('/customer/checkout', [\App\Http\Controllers\Tenant\CustomerOrderController::class, 'store']);
+    Route::post('/customer/redeem-product', [CustomerRedemptionController::class, 'redeemProduct']);
+    Route::post('/customer/validate-coupon', [\App\Http\Controllers\CouponValidationController::class, 'validate']);
+});
 
 // Internal API for Polling (needs auth but generous rate limit - 60 requests per minute)
 Route::middleware(['auth', 'throttle:60,1'])->get('/api/orders/status-check', \App\Http\Controllers\Api\OrderStatusCheckController::class)->name('api.orders.status-check');
@@ -224,6 +235,14 @@ Route::middleware(['auth', 'subscription'])->group(function () {
         Route::post('/regenerate-recovery-codes', [\App\Http\Controllers\TwoFactorController::class, 'regenerateRecoveryCodes'])->name('regenerate-recovery-codes');
     });
 
+    // System / Downloads
+    Route::get('/sistema/downloads', [\App\Http\Controllers\SystemController::class, 'downloads'])->name('system.downloads');
+
+    // Marketing (Future placeholder)
+    Route::prefix('marketing')->name('marketing.')->group(function () {
+        // Route::get('/', [MarketingController::class, 'index'])->name('index');
+    });
+
     // WhatsApp - Only for plans with whatsapp_integration feature (Básico+)
     Route::middleware('feature:whatsapp_integration')->prefix('whatsapp')->name('whatsapp.')->group(function () {
         Route::get('/', [\App\Http\Controllers\WhatsAppController::class, 'index'])->name('index');
@@ -244,5 +263,15 @@ Route::middleware(['auth', 'subscription'])->group(function () {
 
 // Public Webhooks (Outside Auth)
 Route::post('/webhooks/whatsapp', [\App\Http\Controllers\WhatsAppWebhookController::class, 'handle'])->name('webhooks.whatsapp');
+
+// Rota TEMPORÁRIA para criar tabelas na Hostinger (sem SSH)
+Route::get('/setup-production-db', function () {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        return 'Sucesso! Tabelas criadas. Agora você pode importar o arquivo hostinger_data.sql no PHPMyAdmin.';
+    } catch (\Exception $e) {
+        return 'Erro: ' . $e->getMessage();
+    }
+});
 
 require __DIR__ . '/auth.php';

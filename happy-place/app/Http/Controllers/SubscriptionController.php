@@ -18,30 +18,59 @@ class SubscriptionController extends Controller
                     'name' => 'Gratuito',
                     'price' => 0,
                     'interval' => 'mês',
-                    'features' => ['100 Produtos', 'Pedidos ilimitados', 'Cardápio Digital', 'Impressão Automática', 'Fidelidade'],
+                    'features' => [
+                        ['text' => '30 produtos', 'included' => true],
+                        ['text' => '2 usuários', 'included' => true],
+                        ['text' => 'Até 300 pedidos/mês', 'included' => true],
+                        ['text' => '8 categorias', 'included' => true],
+                        ['text' => '3 cupons ativos', 'included' => true],
+                        ['text' => 'Cardápio digital', 'included' => true],
+                        ['text' => 'Programa de fidelidade básico', 'included' => true],
+                        ['text' => 'Múltiplas formas de pagamento', 'included' => true],
+                        ['text' => 'Relatórios básicos (30 dias)', 'included' => true],
+                        ['text' => 'Gestão de motoboys', 'included' => false],
+                        ['text' => 'Impressão automática (ÓoPrint)', 'included' => false],
+                        ['text' => 'Robô WhatsApp (ÓoBot)', 'included' => false],
+                    ],
                     'current' => auth()->user()->tenant->plan === 'free',
                 ],
                 [
                     'id' => 'price_basic',
                     'name' => 'Básico',
-                    // Fixed: Align with Plans.tsx
-                    'price' => 29.90, // Assuming Plans.tsx has 0 for free, but let's check Plans.tsx again. 
-                    // Wait, Plans.tsx says: Free=0, Pro=89.00, Enterprise=Consult. 
-                    // The Controller had "Basic"=79.90 and "Pro"=149.90.
-                    // Let's realign to: Free, Pro (89.00). Removing "Basic" or matching "Pro".
-                    // Actually, Plans.tsx shows: "Básico (R$0)" and "Profissional (R$89)".
-                    // So we must reflect that structure.
+                    'price' => 79.90,
                     'interval' => 'mês',
-                    'features' => ['Tudo do Gratuito +', 'Robô WhatsApp (ÓoBot)', 'Sistema de Motoboys', 'Múltiplas Unidades', 'Suporte Prioritário'],
+                    'features' => [
+                        ['text' => '250 produtos', 'included' => true],
+                        ['text' => '5 usuários', 'included' => true],
+                        ['text' => 'Pedidos ilimitados', 'included' => true],
+                        ['text' => 'Categorias ilimitadas', 'included' => true],
+                        ['text' => '15 cupons ativos', 'included' => true],
+                        ['text' => '10 motoboys', 'included' => true],
+                        ['text' => 'Impressão automática (ÓoPrint) (Em breve)', 'included' => true],
+                        ['text' => 'Robô WhatsApp (ÓoBot) (Em breve)', 'included' => true],
+                        ['text' => 'Relatórios avançados', 'included' => true],
+                        ['text' => 'Gestão de estoque ilimitada', 'included' => true],
+                        ['text' => 'Suporte por email', 'included' => true],
+                    ],
                     'current' => auth()->user()->tenant->plan === 'basic',
                 ],
                 [
-                    'id' => 'price_pro',
-                    'name' => 'Profissional',
-                    'price' => 89.00,
+                    'id' => 'price_pro', // Mantém ID interno 'price_pro' para compatibilidade frontend
+                    'name' => 'Personalizado',
+                    'price' => null,
                     'interval' => 'mês',
-                    'features' => ['Tudo do Básico +', 'Produtos Ilimitados', 'Usuários Ilimitados', 'Remoção de marca d\'água', 'Onboarding Dedicado'],
-                    'current' => auth()->user()->tenant->plan === 'pro',
+                    'features' => [
+                        ['text' => 'Tudo do Básico +', 'included' => true],
+                        ['text' => 'Produtos ilimitados', 'included' => true],
+                        ['text' => 'Usuários ilimitados', 'included' => true],
+                        ['text' => 'Integrações customizadas (API)', 'included' => true],
+                        ['text' => 'Motoboys ilimitados', 'included' => true],
+                        ['text' => 'White Label (Sua marca)', 'included' => true],
+                        ['text' => 'Domínio personalizado', 'included' => true],
+                        ['text' => 'Suporte prioritário WhatsApp', 'included' => true],
+                        ['text' => 'Gerente de conta dedicado', 'included' => true],
+                    ],
+                    'current' => auth()->user()->tenant->plan === 'custom',
                 ]
             ]
         ]);
@@ -59,19 +88,34 @@ class SubscriptionController extends Controller
 
         return Inertia::render('Subscription/Checkout', [
             'plan' => $plan,
-            'price' => $plan === 'price_pro' ? 89.00 : 0
+            'price' => $plan === 'price_basic' ? 79.90 : 0 // Ajustado para refletir preço real do básico
         ]);
     }
 
     public function upgrade(Request $request)
     {
-        // Mock Payment Success
         $tenant = auth()->user()->tenant;
-        $plan = $request->input('plan', 'pro');
+        $requestedPlan = $request->input('plan');
 
-        $tenant->update(['plan' => $plan]);
+        // Validate that the plan is allowed for self-service upgrade
+        if (!in_array($requestedPlan, ['free', 'basic'])) {
+            return back()->withErrors([
+                'plan' => 'O plano Personalizado requer contato com nossa equipe. Entre em contato via WhatsApp.'
+            ]);
+        }
 
-        return redirect()->route('dashboard')->with('success', "Plano atualizado para {$plan} com sucesso! (Modo de Teste)");
+        // Prevent downgrade from custom/pro to basic/free via this method
+        if (in_array($tenant->plan, ['custom', 'pro'])) {
+            return back()->withErrors([
+                'plan' => 'Para alterar seu plano Personalizado, entre em contato com o suporte.'
+            ]);
+        }
+
+        // TODO: Integrate with Stripe payment here
+        // For now, just update the plan (mock)
+        $tenant->update(['plan' => $requestedPlan]);
+
+        return redirect()->route('dashboard')->with('success', "Plano atualizado para {$requestedPlan} com sucesso! (Modo de Teste)");
     }
 
     public function downgradeToFree()

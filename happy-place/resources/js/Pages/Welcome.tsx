@@ -299,7 +299,7 @@ export default function Welcome({ auth }: PageProps) {
                         </div>
                         <div className="pt-12">
                             <img
-                                src="/images/landing/kanban-dashboard.png"
+                                src="/images/landing/kanban-dashboard-update.jpg"
                                 alt="Painel de Pedidos ÓoDelivery"
                                 className="w-full h-auto"
                             />

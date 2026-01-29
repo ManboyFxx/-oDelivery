@@ -91,7 +91,7 @@ export default function Login({
 
                         <div className="mb-10">
                             <h1 className="text-3xl font-black text-gray-900 tracking-tight">Bem-vindo de volta.</h1>
-                            <p className="text-gray-500 font-medium mt-2">Insira suas credenciais para acessar o painel administrativo.</p>
+                            <p className="text-gray-600 font-medium mt-2">Insira suas credenciais para acessar o painel administrativo.</p>
                         </div>
 
                         {status && (
@@ -102,7 +102,7 @@ export default function Login({
 
                         <form onSubmit={submit} className="space-y-6">
                             <div className="space-y-2">
-                                <InputLabel htmlFor="email" value="E-mail Corporativo" className="text-xs font-black uppercase tracking-widest text-gray-400" />
+                                <InputLabel htmlFor="email" value="E-mail Corporativo" className="text-xs font-black uppercase tracking-widest text-gray-900" />
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-[#ff3d03]">
                                         <Mail className="h-5 w-5" />
@@ -112,7 +112,7 @@ export default function Login({
                                         type="email"
                                         name="email"
                                         value={data.email}
-                                        className="block w-full pl-12 pr-4 py-4 bg-white border border-gray-200 focus:border-[#ff3d03] focus:ring-4 focus:ring-[#ff3d03]/10 rounded-2xl text-gray-900 font-bold placeholder-gray-300 transition-all shadow-sm"
+                                        className="block w-full pl-12 pr-4 py-4 bg-white border border-gray-200 focus:border-[#ff3d03] focus:ring-4 focus:ring-[#ff3d03]/10 rounded-2xl text-gray-900 font-bold placeholder-gray-600 transition-all shadow-sm"
                                         autoComplete="username"
                                         onChange={(e) => setData('email', e.target.value)}
                                         placeholder="seu@restaurante.com"
@@ -124,7 +124,7 @@ export default function Login({
 
                             <div className="space-y-2">
                                 <div className="flex justify-between items-end">
-                                    <InputLabel htmlFor="password" value="Sua Senha" className="text-xs font-black uppercase tracking-widest text-gray-400" />
+                                    <InputLabel htmlFor="password" value="Sua Senha" className="text-xs font-black uppercase tracking-widest text-gray-900" />
                                     {canResetPassword && (
                                         <Link
                                             href={route('password.request')}
@@ -143,7 +143,7 @@ export default function Login({
                                         type="password"
                                         name="password"
                                         value={data.password}
-                                        className="block w-full pl-12 pr-4 py-4 bg-white border border-gray-200 focus:border-[#ff3d03] focus:ring-4 focus:ring-[#ff3d03]/10 rounded-2xl text-gray-900 font-bold placeholder-gray-300 transition-all shadow-sm"
+                                        className="block w-full pl-12 pr-4 py-4 bg-white border border-gray-200 focus:border-[#ff3d03] focus:ring-4 focus:ring-[#ff3d03]/10 rounded-2xl text-gray-900 font-bold placeholder-gray-600 transition-all shadow-sm"
                                         autoComplete="current-password"
                                         onChange={(e) => setData('password', e.target.value)}
                                         placeholder="••••••••"
@@ -160,7 +160,7 @@ export default function Login({
                                     onChange={(e) => setData('remember', e.target.checked)}
                                     className="rounded-md border-gray-100 text-[#ff3d03] focus:ring-[#ff3d03]"
                                 />
-                                <span className="ml-2 text-sm font-bold text-gray-400">Permanecer conectado</span>
+                                <span className="ml-2 text-sm font-bold text-gray-600">Permanecer conectado</span>
                             </div>
 
                             <PrimaryButton
@@ -173,7 +173,7 @@ export default function Login({
                         </form>
 
                         <div className="mt-12 text-center">
-                            <p className="text-gray-400 font-medium">
+                            <p className="text-gray-600 font-medium">
                                 Ainda não tem conta?{' '}
                                 <Link
                                     href={route('register')}

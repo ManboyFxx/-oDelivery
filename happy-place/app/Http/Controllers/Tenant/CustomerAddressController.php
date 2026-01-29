@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Models\Customer;
 use App\Models\CustomerAddress;
 use Illuminate\Http\Request;
 
@@ -80,8 +81,12 @@ class CustomerAddressController extends Controller
             return response()->json(['message' => 'Não autenticado'], 401);
         }
 
+        $customer = Customer::findOrFail($customerId);
+
+        // ✅ Validar tenant
         $address = CustomerAddress::where('customer_id', $customerId)
             ->where('id', $id)
+            ->where('tenant_id', $customer->tenant_id) // ✅ Adicionar validação
             ->firstOrFail();
 
         $validated = $request->validate([
@@ -111,8 +116,12 @@ class CustomerAddressController extends Controller
             return response()->json(['message' => 'Não autenticado'], 401);
         }
 
+        $customer = Customer::findOrFail($customerId);
+
+        // ✅ Validar tenant
         $address = CustomerAddress::where('customer_id', $customerId)
             ->where('id', $id)
+            ->where('tenant_id', $customer->tenant_id) // ✅ Adicionar validação
             ->firstOrFail();
 
         // If deleting default address, make another one default
@@ -140,13 +149,17 @@ class CustomerAddressController extends Controller
             return response()->json(['message' => 'Não autenticado'], 401);
         }
 
+        $customer = Customer::findOrFail($customerId);
+
         // Remove default from all addresses
         CustomerAddress::where('customer_id', $customerId)
+            ->where('tenant_id', $customer->tenant_id) // ✅ Validar tenant
             ->update(['is_default' => false]);
 
         // Set new default
         $address = CustomerAddress::where('customer_id', $customerId)
             ->where('id', $id)
+            ->where('tenant_id', $customer->tenant_id) // ✅ Validar tenant
             ->firstOrFail();
 
         $address->update(['is_default' => true]);

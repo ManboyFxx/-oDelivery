@@ -277,12 +277,12 @@ export default function EmployeesIndex({ employees, current_user_id }: Props) {
                                 <select
                                     value={formData.role}
                                     onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
-                                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#ff3d03]"
+                                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1b1e] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#ff3d03] [&>option]:bg-white [&>option]:dark:bg-[#1a1b1e] [&>option]:text-gray-900 [&>option]:dark:text-white"
                                     required
                                 >
-                                    <option value="employee">Funcionário</option>
-                                    <option value="admin">Administrador</option>
-                                    <option value="motoboy">Motoboy</option>
+                                    <option value="employee" className="bg-white dark:bg-[#1a1b1e] text-gray-900 dark:text-white">Funcionário</option>
+                                    <option value="admin" className="bg-white dark:bg-[#1a1b1e] text-gray-900 dark:text-white">Administrador</option>
+                                    <option value="motoboy" className="bg-white dark:bg-[#1a1b1e] text-gray-900 dark:text-white">Motoboy</option>
                                 </select>
                             </div>
 
@@ -389,12 +389,12 @@ export default function EmployeesIndex({ employees, current_user_id }: Props) {
                                 <select
                                     value={editFormData.role}
                                     onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value as any })}
-                                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#ff3d03]"
+                                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1b1e] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#ff3d03] [&>option]:bg-white [&>option]:dark:bg-[#1a1b1e] [&>option]:text-gray-900 [&>option]:dark:text-white"
                                     required
                                 >
-                                    <option value="employee">Funcionário</option>
-                                    <option value="admin">Administrador</option>
-                                    <option value="motoboy">Motoboy</option>
+                                    <option value="employee" className="bg-white dark:bg-[#1a1b1e] text-gray-900 dark:text-white">Funcionário</option>
+                                    <option value="admin" className="bg-white dark:bg-[#1a1b1e] text-gray-900 dark:text-white">Administrador</option>
+                                    <option value="motoboy" className="bg-white dark:bg-[#1a1b1e] text-gray-900 dark:text-white">Motoboy</option>
                                 </select>
                             </div>
 

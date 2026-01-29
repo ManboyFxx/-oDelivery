@@ -34,7 +34,10 @@ class OrderStatusCheckController extends Controller
         return response()->json([
             'newOrderIds' => $newOrderIds,
             'readyOrderIds' => $readyOrderIds,
-            'canceledOrderIds' => $canceledOrderIds
+            'canceledOrderIds' => $canceledOrderIds,
+            'hasNewOrders' => $newOrderIds->isNotEmpty(),
+            'hasReadyOrders' => $readyOrderIds->isNotEmpty(),
+            'hasCanceledOrders' => $canceledOrderIds->isNotEmpty(),
         ]);
     }
 }
