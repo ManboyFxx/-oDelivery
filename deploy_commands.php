@@ -60,7 +60,15 @@ try {
         }
     }
 
-    // 1.5 FIX .ENV
+    // 1.5 FIX .ENV (Existing code...)
+    // ... (Keep existing .env code)
+
+    // 1.8 REMOVE HOT FILE (Critical for Production)
+    if (file_exists(__DIR__ . '/public/hot')) {
+        @unlink(__DIR__ . '/public/hot');
+        log_msg("🔥 Removed 'public/hot' file (Fixes Vite errors).");
+    }
+
     if (!file_exists(__DIR__ . '/.env')) {
         log_msg("⚠️ .env not found! Creating from .env.production...");
         if (file_exists(__DIR__ . '/.env.production')) {
