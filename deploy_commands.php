@@ -64,9 +64,28 @@ try {
     // ... (Keep existing .env code)
 
     // 1.8 REMOVE HOT FILE (Critical for Production)
+    log_msg("🔍 Checking Vite Assets...");
     if (file_exists(__DIR__ . '/public/hot')) {
-        @unlink(__DIR__ . '/public/hot');
-        log_msg("🔥 Removed 'public/hot' file (Fixes Vite errors).");
+        log_msg("⚠️ Found 'public/hot'. Attempting delete...");
+        if (@unlink(__DIR__ . '/public/hot')) {
+            log_msg("✅ Deleted 'public/hot'.");
+        } else {
+            log_msg("❌ FAILED to delete 'public/hot'. Permission denied?");
+        }
+    } else {
+        log_msg("✅ 'public/hot' does not exist (Good).");
+    }
+
+    if (file_exists(__DIR__ . '/public/build/manifest.json')) {
+        log_msg("✅ Found 'public/build/manifest.json'.");
+    } else {
+        log_msg("❌ MISSING 'public/build/manifest.json'. Did you push public/build?");
+        $buildDir = __DIR__ . '/public/build';
+        if (is_dir($buildDir)) {
+            log_msg("📂 public/build exists with " . count(scandir($buildDir)) . " items.");
+        } else {
+            log_msg("❌ public/build directory is also MISSING.");
+        }
     }
 
     if (!file_exists(__DIR__ . '/.env')) {
