@@ -22,13 +22,15 @@ class DatabaseSeeder extends Seeder
         $adminRole = \Illuminate\Support\Facades\DB::table('roles')->where('slug', 'admin')->first();
 
         // Create Super Admin
-        $superAdmin = User::create([
-            'name' => 'Super Admin',
-            'email' => 'admin@happyplace.com',
-            'password' => Hash::make('password'),
-            'role' => 'super_admin',
-            'tenant_id' => null,
-        ]);
+        $superAdmin = User::firstOrCreate(
+            ['email' => 'contato@oodelivery.online'],
+            [
+                'name' => 'Super Admin',
+                'password' => Hash::make('Bobela102030@'),
+                'role' => 'super_admin',
+                'tenant_id' => null,
+            ]
+        );
 
         // Attach Role
         if ($superAdminRole) {

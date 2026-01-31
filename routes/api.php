@@ -24,4 +24,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+
+    // Printer System Routes
+    Route::prefix('printer')->group(function () {
+        Route::get('/orders', [\App\Http\Controllers\Api\PrinterController::class, 'index']);
+        Route::post('/orders/{id}/printed', [\App\Http\Controllers\Api\PrinterController::class, 'markAsPrinted']);
+    });
 });
+

@@ -21,12 +21,14 @@ import {
     AlertCircle,
     Check,
     DollarSign,
-    Bell
+    Bell,
+    Printer
 } from 'lucide-react';
 import { useState } from 'react';
 import { Switch } from '@headlessui/react';
 import Modal from '@/Components/Modal';
 import PageHeader from '@/Components/PageHeader';
+import PrinterSettings from './Partials/PrinterSettings';
 
 interface Tab {
     id: string;
@@ -176,6 +178,7 @@ export default function SettingsIndex({ auth, settings, success, paymentMethods 
         { id: 'delivery', label: 'Delivery', icon: Truck },
         { id: 'payment', label: 'Formas de Pagamento', icon: CreditCard },
         { id: 'notifications', label: 'Notificações', icon: Bell },
+        { id: 'printer', label: 'Impressora', icon: Printer },
         { id: 'system', label: 'Sistema', icon: Palette },
     ];
 
@@ -459,6 +462,9 @@ export default function SettingsIndex({ auth, settings, success, paymentMethods 
 
                 {/* Tab Content */}
                 <form onSubmit={submit} className="space-y-6">
+                    {activeTab === 'printer' && (
+                        <PrinterSettings />
+                    )}
                     {/* General Tab */}
                     {activeTab === 'general' && (
                         <div className="space-y-6">

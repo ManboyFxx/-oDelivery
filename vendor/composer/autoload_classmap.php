@@ -17,6 +17,7 @@ return array(
     'App\\Http\\Controllers\\Admin\\WhatsAppTemplateController' => $baseDir . '/app/Http/Controllers/Admin/WhatsAppTemplateController.php',
     'App\\Http\\Controllers\\Api\\AuthController' => $baseDir . '/app/Http/Controllers/Api/AuthController.php',
     'App\\Http\\Controllers\\Api\\OrderStatusCheckController' => $baseDir . '/app/Http/Controllers/Api/OrderStatusCheckController.php',
+    'App\\Http\\Controllers\\Api\\PrinterController' => $baseDir . '/app/Http/Controllers/Api/PrinterController.php',
     'App\\Http\\Controllers\\Api\\SlugController' => $baseDir . '/app/Http/Controllers/Api/SlugController.php',
     'App\\Http\\Controllers\\Auth\\AuthenticatedSessionController' => $baseDir . '/app/Http/Controllers/Auth/AuthenticatedSessionController.php',
     'App\\Http\\Controllers\\Auth\\ConfirmablePasswordController' => $baseDir . '/app/Http/Controllers/Auth/ConfirmablePasswordController.php',

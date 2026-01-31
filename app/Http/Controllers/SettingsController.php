@@ -149,4 +149,19 @@ class SettingsController extends Controller
 
         return back()->with('success', 'Banner removido com sucesso!');
     }
+    public function createToken(Request $request)
+    {
+        $user = auth()->user();
+        $tokenName = $request->input('name', 'Printer Token');
+
+        // Revoke previous tokens with the same name to keep it clean (Single Device Policy)
+        // Or keep multiple. For this use case, revoking ensures 1 active printer token per user usually.
+        $user->tokens()->where('name', $tokenName)->delete();
+
+        $token = $user->createToken($tokenName);
+
+        // We return the plain text token via session flash so it can be shown ONCE.
+        return back()->with('flash_token', $token->plainTextToken)
+            ->with('success', 'Token de impressão gerado com sucesso!');
+    }
 }

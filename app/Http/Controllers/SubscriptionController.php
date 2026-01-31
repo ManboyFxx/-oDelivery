@@ -128,7 +128,47 @@ class SubscriptionController extends Controller
 
     public function expired()
     {
-        return Inertia::render('Subscription/Expired');
+        return Inertia::render('Subscription/Expired', [
+            'tenant' => auth()->user()->tenant,
+            'plans' => [
+                [
+                    'id' => 'free',
+                    'plan' => 'free', // Added for frontend match
+                    'name' => 'Gratuito',
+                    'price' => 0,
+                    'price_monthly' => 0, // Added for frontend match
+                    'price_yearly' => 0,
+                    'interval' => 'mês',
+                    'features' => [
+                        '30 produtos',
+                        '2 usuários',
+                        'Até 300 pedidos/mês',
+                    ],
+                    'max_products' => 30,
+                    'max_users' => 2,
+                    'current' => auth()->user()->tenant->plan === 'free',
+                ],
+                [
+                    'id' => 'price_basic',
+                    'plan' => 'basic', // Added for frontend match
+                    'name' => 'Básico',
+                    'price' => 79.90,
+                    'price_monthly' => 79.90, // Added for frontend match
+                    'price_yearly' => 79.90 * 10,
+                    'interval' => 'mês',
+                    'features' => [
+                        '250 produtos',
+                        '5 usuários',
+                        'Pedidos ilimitados',
+                        'Impressão automática',
+                        'Fidelidade',
+                    ],
+                    'max_products' => 250,
+                    'max_users' => 5,
+                    'current' => auth()->user()->tenant->plan === 'basic',
+                ],
+            ]
+        ]);
     }
 
     public function status()

@@ -214,6 +214,7 @@ Route::middleware(['auth', 'subscription'])->group(function () {
     Route::delete('/settings/remove-logo', [SettingsController::class, 'removeLogo'])->name('settings.remove-logo');
     Route::post('/settings/upload-banner', [SettingsController::class, 'uploadBanner'])->name('settings.upload-banner');
     Route::delete('/settings/remove-banner', [SettingsController::class, 'removeBanner'])->name('settings.remove-banner');
+    Route::post('/settings/tokens/create', [SettingsController::class, 'createToken'])->name('api.tokens.create');
 
     Route::resource('delivery-zones', \App\Http\Controllers\DeliveryZoneController::class);
     Route::resource('payment-methods', \App\Http\Controllers\PaymentMethodController::class);

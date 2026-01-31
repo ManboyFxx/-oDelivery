@@ -533,6 +533,7 @@ class ComposerStaticInit76fde1a3c3cd7cd50f1763e43a460374
         'App\\Http\\Controllers\\Admin\\WhatsAppTemplateController' => __DIR__ . '/../..' . '/app/Http/Controllers/Admin/WhatsAppTemplateController.php',
         'App\\Http\\Controllers\\Api\\AuthController' => __DIR__ . '/../..' . '/app/Http/Controllers/Api/AuthController.php',
         'App\\Http\\Controllers\\Api\\OrderStatusCheckController' => __DIR__ . '/../..' . '/app/Http/Controllers/Api/OrderStatusCheckController.php',
+        'App\\Http\\Controllers\\Api\\PrinterController' => __DIR__ . '/../..' . '/app/Http/Controllers/Api/PrinterController.php',
         'App\\Http\\Controllers\\Api\\SlugController' => __DIR__ . '/../..' . '/app/Http/Controllers/Api/SlugController.php',
         'App\\Http\\Controllers\\Auth\\AuthenticatedSessionController' => __DIR__ . '/../..' . '/app/Http/Controllers/Auth/AuthenticatedSessionController.php',
         'App\\Http\\Controllers\\Auth\\ConfirmablePasswordController' => __DIR__ . '/../..' . '/app/Http/Controllers/Auth/ConfirmablePasswordController.php',
