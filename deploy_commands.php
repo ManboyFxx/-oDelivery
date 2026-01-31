@@ -43,8 +43,10 @@ try {
     {
         log_msg("Running: php artisan $cmd");
         try {
-            // Force production handling
-            $params['--force'] = true;
+            // Force production handling ONLY for migrate
+            if ($cmd === 'migrate') {
+                $params['--force'] = true;
+            }
 
             $status = $kernel->call($cmd, $params);
             $output = $kernel->output();
