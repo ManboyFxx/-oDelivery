@@ -284,14 +284,4 @@ Route::get('/setup-production-db', function () {
     }
 });
 
-// Acesso de emergência para resetar Admin (sem SSH)
-Route::get('/reset-admin-force', function () {
-    try {
-        \Illuminate\Support\Facades\Artisan::call('user:reset-admin');
-        return nl2br('Sucesso! <br>' . \Illuminate\Support\Facades\Artisan::output());
-    } catch (\Exception $e) {
-        return 'Erro: ' . $e->getMessage();
-    }
-});
-
 require __DIR__ . '/auth.php';
