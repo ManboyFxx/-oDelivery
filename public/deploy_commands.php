@@ -25,12 +25,12 @@ function log_msg($msg)
 try {
     log_msg("Booting Laravel...");
 
-    if (!file_exists(__DIR__ . '/vendor/autoload.php')) {
+    if (!file_exists(__DIR__ . '/../vendor/autoload.php')) {
         throw new Exception("Vendor folder not found! Did you push it to Git?");
     }
 
-    require __DIR__ . '/vendor/autoload.php';
-    $app = require __DIR__ . '/bootstrap/app.php';
+    require __DIR__ . '/../vendor/autoload.php';
+    $app = require __DIR__ . '/../bootstrap/app.php';
 
     // Boot Kernel
     $kernel = $app->make(\Illuminate\Contracts\Console\Kernel::class);
@@ -65,9 +65,9 @@ try {
 
     // 1.8 REMOVE HOT FILE (Critical for Production)
     log_msg("🔍 Checking Vite Assets...");
-    if (file_exists(__DIR__ . '/public/hot')) {
+    if (file_exists(__DIR__ . '/hot')) {
         log_msg("⚠️ Found 'public/hot'. Attempting delete...");
-        if (@unlink(__DIR__ . '/public/hot')) {
+        if (@unlink(__DIR__ . '/hot')) {
             log_msg("✅ Deleted 'public/hot'.");
         } else {
             log_msg("❌ FAILED to delete 'public/hot'. Permission denied?");
@@ -76,11 +76,11 @@ try {
         log_msg("✅ 'public/hot' does not exist (Good).");
     }
 
-    if (file_exists(__DIR__ . '/public/build/manifest.json')) {
+    if (file_exists(__DIR__ . '/build/manifest.json')) {
         log_msg("✅ Found 'public/build/manifest.json'.");
     } else {
         log_msg("❌ MISSING 'public/build/manifest.json'. Did you push public/build?");
-        $buildDir = __DIR__ . '/public/build';
+        $buildDir = __DIR__ . '/build';
         if (is_dir($buildDir)) {
             log_msg("📂 public/build exists with " . count(scandir($buildDir)) . " items.");
         } else {
@@ -88,10 +88,10 @@ try {
         }
     }
 
-    if (!file_exists(__DIR__ . '/.env')) {
+    if (!file_exists(__DIR__ . '/../.env')) {
         log_msg("⚠️ .env not found! Creating from .env.production...");
-        if (file_exists(__DIR__ . '/.env.production')) {
-            copy(__DIR__ . '/.env.production', __DIR__ . '/.env');
+        if (file_exists(__DIR__ . '/../.env.production')) {
+            copy(__DIR__ . '/../.env.production', __DIR__ . '/../.env');
             log_msg("✅ .env created.");
             run_artisan($kernel, 'key:generate');
         } else {
@@ -119,7 +119,7 @@ try {
 
     // 5. ATTEMPT PERMISSIONS (PHP Level)
     log_msg("Fixing Permissions (PHP chmod)...");
-    $dirs = ['storage', 'bootstrap/cache'];
+    $dirs = ['../storage', '../bootstrap/cache'];
     foreach ($dirs as $dir) {
         if (is_dir($dir)) {
             $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir));

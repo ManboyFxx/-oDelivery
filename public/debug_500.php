@@ -8,7 +8,7 @@ echo "<pre style='background:#f4f4f4; padding:15px;'>";
 
 // 1. Check Permissions
 echo "<h2>1. Permissions</h2>";
-$paths = ['storage', 'storage/logs', 'bootstrap/cache'];
+$paths = ['../storage', '../storage/logs', '../bootstrap/cache'];
 foreach ($paths as $path) {
     echo "Checking $path: ";
     if (is_writable(__DIR__ . '/' . $path)) {
@@ -20,9 +20,9 @@ foreach ($paths as $path) {
 
 // 2. Check .env
 echo "\n<h2>2. Environment (.env)</h2>";
-if (file_exists(__DIR__ . '/.env')) {
+if (file_exists(__DIR__ . '/../.env')) {
     echo "<span style='color:green'>Found .env</span>\n";
-    $env = file_get_contents(__DIR__ . '/.env');
+    $env = file_get_contents(__DIR__ . '/../.env');
     if (strpos($env, 'APP_KEY=') === false || strpos($env, 'APP_KEY=base64:...') !== false) {
         echo "<span style='color:red'>WARNING: Check APP_KEY</span>\n";
     } else {
@@ -34,7 +34,7 @@ if (file_exists(__DIR__ . '/.env')) {
 
 // 3. Last Log Entry
 echo "\n<h2>3. Laravel Log (Last 50 lines)</h2>";
-$logFile = __DIR__ . '/storage/logs/laravel.log';
+$logFile = __DIR__ . '/../storage/logs/laravel.log';
 if (file_exists($logFile)) {
     $lines = file($logFile);
     $last = array_slice($lines, -50);
