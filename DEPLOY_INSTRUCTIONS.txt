@@ -1,0 +1,23 @@
+=== COMO ATUALIZAR O SITE (DEPLOY) ===
+
+1. Crie o novo pacote no seu computador:
+   Execute: node build_for_hosting.js
+
+2. Na Hostinger:
+   - Apague o conteúdo da pasta public_html (ou substitua).
+   - Faça upload do NOVO `deploy.zip`.
+   - Acesse `https://oodelivery.online/unzip_deploy.php`.
+   
+   *OBS: Não precisa mais mover pastas manualmente! O zip novo já vem arrumado.*
+
+3. ATUALIZAR BANCO DE DADOS (Importante!):
+   - O banco NÃO atualiza sozinho só de subir os arquivos.
+   - SEMPRE que enviar uma versão nova, acesse o link mágico:
+   
+   👉 https://oodelivery.online/setup-production-db
+   
+   - Esse link roda o comando "migrate" do Laravel.
+   - Se tiver tabelas novas, ele cria.
+   - Se não tiver nada novo, ele não faz nada (é seguro rodar sempre).
+
+=== FIM ===
