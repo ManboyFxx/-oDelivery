@@ -60,6 +60,24 @@ try {
         }
     }
 
+    // 1.5 FIX .ENV
+    if (!file_exists(__DIR__ . '/.env')) {
+        log_msg("⚠️ .env not found! Creating from .env.production...");
+        if (file_exists(__DIR__ . '/.env.production')) {
+            copy(__DIR__ . '/.env.production', __DIR__ . '/.env');
+            log_msg("✅ .env created.");
+            run_artisan($kernel, 'key:generate');
+        } else {
+            log_msg("❌ .env.production also missing! Please upload it manually.");
+        }
+    } else {
+        log_msg("✅ .env exists.");
+        // Check if key is set
+        if (empty(getenv('APP_KEY'))) {
+            run_artisan($kernel, 'key:generate');
+        }
+    }
+
     // 2. MIGRATE
     run_artisan($kernel, 'migrate');
 
