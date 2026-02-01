@@ -120,7 +120,9 @@ try {
         'whatsapp_instances',
         'whatsapp_templates',
         'whatsapp_message_logs',
-        'migrations'
+        'migrations',
+        'sessions',
+        'cache'
     ];
 
     foreach ($tablesToCheck as $table) {
@@ -146,7 +148,30 @@ try {
             }
 
         } else {
-            echo "<div class='error'>❌ Tabela <b>$table</b> NÃO EXISTE (Crítico!)</div>";
+            // Non-critical tables
+            if ($table === 'sessions' || $table === 'cache') {
+                echo "<div class='warning'>⚠️ Tabela <b>$table</b> não existe (Problema se SESSION_DRIVER/CACHE_STORE=database)</div>";
+            } else {
+                echo "<div class='error'>❌ Tabela <b>$table</b> NÃO EXISTE (Crítico!)</div>";
+            }
+        }
+    }
+
+    // 8. Session & Auth Debug
+    echo "<h2>🍪 Session & Auth Debug</h2>";
+    echo "<strong>Configuração .env:</strong><br>";
+    echo "APP_URL: " . ($env['APP_URL'] ?? 'N/A') . "<br>";
+    echo "SESSION_DRIVER: " . ($env['SESSION_DRIVER'] ?? 'N/A') . "<br>";
+    echo "SESSION_DOMAIN: " . ($env['SESSION_DOMAIN'] ?? 'N/A') . "<br>";
+    echo "SANCTUM_STATEFUL_DOMAINS: " . ($env['SANCTUM_STATEFUL_DOMAINS'] ?? 'N/A') . "<br>";
+
+    // Check storage for sessions if file driver
+    if (($env['SESSION_DRIVER'] ?? 'file') === 'file') {
+        $sessionPath = '../storage/framework/sessions';
+        if (is_writable($sessionPath)) {
+            echo "<div class='ok'>✅ Folder storage/framework/sessions executável.</div>";
+        } else {
+            echo "<div class='error'>❌ Folder storage/framework/sessions NÃO é gravável!</div>";
         }
     }
 
