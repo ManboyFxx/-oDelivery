@@ -11,7 +11,9 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('store_settings', function (Blueprint $table) {
-            $table->foreignId('default_motoboy_id')->nullable()->constrained('users')->nullOnDelete();
+            if (!Schema::hasColumn('store_settings', 'default_motoboy_id')) {
+                $table->foreignId('default_motoboy_id')->nullable()->constrained('users')->nullOnDelete();
+            }
         });
     }
 
@@ -21,8 +23,10 @@ return new class extends Migration {
     public function down(): void
     {
         Schema::table('store_settings', function (Blueprint $table) {
-            $table->dropForeign(['default_motoboy_id']);
-            $table->dropColumn('default_motoboy_id');
+            if (Schema::hasColumn('store_settings', 'default_motoboy_id')) {
+                // Try to drop the column - if FK exists it will be dropped too
+                $table->dropColumn('default_motoboy_id');
+            }
         });
     }
 };
