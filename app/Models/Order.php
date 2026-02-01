@@ -113,6 +113,32 @@ class Order extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public function motoboyRating()
+    {
+        return $this->hasOne(MotoboyRating::class);
+    }
+
+    // Scopes
+    public function scopeForMotoboy($query, $motoboyId)
+    {
+        return $query->where('motoboy_id', $motoboyId);
+    }
+
+    public function scopeCompleted($query)
+    {
+        return $query->where('status', 'delivered');
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->whereIn('status', ['confirmed', 'preparing', 'ready', 'waiting_motoboy', 'motoboy_accepted', 'out_for_delivery']);
+    }
+
+    public function scopeDelivery($query)
+    {
+        return $query->where('mode', 'delivery');
+    }
+
     // Status Helpers
     public function isNew(): bool
     {

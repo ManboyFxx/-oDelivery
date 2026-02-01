@@ -271,6 +271,59 @@ Route::middleware(['auth', 'subscription'])->group(function () {
 
 });
 
+// Motoboy Routes
+Route::middleware(['auth', 'is_motoboy', 'check_subscription'])->prefix('/motoboy')->name('motoboy.')->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [\App\Http\Controllers\Motoboy\MotoboysController::class, 'dashboard'])->name('dashboard');
+
+    // Perfil
+    Route::get('/perfil', [\App\Http\Controllers\Motoboy\MotoboysController::class, 'profile'])->name('profile');
+
+    // Pedidos
+    Route::get('/pedidos', [\App\Http\Controllers\Motoboy\MotoboysController::class, 'orders'])->name('orders');
+    Route::get('/pedidos/{orderId}', [\App\Http\Controllers\Motoboy\MotoboysController::class, 'showOrder'])->name('orders.show');
+
+    // Histórico
+    Route::get('/historico', [\App\Http\Controllers\Motoboy\MotoboysController::class, 'history'])->name('history');
+
+    // Métricas
+    Route::get('/metricas', [\App\Http\Controllers\Motoboy\MotoboysController::class, 'metrics'])->name('metrics');
+
+    // Notificações
+    Route::get('/notificacoes', [\App\Http\Controllers\Motoboy\MotoboysController::class, 'notifications'])->name('notifications');
+
+    // Disponibilidade
+    Route::post('/availability/toggle', [\App\Http\Controllers\Motoboy\AvailabilityController::class, 'toggle'])->name('availability.toggle');
+    Route::post('/availability/update', [\App\Http\Controllers\Motoboy\AvailabilityController::class, 'update'])->name('availability.update');
+    Route::get('/availability', [\App\Http\Controllers\Motoboy\AvailabilityController::class, 'show'])->name('availability.show');
+
+    // Geolocalização
+    Route::get('/location', [\App\Http\Controllers\Motoboy\LocationController::class, 'index'])->name('location.index');
+    Route::get('/location/tracking', [\App\Http\Controllers\Motoboy\LocationController::class, 'tracking'])->name('location.tracking');
+    Route::get('/location/history', [\App\Http\Controllers\Motoboy\LocationController::class, 'history'])->name('location.history');
+    Route::get('/location/delivery/{orderId}', [\App\Http\Controllers\Motoboy\LocationController::class, 'delivery'])->name('location.delivery');
+
+    // Será expandido nas próximas fases com:
+    // - Ações de pedidos (POST - aceitar, recusar, entregar)
+});
+
+// API Routes for Motoboy Geolocation and Notifications
+Route::middleware(['auth', 'is_motoboy', 'throttle:60,1'])->prefix('/api/motoboy')->name('api.motoboy.')->group(function () {
+    // Location endpoints
+    Route::post('/location', [\App\Http\Controllers\Api\Motoboy\LocationController::class, 'store'])->name('location.store');
+    Route::get('/location', [\App\Http\Controllers\Api\Motoboy\LocationController::class, 'show'])->name('location.show');
+    Route::get('/location/history', [\App\Http\Controllers\Api\Motoboy\LocationController::class, 'history'])->name('location.history');
+    Route::get('/location/distance', [\App\Http\Controllers\Api\Motoboy\LocationController::class, 'distance'])->name('location.distance');
+    Route::get('/location/trajectory', [\App\Http\Controllers\Api\Motoboy\LocationController::class, 'trajectory'])->name('location.trajectory');
+    Route::get('/location/arrived', [\App\Http\Controllers\Api\Motoboy\LocationController::class, 'checkArrived'])->name('location.arrived');
+
+    // Notification endpoints
+    Route::get('/notifications', [\App\Http\Controllers\Api\Motoboy\NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{id}/read', [\App\Http\Controllers\Api\Motoboy\NotificationController::class, 'markRead'])->name('notifications.mark-read');
+    Route::post('/notifications/read-all', [\App\Http\Controllers\Api\Motoboy\NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
+    Route::delete('/notifications/{id}', [\App\Http\Controllers\Api\Motoboy\NotificationController::class, 'destroy'])->name('notifications.destroy');
+});
+
 // Public Webhooks (Outside Auth)
 Route::post('/webhooks/whatsapp', [\App\Http\Controllers\WhatsAppWebhookController::class, 'handle'])->name('webhooks.whatsapp');
 

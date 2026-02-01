@@ -31,10 +31,28 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
+        $user = $request->user();
+        $isMotoboy = $request->boolean('is_motoboy', false);
+
+        // Validar se o usuário marcou "sou entregador" mas não é motoboy
+        if ($isMotoboy && !$user->isMotoboy()) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+
+            return back()->withErrors([
+                'email' => 'Acesso negado. Você não está registrado como entregador.',
+            ]);
+        }
+
         $request->session()->regenerate();
 
+        // Se é motoboy e marcou o checkbox, redireciona para painel do motoboy
+        if ($user->isMotoboy() && $isMotoboy) {
+            return redirect()->route('motoboy.dashboard');
+        }
+
         // If user is super_admin, redirect to admin panel
-        if ($request->user()->isSuperAdmin()) {
+        if ($user->isSuperAdmin()) {
             return redirect()->route('admin.dashboard');
         }
 

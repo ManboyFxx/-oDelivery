@@ -15,20 +15,31 @@ class MotoboyLocationHistory extends Model
     protected $table = 'motoboy_location_history';
 
     protected $fillable = [
-        'motoboy_id',
+        'user_id',
         'order_id',
         'latitude',
         'longitude',
     ];
 
-    protected $casts = [
-        'latitude' => 'float',
-        'longitude' => 'float',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'latitude' => 'float',
+            'longitude' => 'float',
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
+        ];
+    }
 
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    // Alias para compatibilidade
     public function motoboy()
     {
-        return $this->belongsTo(User::class, 'motoboy_id');
+        return $this->user();
     }
 
     public function order()

@@ -61,6 +61,42 @@ class User extends Authenticatable
         return $this->hasMany(Order::class, 'created_by');
     }
 
+    // Motoboy Relationships
+    public function motoboyProfile()
+    {
+        return $this->hasOne(MotoboyProfile::class);
+    }
+
+    public function motoboyLocations()
+    {
+        return $this->hasMany(MotoboyLocation::class);
+    }
+
+    public function motoboyAvailability()
+    {
+        return $this->hasOne(MotoboyAvailability::class);
+    }
+
+    public function motoboyRatings()
+    {
+        return $this->hasMany(MotoboyRating::class, 'motoboy_id');
+    }
+
+    public function motoboyMetrics()
+    {
+        return $this->hasMany(MotoboyMetrics::class);
+    }
+
+    public function motoboyLocationHistories()
+    {
+        return $this->hasMany(MotoboyLocationHistory::class, 'user_id');
+    }
+
+    public function acceptedOrders()
+    {
+        return $this->hasMany(Order::class, 'motoboy_id');
+    }
+
     // Helpers
     public function isSuperAdmin(): bool
     {

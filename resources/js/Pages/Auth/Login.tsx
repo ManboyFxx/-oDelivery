@@ -18,6 +18,7 @@ export default function Login({
         email: '',
         password: '',
         remember: false as boolean,
+        is_motoboy: false as boolean,
     });
 
     const submit: FormEventHandler = (e) => {
@@ -153,14 +154,26 @@ export default function Login({
                                 <InputError message={errors.password} className="mt-1" />
                             </div>
 
-                            <div className="flex items-center">
-                                <Checkbox
-                                    name="remember"
-                                    checked={data.remember}
-                                    onChange={(e) => setData('remember', e.target.checked)}
-                                    className="rounded-md border-gray-100 text-[#ff3d03] focus:ring-[#ff3d03]"
-                                />
-                                <span className="ml-2 text-sm font-bold text-gray-600">Permanecer conectado</span>
+                            <div className="space-y-3">
+                                <div className="flex items-center">
+                                    <Checkbox
+                                        name="remember"
+                                        checked={data.remember}
+                                        onChange={(e) => setData('remember', e.target.checked)}
+                                        className="rounded-md border-gray-100 text-[#ff3d03] focus:ring-[#ff3d03]"
+                                    />
+                                    <span className="ml-2 text-sm font-bold text-gray-600">Permanecer conectado</span>
+                                </div>
+
+                                <div className="flex items-center pt-2 border-t border-gray-200">
+                                    <Checkbox
+                                        name="is_motoboy"
+                                        checked={data.is_motoboy}
+                                        onChange={(e) => setData('is_motoboy', e.target.checked)}
+                                        className="rounded-md border-gray-100 text-[#ff3d03] focus:ring-[#ff3d03]"
+                                    />
+                                    <span className="ml-2 text-sm font-bold text-gray-600">Sou um entregador/motoboy</span>
+                                </div>
                             </div>
 
                             <PrimaryButton
