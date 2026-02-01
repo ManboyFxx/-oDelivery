@@ -11,8 +11,12 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('tenants', function (Blueprint $table) {
-            $table->integer('max_users')->default(1)->after('is_open');
-            $table->integer('max_products')->default(10)->after('max_users');
+            if (!Schema::hasColumn('tenants', 'max_users')) {
+                $table->integer('max_users')->default(1)->after('is_open');
+            }
+            if (!Schema::hasColumn('tenants', 'max_products')) {
+                $table->integer('max_products')->default(10)->after('max_users');
+            }
         });
     }
 
