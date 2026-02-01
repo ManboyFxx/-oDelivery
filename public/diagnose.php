@@ -128,10 +128,19 @@ try {
         if ($exists) {
             echo "<div class='ok'>✅ Tabela <b>$table</b> existe.</div>";
 
+            // List columns found
+            try {
+                $columns = $pdo->query("DESCRIBE $table")->fetchAll(PDO::FETCH_COLUMN);
+                $colsList = implode(', ', $columns);
+                echo "<div style='margin-left:20px; font-size:12px; color:#555;'>Columns: $colsList</div>";
+            } catch (Exception $e) {
+                echo "<div class='error'>❌ Erro ao ler colunas: " . $e->getMessage() . "</div>";
+            }
+
             // Check content count
             try {
                 $count = $pdo->query("SELECT COUNT(*) FROM $table")->fetchColumn();
-                echo "<div style='margin-left:20px; color:#666;'>Running rows: $count</div>";
+                echo "<div style='margin-left:20px; color:#666;'>Rows: $count</div>";
             } catch (Exception $e) {
                 echo "<div class='error'>❌ Erro ao ler tabela $table: " . $e->getMessage() . "</div>";
             }
