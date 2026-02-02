@@ -20,6 +20,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if ($this->app->environment('production')) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+
         \Illuminate\Support\Facades\Schema::defaultStringLength(191);
         Vite::prefetch(concurrency: 3);
         \App\Models\Order::observe(\App\Observers\OrderObserver::class);

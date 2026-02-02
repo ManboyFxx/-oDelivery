@@ -10,14 +10,16 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('whatsapp_templates', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->string('key')->unique(); // Ex: "order_confirmed", "order_ready"
-            $table->string('name'); // Nome amigável
-            $table->text('message'); // Template com variáveis: {{customer_name}}, {{order_total}}, etc.
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('whatsapp_templates')) {
+            Schema::create('whatsapp_templates', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('key')->unique(); // Ex: "order_confirmed", "order_ready"
+                $table->string('name'); // Nome amigável
+                $table->text('message'); // Template com variáveis: {{customer_name}}, {{order_total}}, etc.
+                $table->boolean('is_active')->default(true);
+                $table->timestamps();
+            });
+        }
     }
 
     /**

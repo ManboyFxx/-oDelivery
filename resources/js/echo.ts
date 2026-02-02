@@ -44,8 +44,9 @@ if (broadcastDriver === 'pusher') {
     } as any);
 } else {
     // Log driver for development
+    // Log driver for development - use 'null' to avoid client error
     echo = new Echo({
-        broadcaster: 'log' as any,
+        broadcaster: 'null' as any,
     } as any);
 }
 

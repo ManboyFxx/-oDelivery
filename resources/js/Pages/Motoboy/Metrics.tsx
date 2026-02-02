@@ -1,23 +1,75 @@
 import { Head } from '@inertiajs/react';
 import MotoboyLayout from '@/Layouts/MotoboyLayout';
-import { BarChart3 } from 'lucide-react';
+import DashboardCard from '@/Components/Motoboy/DashboardCard';
+import { Zap, TrendingUp, Star, Clock, BarChart3 } from 'lucide-react';
 
-export default function Metrics() {
+interface MetricsProps {
+    summary: {
+        deliveries_today: number;
+        earnings_today: number;
+        average_rating: number;
+        status: string;
+        is_online: boolean;
+        pending_orders_count: number;
+    };
+    recentDeliveries: any[]; // Simple list for now
+}
+
+export default function Metrics({ summary, recentDeliveries }: MetricsProps) {
     return (
-        <MotoboyLayout title="Métricas" subtitle="Acompanhe seu desempenho e estatísticas">
+        <MotoboyLayout title="Métricas" subtitle="Seu desempenho detalhado">
             <Head title="Métricas - ÓoDelivery Motoboy" />
 
-            <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-sm">
-                <div className="flex justify-center mb-6">
-                    <div className="w-16 h-16 bg-yellow-100 rounded-2xl flex items-center justify-center">
-                        <BarChart3 className="w-8 h-8 text-yellow-600" />
+            <div className="space-y-8">
+                {/* MAIN KPI CARDS */}
+                <section>
+                    <h2 className="text-xs font-black uppercase tracking-widest text-gray-600 mb-4">
+                        Resumo do Dia
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <DashboardCard
+                            icon={Zap}
+                            label="Entregas Hoje"
+                            value={summary.deliveries_today}
+                            color="orange"
+                            subtitle="Entregas completadas"
+                        />
+                        <DashboardCard
+                            icon={TrendingUp}
+                            label="Ganhos Hoje"
+                            value={`R$ ${summary.earnings_today.toFixed(2)}`}
+                            color="green"
+                            trend="up"
+                            trendValue="+0%"
+                        />
+                        <DashboardCard
+                            icon={Star}
+                            label="Avaliação"
+                            value={summary.average_rating.toFixed(1)}
+                            color="yellow"
+                            subtitle="Média atual"
+                        />
+                        <DashboardCard
+                            icon={Clock}
+                            label="Horas Online"
+                            value="0h"
+                            color="blue"
+                            subtitle="Em breve"
+                        />
                     </div>
-                </div>
-                <h2 className="text-2xl font-black text-gray-900 mb-3">Métricas e Desempenho</h2>
-                <p className="text-gray-600 font-medium mb-6">
-                    Veja gráficos, estatísticas, avaliações e análise completa de seu desempenho.
-                </p>
-                <p className="text-sm text-gray-500">🚀 Esta página será implementada na próxima fase!</p>
+                </section>
+
+                {/* DETAILED STATS */}
+                <section className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                    <h2 className="text-lg font-bold text-gray-900 mb-4">Histórico Recente</h2>
+                    <div className="space-y-4">
+                        {/* Placeholder for more detailed charts/stats */}
+                        <div className="text-center py-8 text-gray-500">
+                            <BarChart3 className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                            <p>Gráficos detalhados em breve</p>
+                        </div>
+                    </div>
+                </section>
             </div>
         </MotoboyLayout>
     );

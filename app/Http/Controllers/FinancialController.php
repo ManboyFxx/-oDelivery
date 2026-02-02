@@ -17,22 +17,22 @@ class FinancialController extends Controller
         $startDate = Carbon::now()->startOfMonth();
         $endDate = Carbon::now()->endOfMonth();
 
-        // 1. Total Revenue (Completed & Paid orders this month)
+        // 1. Total Revenue (Completed & Delivered orders this month)
         $totalRevenue = Order::where('tenant_id', $tenantId)
             ->whereBetween('created_at', [$startDate, $endDate])
-            ->whereIn('status', ['completed', 'delivered']) // Assuming these are final statuses
+            ->whereIn('status', ['completed', 'delivered'])
             ->sum('total');
 
         // 2. Orders Count
         $ordersCount = Order::where('tenant_id', $tenantId)
             ->whereBetween('created_at', [$startDate, $endDate])
+            ->whereIn('status', ['completed', 'delivered'])
             ->count();
 
         // 3. Average Ticket
         $averageTicket = $ordersCount > 0 ? $totalRevenue / $ordersCount : 0;
 
-        // 4. Growth (Compare with last month same period)
-        // Simplified: Compare total revenue vs last month total
+        // 4. Growth logic
         $lastMonthStart = Carbon::now()->subMonth()->startOfMonth();
         $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
         $lastMonthRevenue = Order::where('tenant_id', $tenantId)
@@ -44,49 +44,66 @@ class FinancialController extends Controller
         if ($lastMonthRevenue > 0) {
             $growth = (($totalRevenue - $lastMonthRevenue) / $lastMonthRevenue) * 100;
         } else if ($totalRevenue > 0) {
-            $growth = 100; // 100% growth if started from 0
+            $growth = 100;
         }
 
-        // 5. Chart Data (Last 7 Days)
+        // 5. Chart Data (Last 30 Days)
+        // Group by date to show trend
         $chartData = [];
-        for ($i = 6; $i >= 0; $i--) {
-            $date = Carbon::now()->subDays($i);
-            $dayRevenue = Order::where('tenant_id', $tenantId)
-                ->whereDate('created_at', $date)
-                ->whereIn('status', ['completed', 'delivered'])
-                ->sum('total');
+        $queryDate = Carbon::now()->subDays(29); // Start 30 days ago
+
+        // Pre-fetch data for efficiency
+        $dailyRevenues = Order::where('tenant_id', $tenantId)
+            ->where('created_at', '>=', $queryDate->startOfDay())
+            ->whereIn('status', ['completed', 'delivered'])
+            ->selectRaw('DATE(created_at) as date, SUM(total) as total')
+            ->groupBy('date')
+            ->get()
+            ->keyBy('date');
+
+        for ($i = 0; $i < 30; $i++) {
+            $date = Carbon::now()->subDays(29 - $i);
+            $dateString = $date->format('Y-m-d');
+            $revenue = isset($dailyRevenues[$dateString]) ? $dailyRevenues[$dateString]->total : 0;
 
             $chartData[] = [
                 'date' => $date->format('d/m'),
-                'value' => (float) $dayRevenue
+                'value' => (float) $revenue
             ];
         }
 
         // 6. Recent Transactions
         $transactions = Order::where('tenant_id', $tenantId)
-            ->with(['payments']) // Assuming relation
+            ->with(['payments'])
             ->latest()
-            ->take(10)
+            ->take(8)
             ->get()
             ->map(function ($order) {
-                // Determine main payment method
+                // Determine payment method from relation or fallback
                 $methodStr = 'Outros';
-                $payment = $order->payments->first(); // Get first payment
+                $payment = $order->payments->first();
                 if ($payment) {
-                    $methods = [
+                    $methodStr = match ($payment->method) {
                         'credit_card' => 'Cartão de Crédito',
                         'debit_card' => 'Cartão de Débito',
                         'pix' => 'PIX',
-                        'cash' => 'Dinheiro'
-                    ];
-                    $methodStr = $methods[$payment->method] ?? $payment->method;
+                        'cash' => 'Dinheiro',
+                        default => ucfirst($payment->method),
+                    };
                 }
 
+                // Check status map
+                $status = match ($order->status) {
+                    'delivered', 'completed' => 'completed',
+                    'cancelled' => 'refunded',
+                    default => 'pending'
+                };
+
                 return [
-                    'id' => $order->order_number, // User friendly ID
-                    'customer' => $order->customer_name,
+                    'id' => substr($order->id, -6), // Short ID
+                    'customer' => $order->customer_name ?? 'Cliente Balcão',
                     'amount' => (float) $order->total,
-                    'status' => $order->status,
+                    'status' => $status,
                     'payment_method' => $methodStr,
                     'date' => $order->created_at->format('H:i - d/m')
                 ];

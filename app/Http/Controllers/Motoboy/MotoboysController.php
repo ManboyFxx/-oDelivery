@@ -94,7 +94,14 @@ class MotoboysController extends Controller
      */
     public function metrics()
     {
-        return Inertia::render('Motoboy/Metrics');
+        $user = auth()->user();
+        $summary = $this->summaryService->getSummary($user->id);
+        $recentDeliveries = $this->orderService->getRecentDeliveries($user->id, 10); // More history for metrics page
+
+        return Inertia::render('Motoboy/Metrics', [
+            'summary' => $summary,
+            'recentDeliveries' => $recentDeliveries,
+        ]);
     }
 
     /**

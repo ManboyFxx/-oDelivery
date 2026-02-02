@@ -12,6 +12,7 @@ class MotoboyAvailability extends Model
 
     protected $keyType = 'string';
     public $incrementing = false;
+    protected $table = 'motoboy_availability';
 
     protected $fillable = [
         'user_id',

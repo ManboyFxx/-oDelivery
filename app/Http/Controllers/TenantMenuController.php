@@ -66,23 +66,9 @@ class TenantMenuController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        // Get loyalty rewards category if exists
-        $loyaltyRewardsCategory = Category::where('tenant_id', $tenantId)
-            ->where('category_type', 'loyalty_rewards')
-            ->with([
-                'products' => function ($query) {
-                    $query->where('is_available', true)
-                        ->where('loyalty_redeemable', true)
-                        ->select('id', 'tenant_id', 'category_id', 'name', 'description', 'price', 'image_url', 'track_stock', 'stock_quantity', 'is_available', 'is_featured', 'is_promotional', 'is_new', 'is_exclusive', 'loyalty_earns_points', 'loyalty_redeemable', 'loyalty_points_cost');
-                }
-            ])
-            ->where('is_active', true)
-            ->first();
-
-        // Add loyalty rewards category to the beginning if it exists and has products
-        if ($loyaltyRewardsCategory && $loyaltyRewardsCategory->products->count() > 0) {
-            $categories->prepend($loyaltyRewardsCategory);
-        }
+        // TODO: Get loyalty rewards category if exists (requires category_type column in categories table)
+        // This feature is planned for a future phase
+        $loyaltyRewardsCategory = null;
 
         // Get active loyalty promotion for banner (FASE 4)
         $activePromotion = \App\Models\LoyaltyPromotion::where('tenant_id', $tenantId)
@@ -97,7 +83,6 @@ class TenantMenuController extends Controller
                 'id' => $category->id,
                 'name' => $category->name,
                 'sort_order' => $category->sort_order,
-                'category_type' => $category->category_type,
                 'products' => $category->products->map(function ($product) {
                     return [
                         'id' => $product->id,

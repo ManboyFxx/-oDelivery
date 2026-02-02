@@ -97,4 +97,51 @@ class AdminTenantController extends Controller
             'metrics' => $metrics,
         ]);
     }
+    public function edit(string $id)
+    {
+        $tenant = Tenant::findOrFail($id);
+
+        // Load plan limits for reference
+        $plans = \App\Models\PlanLimit::where('is_active', true)->orderBy('sort_order')->get();
+
+        return Inertia::render('Admin/Tenants/Edit', [
+            'tenant' => $tenant,
+            'plans' => $plans,
+            'currentLimits' => [
+                'max_products' => $tenant->getLimit('max_products'),
+                'max_users' => $tenant->getLimit('max_users'),
+                'max_orders_per_month' => $tenant->getLimit('max_orders_per_month'),
+                'max_motoboys' => $tenant->getLimit('max_motoboys'),
+                'max_storage_mb' => $tenant->getLimit('max_storage_mb'),
+            ]
+        ]);
+    }
+
+    public function update(Request $request, Tenant $tenant)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'slug' => 'required|string|max:255|unique:tenants,slug,' . $tenant->id,
+            'is_active' => 'boolean',
+            'plan' => 'required|string',
+            // Custom Override Fields
+            'is_custom' => 'boolean',
+            'max_products' => 'nullable|integer',
+            'max_users' => 'nullable|integer',
+            'max_orders_per_month' => 'nullable|integer',
+            'max_motoboys' => 'nullable|integer',
+        ]);
+
+        // If not custom, we clear the overrides to respect the plan limits
+        if (!$request->boolean('is_custom')) {
+            $validated['max_products'] = null;
+            $validated['max_users'] = null;
+            $validated['max_orders_per_month'] = null;
+            $validated['max_motoboys'] = null;
+        }
+
+        $tenant->update($validated);
+
+        return \Illuminate\Support\Facades\Redirect::route('admin.tenants.index')->with('success', 'Loja atualizada com sucesso!');
+    }
 }

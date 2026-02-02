@@ -12,25 +12,34 @@ class MotoboySummaryService
     /**
      * Retorna resumo do dia do motoboy
      */
-    public function getSummary(string $userId): array
+    public function getSummary(string $userId, string $tenantId = null): array
     {
         $today = Carbon::today();
+        $tenantId = $tenantId ?? auth()->user()->tenant_id;
 
         // Entregas de hoje
         $deliveriesToday = Order::where('motoboy_id', $userId)
+            ->where('tenant_id', $tenantId)
             ->where('status', 'delivered')
-            ->whereDate('motoboy_delivered_at', $today)
+            ->whereDate('delivered_at', $today)
             ->count();
 
         // Ganho do dia (soma de delivery_fee dos pedidos entregues)
         $earningsToday = Order::where('motoboy_id', $userId)
+            ->where('tenant_id', $tenantId)
             ->where('status', 'delivered')
-            ->whereDate('motoboy_delivered_at', $today)
+            ->whereDate('delivered_at', $today)
             ->sum('delivery_fee');
 
         // Avaliação média
-        $averageRating = MotoboyRating::where('motoboy_id', $userId)
-            ->avg('rating');
+        $averageRating = 0;
+        try {
+            $averageRating = MotoboyRating::where('motoboy_id', $userId)
+                ->avg('rating');
+        } catch (\Exception $e) {
+            // Table may not exist yet or other DB error
+            $averageRating = 0;
+        }
 
         // Status de disponibilidade
         $availability = MotoboyAvailability::where('user_id', $userId)->first();
@@ -55,8 +64,10 @@ class MotoboySummaryService
     /**
      * Retorna estatísticas de um período específico
      */
-    public function getPeriodSummary(string $userId, string $period = 'week'): array
+    public function getPeriodSummary(string $userId, string $period = 'week', string $tenantId = null): array
     {
+        $tenantId = $tenantId ?? auth()->user()->tenant_id;
+
         $startDate = match ($period) {
             'today' => Carbon::today(),
             'week' => Carbon::now()->startOfWeek(),
@@ -68,21 +79,29 @@ class MotoboySummaryService
         $endDate = Carbon::now();
 
         $deliveries = Order::where('motoboy_id', $userId)
+            ->where('tenant_id', $tenantId)
             ->where('status', 'delivered')
-            ->whereBetween('motoboy_delivered_at', [$startDate, $endDate])
+            ->whereBetween('delivered_at', [$startDate, $endDate])
             ->count();
 
         $earnings = Order::where('motoboy_id', $userId)
+            ->where('tenant_id', $tenantId)
             ->where('status', 'delivered')
-            ->whereBetween('motoboy_delivered_at', [$startDate, $endDate])
+            ->whereBetween('delivered_at', [$startDate, $endDate])
             ->sum('delivery_fee');
 
-        $averageTime = Order::where('motoboy_id', $userId)
-            ->where('status', 'delivered')
-            ->whereBetween('motoboy_delivered_at', [$startDate, $endDate])
-            ->selectRaw('AVG(TIMESTAMPDIFF(MINUTE, motoboy_accepted_at, motoboy_delivered_at)) as avg_time')
-            ->first()
-            ->avg_time ?? 0;
+        $averageTime = 0;
+        try {
+            $result = Order::where('motoboy_id', $userId)
+                ->where('tenant_id', $tenantId)
+                ->where('status', 'delivered')
+                ->whereBetween('delivered_at', [$startDate, $endDate])
+                ->selectRaw('AVG(TIMESTAMPDIFF(MINUTE, confirmed_at, delivered_at)) as avg_time')
+                ->first();
+            $averageTime = $result?->avg_time ?? 0;
+        } catch (\Exception $e) {
+            $averageTime = 0;
+        }
 
         return [
             'period' => $period,

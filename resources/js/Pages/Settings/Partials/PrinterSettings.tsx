@@ -58,11 +58,16 @@ export default function PrinterSettings() {
                     </div>
                 </div>
 
+                {/* DEBUG: Remove in production */}
+                {/* <div className="p-2 border border-red-500 text-xs text-red-500">
+                    DEBUG FLASH: {JSON.stringify(flash)}
+                </div> */}
+
                 <div className="space-y-2">
                     <InputLabel value="Token de Acesso" />
                     <div className="flex gap-2">
                         <TextInput
-                            value={token || "********************************"}
+                            value={flash?.flash_token || token || "********************************"}
                             readOnly
                             className={`flex-1 font-mono ${token ? "bg-green-50 border-green-200 text-green-700" : ""}`}
                             type={token ? "text" : "password"}
@@ -82,7 +87,7 @@ export default function PrinterSettings() {
                 </div>
 
                 <div className="flex gap-2 justify-end pt-4 border-t border-gray-100 dark:border-white/5">
-                    <PrimaryButton onClick={generateToken} className="flex items-center gap-2">
+                    <PrimaryButton type="button" onClick={generateToken} className="flex items-center gap-2">
                         <RefreshCw className="w-4 h-4" />
                         Gerar Novo Token
                     </PrimaryButton>

@@ -44,6 +44,16 @@ class AuthenticatedSessionController extends Controller
             ]);
         }
 
+        // Se é motoboy MAS NÃO marcou o checkbox
+        if ($user->isMotoboy() && !$isMotoboy) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+
+            return back()->withErrors([
+                'email' => 'Esta conta é de entregador. Marque a caixa "Sou Entregador" para acessar o painel motoboy.',
+            ])->with('info', 'use_motoboy_panel');
+        }
+
         $request->session()->regenerate();
 
         // Se é motoboy e marcou o checkbox, redireciona para painel do motoboy
@@ -56,6 +66,12 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('admin.dashboard');
         }
 
+        // Se é employee, redireciona para PDV (sem acesso a dashboard)
+        if ($user->isEmployee()) {
+            return redirect()->route('pdv.index');
+        }
+
+        // Admin padrão vai para dashboard
         return redirect()->intended(route('dashboard', absolute: false));
     }
 

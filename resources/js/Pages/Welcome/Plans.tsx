@@ -1,8 +1,26 @@
 import { Head, Link } from '@inertiajs/react';
-import { Check, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, X, Star } from 'lucide-react';
 import { useState } from 'react';
+import clsx from 'clsx';
 
-export default function Plans() {
+interface Feature {
+    text: string;
+    included: boolean;
+}
+
+interface Plan {
+    id: string;
+    name: string;
+    price: number;
+    interval: string;
+    features: Feature[];
+}
+
+interface Props {
+    plans: Plan[];
+}
+
+export default function Plans({ plans }: Props) {
     return (
         <div className="min-h-screen bg-white font-sans text-gray-900 selection:bg-[#ff3d03] selection:text-white">
             <Head title="Planos e Preços - ÓoDelivery" />
@@ -48,172 +66,84 @@ export default function Plans() {
                 {/* Pricing Cards */}
                 <div className="max-w-7xl mx-auto px-6 lg:px-8 mb-32">
                     <div className="grid md:grid-cols-3 gap-8 items-start">
-                        {/* Free Plan */}
-                        <div className="relative p-8 rounded-3xl border border-gray-200 bg-white hover:border-[#ff3d03]/30 hover:shadow-2xl hover:shadow-[#ff3d03]/5 transition-all duration-300">
-                            <div className="mb-6">
-                                <h3 className="text-lg font-bold text-gray-500 uppercase tracking-wider mb-2">Gratuito</h3>
-                                <div className="flex items-baseline gap-1">
-                                    <span className="text-5xl font-black text-gray-900">R$0</span>
-                                    <span className="text-gray-500 font-medium">/mês</span>
-                                </div>
-                                <p className="text-gray-400 text-sm mt-2">Para testar e validar seu delivery.</p>
-                            </div>
-                            <ul className="space-y-4 mb-8">
-                                <li className="flex items-center gap-3 text-gray-600 font-medium">
-                                    <Check className="h-5 w-5 text-[#ff3d03]" />
-                                    30 produtos
-                                </li>
-                                <li className="flex items-center gap-3 text-gray-600 font-medium">
-                                    <Check className="h-5 w-5 text-[#ff3d03]" />
-                                    2 usuários
-                                </li>
-                                <li className="flex items-center gap-3 text-gray-600 font-medium">
-                                    <Check className="h-5 w-5 text-[#ff3d03]" />
-                                    Até 300 pedidos/mês
-                                </li>
-                                <li className="flex items-center gap-3 text-gray-600 font-medium">
-                                    <Check className="h-5 w-5 text-[#ff3d03]" />
-                                    8 categorias
-                                </li>
-                                <li className="flex items-center gap-3 text-gray-600 font-medium">
-                                    <Check className="h-5 w-5 text-[#ff3d03]" />
-                                    3 cupons ativos
-                                </li>
-                                <li className="flex items-center gap-3 text-gray-600 font-medium">
-                                    <Check className="h-5 w-5 text-[#ff3d03]" />
-                                    Cardápio digital
-                                </li>
-                                <li className="flex items-center gap-3 text-gray-600 font-medium">
-                                    <Check className="h-5 w-5 text-[#ff3d03]" />
-                                    Programa de fidelidade básico
-                                </li>
-                                {/* Not Included */}
-                                <li className="flex items-center gap-3 text-gray-400 font-medium opacity-60">
-                                    <X className="h-5 w-5 text-gray-300" />
-                                    Gestão de motoboys
-                                </li>
-                                <li className="flex items-center gap-3 text-gray-400 font-medium opacity-60">
-                                    <X className="h-5 w-5 text-gray-300" />
-                                    Impressão automática (ÓoPrint) <span className="text-xs text-[#ff3d03] italic">(Em breve)</span>
-                                </li>
-                                <li className="flex items-center gap-3 text-gray-400 font-medium opacity-60">
-                                    <X className="h-5 w-5 text-gray-300" />
-                                    Robô WhatsApp (ÓoBot) <span className="text-xs text-[#ff3d03] italic">(Em breve)</span>
-                                </li>
-                            </ul>
-                            <Link href={route('register')} className="block w-full py-4 rounded-xl border-2 border-gray-100 text-gray-900 font-bold text-center hover:border-[#ff3d03] hover:text-[#ff3d03] transition-all">
-                                Começar Grátis
-                            </Link>
-                        </div>
+                        {plans.map((plan) => {
+                            const isPro = plan.price > 0 && plan.price < 100; // Heuristic for Pro plan (middle tier)
+                            const isFree = plan.price === 0;
+                            const isCustom = plan.price >= 100 && plan.interval !== 'mês'; // Custom logic usually price is high or placeholder.
+                            // Actually better to check ID if standard
+                            const isProById = plan.id === 'pro';
 
-                        {/* Basic Plan (Highlighted) */}
-                        <div className="relative p-8 rounded-3xl border-2 border-[#ff3d03] bg-white shadow-xl shadow-[#ff3d03]/10 scale-105 z-10">
-                            <div className="absolute top-0 right-0 bg-[#ff3d03] text-white text-xs font-bold px-3 py-1 rounded-bl-xl rounded-tr-2xl uppercase tracking-wider">
-                                Melhor Custo-Benefício
-                            </div>
-                            <div className="mb-6">
-                                <h3 className="text-lg font-bold text-[#ff3d03] uppercase tracking-wider mb-2">Básico</h3>
-                                <div className="flex items-baseline gap-1">
-                                    <span className="text-5xl font-black text-gray-900">R$79</span>
-                                    <span className="text-2xl font-bold text-gray-900">,90</span>
-                                    <span className="text-gray-500 font-medium">/mês</span>
-                                </div>
-                                <p className="text-gray-400 text-sm mt-2">Para deliverys em crescimento.</p>
-                            </div>
-                            <ul className="space-y-4 mb-8">
-                                <li className="flex items-center gap-3 text-gray-900 font-bold">
-                                    <Check className="h-5 w-5 text-[#ff3d03]" />
-                                    250 produtos
-                                </li>
-                                <li className="flex items-center gap-3 text-gray-900 font-bold">
-                                    <Check className="h-5 w-5 text-[#ff3d03]" />
-                                    5 usuários
-                                </li>
-                                <li className="flex items-center gap-3 text-gray-900 font-bold">
-                                    <Check className="h-5 w-5 text-[#ff3d03]" />
-                                    Pedidos Ilimitados
-                                </li>
-                                <li className="flex items-center gap-3 text-gray-900 font-bold">
-                                    <Check className="h-5 w-5 text-[#ff3d03]" />
-                                    Categorias ilimitadas
-                                </li>
-                                <li className="flex items-center gap-3 text-gray-900 font-bold">
-                                    <Check className="h-5 w-5 text-[#ff3d03]" />
-                                    15 cupons ativos
-                                </li>
-                                <li className="flex items-center gap-3 text-gray-900 font-bold">
-                                    <Check className="h-5 w-5 text-[#ff3d03]" />
-                                    10 motoboys
-                                </li>
-                                <li className="flex items-center gap-3 text-gray-900 font-bold">
-                                    <Check className="h-5 w-5 text-[#ff3d03]" />
-                                    Impressão automática (ÓoPrint) <span className="text-xs text-[#ff3d03] italic font-normal ml-1">(Em breve)</span>
-                                </li>
-                                <li className="flex items-center gap-3 text-gray-900 font-bold">
-                                    <Check className="h-5 w-5 text-[#ff3d03]" />
-                                    Robô WhatsApp (ÓoBot) <span className="text-xs text-[#ff3d03] italic font-normal ml-1">(Em breve)</span>
-                                </li>
-                                <li className="flex items-center gap-3 text-gray-900 font-bold">
-                                    <Check className="h-5 w-5 text-[#ff3d03]" />
-                                    Gestão de estoque ilimitada
-                                </li>
-                            </ul>
-                            <Link href={route('register')} className="block w-full py-4 rounded-xl bg-[#ff3d03] text-white font-bold text-center hover:bg-[#e63700] shadow-lg shadow-[#ff3d03]/30 hover:shadow-[#ff3d03]/50 transition-all">
-                                Assinar Agora
-                            </Link>
-                        </div>
+                            return (
+                                <div
+                                    key={plan.id}
+                                    className={clsx(
+                                        "relative p-8 rounded-3xl border transition-all duration-300 flex flex-col h-full",
+                                        isProById
+                                            ? "border-2 border-[#ff3d03] bg-white shadow-xl shadow-[#ff3d03]/10 scale-105 z-10"
+                                            : "border-gray-200 bg-white hover:border-[#ff3d03]/30 hover:shadow-2xl hover:shadow-[#ff3d03]/5"
+                                    )}
+                                >
+                                    {isProById && (
+                                        <div className="absolute top-0 right-0 bg-[#ff3d03] text-white text-xs font-bold px-3 py-1 rounded-bl-xl rounded-tr-2xl uppercase tracking-wider">
+                                            Recomendado
+                                        </div>
+                                    )}
 
-                        {/* Custom Plan */}
-                        <div className="relative p-8 rounded-3xl border border-gray-200 bg-white hover:border-[#ff3d03]/30 hover:shadow-2xl hover:shadow-[#ff3d03]/5 transition-all duration-300">
-                            <div className="mb-6">
-                                <h3 className="text-lg font-bold text-gray-500 uppercase tracking-wider mb-2">Personalizado</h3>
-                                <div className="flex items-baseline gap-1">
-                                    <span className="text-4xl font-black text-gray-900">Sob Consulta</span>
+                                    <div className="mb-6">
+                                        <h3 className={clsx("text-lg font-bold uppercase tracking-wider mb-2", isProById ? "text-[#ff3d03]" : "text-gray-500")}>
+                                            {plan.name}
+                                        </h3>
+                                        <div className="flex items-baseline gap-1">
+                                            {plan.price > 0 ? (
+                                                <>
+                                                    <span className="text-5xl font-black text-gray-900">R${Math.floor(plan.price)}</span>
+                                                    <span className="text-2xl font-bold text-gray-900">,{plan.price.toFixed(2).split('.')[1]}</span>
+                                                </>
+                                            ) : (
+                                                <span className="text-5xl font-black text-gray-900">{plan.price === 0 ? 'R$0' : 'Sob Consulta'}</span>
+                                            )}
+                                            <span className="text-gray-500 font-medium">/{plan.interval}</span>
+                                        </div>
+                                        <p className="text-gray-400 text-sm mt-2">
+                                            {plan.id === 'free' && "Ideal para começar a operar com qualidade."}
+                                            {plan.id === 'pro' && "Liberdade total para crescer e organizar a logística."}
+                                            {plan.id === 'custom' && "Sob medida para redes e grandes operações."}
+                                        </p>
+                                    </div>
+
+                                    <ul className="space-y-4 mb-8 flex-1">
+                                        {plan.features.map((feature, idx) => (
+                                            <li key={idx} className={clsx("flex items-center gap-3 font-medium", feature.included ? (isProById ? "text-gray-900 font-bold" : "text-gray-600") : "text-gray-400 opacity-60")}>
+                                                {feature.included ? (
+                                                    <Check className="h-5 w-5 text-[#ff3d03]" />
+                                                ) : (
+                                                    <X className="h-5 w-5 text-gray-300" />
+                                                )}
+                                                {feature.text}
+                                            </li>
+                                        ))}
+                                    </ul>
+
+                                    {plan.id === 'custom' ? (
+                                        <a href="https://wa.me/5511999999999" target="_blank" className="block w-full py-4 rounded-xl border-2 border-gray-100 text-gray-900 font-bold text-center hover:border-[#ff3d03] hover:text-[#ff3d03] transition-all">
+                                            Falar com Consultor
+                                        </a>
+                                    ) : (
+                                        <Link
+                                            href={route('register')}
+                                            className={clsx(
+                                                "block w-full py-4 rounded-xl font-bold text-center transition-all",
+                                                isProById
+                                                    ? "bg-[#ff3d03] text-white hover:bg-[#e63700] shadow-lg shadow-[#ff3d03]/30 hover:shadow-[#ff3d03]/50"
+                                                    : "border-2 border-gray-100 text-gray-900 hover:border-[#ff3d03] hover:text-[#ff3d03]"
+                                            )}
+                                        >
+                                            {plan.price === 0 ? 'Começar Grátis' : 'Assinar Agora'}
+                                        </Link>
+                                    )}
                                 </div>
-                                <p className="text-gray-400 text-sm mt-2">Para grandes operações e franquias.</p>
-                            </div>
-                            <ul className="space-y-4 mb-8">
-                                <li className="flex items-center gap-3 text-gray-600 font-medium">
-                                    <Check className="h-5 w-5 text-[#ff3d03]" />
-                                    Tudo do Básico +
-                                </li>
-                                <li className="flex items-center gap-3 text-gray-600 font-medium">
-                                    <Check className="h-5 w-5 text-[#ff3d03]" />
-                                    Produtos ilimitados
-                                </li>
-                                <li className="flex items-center gap-3 text-gray-600 font-medium">
-                                    <Check className="h-5 w-5 text-[#ff3d03]" />
-                                    Usuários ilimitados
-                                </li>
-                                <li className="flex items-center gap-3 text-gray-600 font-medium">
-                                    <Check className="h-5 w-5 text-[#ff3d03]" />
-                                    Integrações customizadas (API)
-                                </li>
-                                <li className="flex items-center gap-3 text-gray-600 font-medium">
-                                    <Check className="h-5 w-5 text-[#ff3d03]" />
-                                    Motoboys ilimitados
-                                </li>
-                                <li className="flex items-center gap-3 text-gray-600 font-medium">
-                                    <Check className="h-5 w-5 text-[#ff3d03]" />
-                                    White Label (Sua marca)
-                                </li>
-                                <li className="flex items-center gap-3 text-gray-600 font-medium">
-                                    <Check className="h-5 w-5 text-[#ff3d03]" />
-                                    Domínio personalizado
-                                </li>
-                                <li className="flex items-center gap-3 text-gray-600 font-medium">
-                                    <Check className="h-5 w-5 text-[#ff3d03]" />
-                                    Suporte prioritário WhatsApp
-                                </li>
-                                <li className="flex items-center gap-3 text-gray-600 font-medium">
-                                    <Check className="h-5 w-5 text-[#ff3d03]" />
-                                    Gerente de conta dedicado
-                                </li>
-                            </ul>
-                            <a href="https://wa.me/5511999999999" target="_blank" className="block w-full py-4 rounded-xl border-2 border-gray-100 text-gray-900 font-bold text-center hover:border-[#ff3d03] hover:text-[#ff3d03] transition-all">
-                                Falar com Consultor
-                            </a>
-                        </div>
+                            );
+                        })}
                     </div>
                 </div>
 

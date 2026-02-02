@@ -13,6 +13,10 @@ class DashboardController extends Controller
 {
     public function index()
     {
+        if (Auth::user()->isMotoboy()) {
+            return redirect()->route('motoboy.dashboard');
+        }
+
         $tenantId = Auth::user()->tenant_id;
 
         // 1. Faturamento do Dia

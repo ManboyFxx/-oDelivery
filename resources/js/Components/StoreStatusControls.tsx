@@ -22,6 +22,7 @@ export default function StoreStatusControls() {
     }
 
     const { store_status } = tenant;
+    console.log('DEBUG Store Status:', store_status); // Debugging
 
     if (!store_status) {
         return null;

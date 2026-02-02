@@ -92,7 +92,7 @@ class StoreSetting extends Model
         'store_longitude' => 'float',
         'is_delivery_paused' => 'boolean',
         'paused_until' => 'datetime',
-        'default_motoboy_id' => 'integer',
+        'default_motoboy_id' => 'string',
     ];
 
     protected $hidden = [
@@ -124,9 +124,9 @@ class StoreSetting extends Model
         }
 
         // 3. Business Hours Logic
-        // If business_hours not configured, DEFAULT TO OPEN (not closed!)
         if (!$this->business_hours || !is_array($this->business_hours) || empty($this->business_hours)) {
-            return true; // ✅ Se não configurado, abre por padrão
+            \Illuminate\Support\Facades\Log::info('Store Open Check: defaulting to false (no config)');
+            return false;
         }
 
         try {
@@ -137,7 +137,14 @@ class StoreSetting extends Model
             // Get current day name in lowercase
             $dayOfWeek = strtolower($now->format('l'));
 
-            // Map English day names
+            \Illuminate\Support\Facades\Log::info('Store Open Check: ', [
+                'now' => $now->toDateTimeString(),
+                'day' => $dayOfWeek,
+                'override' => $this->status_override,
+                'hours_raw' => $hours[$dayOfWeek] ?? 'missing'
+            ]);
+
+            // Map English day names (redundant but safe)
             $dayMap = [
                 'monday' => 'monday',
                 'tuesday' => 'tuesday',
@@ -150,16 +157,17 @@ class StoreSetting extends Model
 
             $day = $dayMap[$dayOfWeek] ?? null;
 
-            // If day not found in config, default to OPEN
+            // If day not found in config, default to CLOSED
             if (!$day || !isset($hours[$day])) {
-                return true;
+                \Illuminate\Support\Facades\Log::info('Store Open Check: Day not configured, CLOSED');
+                return false;
             }
 
             $dayData = $hours[$day];
-            $isOpen = $dayData['isOpen'] ?? $dayData['is_open'] ?? true; // Default to true
+            $isOpen = $dayData['isOpen'] ?? $dayData['is_open'] ?? false;
 
-            // If day is marked as closed, return false
             if (!$isOpen) {
+                \Illuminate\Support\Facades\Log::info('Store Open Check: Day marked closed');
                 return false;
             }
 
@@ -268,7 +276,15 @@ class StoreSetting extends Model
             }
 
             // Normalize keys (support both is_open/isOpen, open/open_time, etc)
-            $isOpen = $dayData['isOpen'] ?? $dayData['is_open'] ?? $dayData['closed'] ?? false;
+            $isOpen = false;
+            if (isset($dayData['isOpen'])) {
+                $isOpen = filter_var($dayData['isOpen'], FILTER_VALIDATE_BOOLEAN);
+            } elseif (isset($dayData['is_open'])) {
+                $isOpen = filter_var($dayData['is_open'], FILTER_VALIDATE_BOOLEAN);
+            } elseif (isset($dayData['closed'])) {
+                $isOpen = !filter_var($dayData['closed'], FILTER_VALIDATE_BOOLEAN);
+            }
+
             $openTime = $dayData['open'] ?? $dayData['open_time'] ?? '09:00';
             $closeTime = $dayData['close'] ?? $dayData['close_time'] ?? '23:00';
 
@@ -281,7 +297,7 @@ class StoreSetting extends Model
             }
 
             $formatted[$day] = [
-                'is_open' => (bool)$isOpen,
+                'is_open' => (bool) $isOpen,
                 'open_time' => $openTime,
                 'close_time' => $closeTime,
             ];

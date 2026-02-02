@@ -83,7 +83,7 @@ export default function TopBar({ user, onMenuClick, hasUnread = false, onRead }:
                             <div className="hidden md:block">
                                 <p className="text-xs font-bold text-gray-800 dark:text-white leading-tight group-hover:text-[#ff3d03] transition-colors">{user?.name || 'Administrador'}</p>
                                 <div className="flex items-center gap-1 text-[10px] text-gray-400 uppercase tracking-wide font-medium">
-                                    {user?.role === 'super_admin' ? 'Super Admin' : 'Proprietário'}
+                                    {user?.role === 'super_admin' ? 'Super Admin' : user?.role === 'admin' ? 'Proprietário' : user?.role === 'employee' ? 'Funcionário' : 'Entregador'}
                                     <ChevronDown className="h-3 w-3" />
                                 </div>
                             </div>

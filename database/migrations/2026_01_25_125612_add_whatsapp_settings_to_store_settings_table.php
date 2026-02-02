@@ -11,7 +11,9 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('store_settings', function (Blueprint $table) {
-            $table->boolean('whatsapp_auto_messages_enabled')->default(false)->after('paused_until');
+            if (!Schema::hasColumn('store_settings', 'whatsapp_auto_messages_enabled')) {
+                $table->boolean('whatsapp_auto_messages_enabled')->default(false)->after('paused_until');
+            }
         });
     }
 

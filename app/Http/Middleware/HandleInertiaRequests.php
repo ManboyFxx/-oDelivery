@@ -44,6 +44,7 @@ class HandleInertiaRequests extends Middleware
                 'plan' => $tenant->plan,
                 'plan_display_name' => $tenant->plan_display_name,
                 'subscription_status' => $tenant->subscription_status,
+                'limits' => $tenant->getUsageStats(), // Added usage stats
                 'is_trial_active' => $tenant->isTrialActive(),
                 'is_trial_expiring_soon' => $tenant->isTrialExpiringSoon(),
                 'trial_days_remaining' => $tenant->trialDaysRemaining(),
@@ -61,6 +62,7 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => fn() => $request->session()->get('success'),
                 'error' => fn() => $request->session()->get('error'),
+                'flash_token' => fn() => $request->session()->get('flash_token'), // Explicitly share token
             ],
             'toast' => fn() => $request->session()->get('toast'),
         ];

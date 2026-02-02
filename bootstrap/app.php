@@ -23,12 +23,15 @@ return Application::configure(basePath: dirname(__DIR__))
         // Register middleware aliases
         $middleware->alias([
             'subscription' => \App\Http\Middleware\CheckSubscription::class,
-            'plan.limit' => \App\Http\Middleware\CheckPlanLimits::class,
+            'plan.limit' => \App\Http\Middleware\EnforcePlanLimits::class,
             'feature' => \App\Http\Middleware\CheckFeature::class,
             'tenant.required' => \App\Http\Middleware\EnsureTenantExists::class,
             'tenant.scope' => \App\Http\Middleware\TenantScopeMiddleware::class,
             'two-factor' => \App\Http\Middleware\EnsureTwoFactorEnabled::class,
             'throttle.plan' => \App\Http\Middleware\ThrottleByPlan::class,
+            'is_motoboy' => \App\Http\Middleware\IsMotoboyMiddleware::class,
+            'check_subscription' => \App\Http\Middleware\CheckSubscription::class,
+            'role' => \App\Http\Middleware\RoleBasedAccessMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

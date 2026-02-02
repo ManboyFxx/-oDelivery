@@ -11,9 +11,15 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('orders', function (Blueprint $table) {
-            $table->timestamp('preparation_started_at')->nullable()->after('status');
-            $table->timestamp('estimated_ready_at')->nullable()->after('preparation_started_at');
-            $table->integer('preparation_time_minutes')->default(30)->after('estimated_ready_at');
+            if (!Schema::hasColumn('orders', 'preparation_started_at')) {
+                $table->timestamp('preparation_started_at')->nullable()->after('status');
+            }
+            if (!Schema::hasColumn('orders', 'estimated_ready_at')) {
+                $table->timestamp('estimated_ready_at')->nullable()->after('preparation_started_at');
+            }
+            if (!Schema::hasColumn('orders', 'preparation_time_minutes')) {
+                $table->integer('preparation_time_minutes')->default(30)->after('estimated_ready_at');
+            }
         });
     }
 

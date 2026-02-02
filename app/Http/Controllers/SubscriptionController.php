@@ -4,77 +4,72 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Models\PlanLimit;
 
 class SubscriptionController extends Controller
 {
     public function index()
     {
+        $tenant = auth()->user()->tenant;
+        $activePlans = PlanLimit::where('is_active', true)->orderBy('sort_order')->get();
+
+        $plans = $activePlans->map(function ($plan) use ($tenant) {
+            return [
+                'id' => match ($plan->plan) {
+                    'free' => 'free',
+                    'pro' => 'price_basic',
+                    'start' => 'free',
+                    'custom' => 'price_pro',
+                    default => $plan->plan,
+                },
+                'original_id' => $plan->plan, // Useful for strict comparison if needed
+                'name' => $plan->display_name,
+                'price' => $plan->price_monthly,
+                'interval' => 'mês',
+                'features' => $plan->formatted_features,
+                'limits' => [
+                    'products' => $plan->max_products,
+                    'users' => $plan->max_users,
+                    'orders' => $plan->max_orders_per_month,
+                    'motoboys' => $plan->max_motoboys,
+                    'stock_items' => $plan->max_stock_items,
+                    'coupons' => $plan->max_coupons,
+                ],
+                'current' => $tenant->plan === $plan->plan,
+            ];
+        })->values();
+
+        // Calculate Usage - STRICTLY SCOPED VIA TENANT RELATIONSHIP
+        $usage = [
+            'products' => $tenant->products()->count(),
+            'users' => $tenant->users()->count(),
+            'orders' => $tenant->orders()->whereMonth('created_at', now()->month)->count(),
+            'motoboys' => $tenant->users()->where('role', 'motoboy')->count(),
+            'coupons' => $tenant->coupons()->where('is_active', true)->count(),
+            'stock_items' => 0,
+        ];
+
+        // Try to count ingredients (Stock Items) via relationship checking
+        // Assuming Ingredient model has tenant_id or is related to tenant
+        if (class_exists(\App\Models\Ingredient::class)) {
+            // If Ingredient doesn't have a direct relationship in Tenant model yet, we can try direct query with tenant_id if column exists
+            // Or better, add the relationship to Tenant.php if missing.
+            // For now, let's assume global scope or direct query if relationship missing.
+            // Best practice: $tenant->ingredients()->count() if relation exists.
+            // Checking Tenant.php from previous turn... ID 772 shows it DOES NOT have ingredients() relationship visible in lines 51-150.
+            // However, it has 'users', 'products', 'orders'.
+            // Let's use direct scoped query as fallback safe method.
+            $usage['stock_items'] = \App\Models\Ingredient::where('tenant_id', $tenant->id)->count();
+        }
+
         return Inertia::render('Subscription/Index', [
-            // 'tenant' => auth()->user()->tenant, (Removed to use global shared prop)
-            // Add plans later when integrating Stripe
-            'plans' => [
-                [
-                    'id' => 'free',
-                    'name' => 'Gratuito',
-                    'price' => 0,
-                    'interval' => 'mês',
-                    'features' => [
-                        ['text' => '30 produtos', 'included' => true],
-                        ['text' => '2 usuários', 'included' => true],
-                        ['text' => 'Até 300 pedidos/mês', 'included' => true],
-                        ['text' => '8 categorias', 'included' => true],
-                        ['text' => '3 cupons ativos', 'included' => true],
-                        ['text' => 'Cardápio digital', 'included' => true],
-                        ['text' => 'Programa de fidelidade básico', 'included' => true],
-                        ['text' => 'Múltiplas formas de pagamento', 'included' => true],
-                        ['text' => 'Relatórios básicos (30 dias)', 'included' => true],
-                        ['text' => 'Gestão de motoboys', 'included' => false],
-                        ['text' => 'Impressão automática (ÓoPrint)', 'included' => false],
-                        ['text' => 'Robô WhatsApp (ÓoBot)', 'included' => false],
-                    ],
-                    'current' => auth()->user()->tenant->plan === 'free',
-                ],
-                [
-                    'id' => 'price_basic',
-                    'name' => 'Básico',
-                    'price' => 79.90,
-                    'interval' => 'mês',
-                    'features' => [
-                        ['text' => '250 produtos', 'included' => true],
-                        ['text' => '5 usuários', 'included' => true],
-                        ['text' => 'Pedidos ilimitados', 'included' => true],
-                        ['text' => 'Categorias ilimitadas', 'included' => true],
-                        ['text' => '15 cupons ativos', 'included' => true],
-                        ['text' => '10 motoboys', 'included' => true],
-                        ['text' => 'Impressão automática (ÓoPrint) (Em breve)', 'included' => true],
-                        ['text' => 'Robô WhatsApp (ÓoBot) (Em breve)', 'included' => true],
-                        ['text' => 'Relatórios avançados', 'included' => true],
-                        ['text' => 'Gestão de estoque ilimitada', 'included' => true],
-                        ['text' => 'Suporte por email', 'included' => true],
-                    ],
-                    'current' => auth()->user()->tenant->plan === 'basic',
-                ],
-                [
-                    'id' => 'price_pro', // Mantém ID interno 'price_pro' para compatibilidade frontend
-                    'name' => 'Personalizado',
-                    'price' => null,
-                    'interval' => 'mês',
-                    'features' => [
-                        ['text' => 'Tudo do Básico +', 'included' => true],
-                        ['text' => 'Produtos ilimitados', 'included' => true],
-                        ['text' => 'Usuários ilimitados', 'included' => true],
-                        ['text' => 'Integrações customizadas (API)', 'included' => true],
-                        ['text' => 'Motoboys ilimitados', 'included' => true],
-                        ['text' => 'White Label (Sua marca)', 'included' => true],
-                        ['text' => 'Domínio personalizado', 'included' => true],
-                        ['text' => 'Suporte prioritário WhatsApp', 'included' => true],
-                        ['text' => 'Gerente de conta dedicado', 'included' => true],
-                    ],
-                    'current' => auth()->user()->tenant->plan === 'custom',
-                ]
-            ]
+            'plans' => $plans,
+            'usage' => $usage,
         ]);
     }
+
+    // Private formatFeatures method removed as logic is now in Model
+
 
     public function checkout(string $plan)
     {

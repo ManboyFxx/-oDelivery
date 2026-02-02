@@ -8,6 +8,8 @@ use App\Services\SettingsService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Intervention\Image\Laravel\Facades\Image;
 
 class SettingsController extends Controller
 {
@@ -59,6 +61,21 @@ class SettingsController extends Controller
 
         DB::transaction(function () use ($tenant, $validated) {
             $settings = StoreSetting::where('tenant_id', $tenant->id)->firstOrFail();
+
+            // Explicitly handle business_hours logic if present
+            if (isset($validated['business_hours'])) {
+                // Ensure it is not double encoded if frontend sends JSON string
+                if (is_string($validated['business_hours'])) {
+                    $decoded = json_decode($validated['business_hours'], true);
+                    if (is_array($decoded)) {
+                        $validated['business_hours'] = $decoded;
+                    }
+                }
+            }
+
+            // Log update for debugging
+            \Illuminate\Support\Facades\Log::info('Settings Update Payload:', ['tenant' => $tenant->id, 'data' => $validated]);
+
             $settings->update($validated);
 
             // Clear cache after update
@@ -71,7 +88,7 @@ class SettingsController extends Controller
     public function uploadLogo(Request $request)
     {
         $request->validate([
-            'logo' => 'required|image|max:2048' // 2MB max
+            'logo' => 'required|image|max:4096' // 4MB max upload (will be resized)
         ]);
 
         $tenant = auth()->user()->tenant;
@@ -82,9 +99,21 @@ class SettingsController extends Controller
             \Illuminate\Support\Facades\Storage::disk('public')->delete($settings->logo_path);
         }
 
-        // Store new logo
-        $path = $request->file('logo')->store('logos', 'public');
-        $settings->update(['logo_path' => $path]);
+        // Optimize and Store new logo
+        try {
+            // Resize to max 500x500
+            $image = Image::read($request->file('logo'));
+            $image->scaleDown(width: 500);
+
+            $filename = 'logos/' . $tenant->id . '_' . time() . '.webp';
+            Storage::disk('public')->put($filename, (string) $image->toWebp(quality: 85));
+
+            $settings->update(['logo_path' => $filename]);
+        } catch (\Exception $e) {
+            // Fallback
+            $path = $request->file('logo')->store('logos', 'public');
+            $settings->update(['logo_path' => $path]);
+        }
 
         // Clear cache
         $this->settingsService->clearCache($tenant->id);
@@ -112,20 +141,32 @@ class SettingsController extends Controller
     public function uploadBanner(Request $request)
     {
         $request->validate([
-            'banner' => 'required|image|max:4096' // 4MB max
+            'banner' => 'required|image|max:8192' // 8MB max upload (will be resized)
         ]);
 
         $tenant = auth()->user()->tenant;
         $settings = StoreSetting::where('tenant_id', $tenant->id)->firstOrFail();
 
         // Delete old banner if exists
-        if ($settings->banner_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($settings->banner_path)) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($settings->banner_path);
+        if ($settings->banner_path && Storage::disk('public')->exists($settings->banner_path)) {
+            Storage::disk('public')->delete($settings->banner_path);
         }
 
-        // Store new banner
-        $path = $request->file('banner')->store('banners', 'public');
-        $settings->update(['banner_path' => $path]);
+        // Optimize and Store new banner
+        try {
+            // Resize to max width 1200px
+            $image = Image::read($request->file('banner'));
+            $image->scaleDown(width: 1200);
+
+            $filename = 'banners/' . $tenant->id . '_' . time() . '.webp';
+            Storage::disk('public')->put($filename, (string) $image->toWebp(quality: 80));
+
+            $settings->update(['banner_path' => $filename]);
+        } catch (\Exception $e) {
+            // Fallback
+            $path = $request->file('banner')->store('banners', 'public');
+            $settings->update(['banner_path' => $path]);
+        }
 
         // Clear cache
         $this->settingsService->clearCache($tenant->id);

@@ -8,11 +8,24 @@ use Inertia\Inertia;
 
 class OrderController extends Controller
 {
+    /**
+     * Verify that order belongs to the authenticated user's tenant
+     */
+    private function authorizeOrder(Order $order): void
+    {
+        if ($order->tenant_id !== auth()->user()->tenant_id) {
+            abort(403, 'Acesso negado. Pedido não pertence ao seu établecimento.');
+        }
+    }
+
     public function index()
     {
         // Fetch orders and group by status for the Kanban
         // We focus on active orders for the board
+        $tenantId = auth()->user()->tenant_id;
+
         $orders = Order::query()
+            ->where('tenant_id', $tenantId)
             ->with(['customer', 'items.product', 'motoboy'])
             ->whereIn('status', ['new', 'preparing', 'ready', 'waiting_motoboy', 'motoboy_accepted', 'out_for_delivery'])
             ->orderBy('created_at', 'desc') // Newest first
@@ -30,7 +43,8 @@ class OrderController extends Controller
         $motoboys = auth()->user()->tenant->motoboys()->get();
 
         // Fetch Active Products for the Edit Modal
-        $products = \App\Models\Product::where('is_available', true)
+        $products = \App\Models\Product::where('tenant_id', $tenantId)
+            ->where('is_available', true)
             ->with(['complementGroups.options'])
             ->get();
 
@@ -43,6 +57,8 @@ class OrderController extends Controller
 
     public function updateItems(Request $request, Order $order)
     {
+        $this->authorizeOrder($order);
+
         $validated = $request->validate([
             'items' => 'required|array',
             'items.*.product_id' => 'required|exists:products,id',
@@ -146,6 +162,8 @@ class OrderController extends Controller
 
     public function updateStatus(Request $request, Order $order)
     {
+        $this->authorizeOrder($order);
+
         $validated = $request->validate([
             'status' => 'required|string|in:new,preparing,ready,waiting_motoboy,motoboy_accepted,out_for_delivery,delivered,cancelled'
         ]);
@@ -162,6 +180,8 @@ class OrderController extends Controller
 
     public function assignMotoboy(Request $request, Order $order)
     {
+        $this->authorizeOrder($order);
+
         $validated = $request->validate([
             'motoboy_id' => 'required|exists:users,id'
         ]);
@@ -176,6 +196,8 @@ class OrderController extends Controller
 
     public function updatePayment(Request $request, Order $order)
     {
+        $this->authorizeOrder($order);
+
         $validated = $request->validate([
             'payment_method' => 'required|in:cash,credit_card,debit_card,pix',
             'payment_status' => 'nullable|in:pending,paid'
@@ -193,6 +215,8 @@ class OrderController extends Controller
 
     public function updateMode(Request $request, Order $order)
     {
+        $this->authorizeOrder($order);
+
         $validated = $request->validate([
             'mode' => 'required|in:delivery,pickup,table'
         ]);
@@ -204,6 +228,8 @@ class OrderController extends Controller
 
     public function cancel(Request $request, Order $order)
     {
+        $this->authorizeOrder($order);
+
         $validated = $request->validate([
             'reason' => 'required|string|max:255'
         ]);
@@ -219,6 +245,8 @@ class OrderController extends Controller
 
     public function print(Order $order)
     {
+        $this->authorizeOrder($order);
+
         $order->load(['customer', 'items.product', 'motoboy']);
         // Return a blade view for printing would be simpler for receipt style
         return view('orders.print', compact('order'));
@@ -226,6 +254,8 @@ class OrderController extends Controller
 
     public function startPreparation(Order $order)
     {
+        $this->authorizeOrder($order);
+
         $order->startPreparation();
 
         return back()->with('success', 'Preparo iniciado!');

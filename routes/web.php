@@ -44,7 +44,19 @@ Route::get('/', function () {
 });
 
 Route::get('/planos', function () {
-    return Inertia::render('Welcome/Plans'); // Creating a dedicated folder for welcome related pages
+    $plans = \App\Models\PlanLimit::where('is_active', true)->orderBy('sort_order')->get()->map(function ($plan) {
+        return [
+            'id' => $plan->plan,
+            'name' => $plan->display_name,
+            'price' => $plan->price_monthly > 0 ? $plan->price_monthly : 0,
+            'interval' => 'mês',
+            'features' => $plan->formatted_features,
+        ];
+    });
+
+    return Inertia::render('Welcome/Plans', [
+        'plans' => $plans
+    ]);
 })->name('plans');
 
 Route::get('/oomotoboy', function () {
@@ -80,7 +92,7 @@ Route::middleware(['throttle:10,1', 'tenant.scope'])->group(function () {
     Route::post('/customer/addresses/{id}/set-default', [\App\Http\Controllers\Tenant\CustomerAddressController::class, 'setDefault']);
 
     Route::get('/customer/orders', [\App\Http\Controllers\Tenant\CustomerOrderController::class, 'index']);
-    Route::post('/customer/checkout', [\App\Http\Controllers\Tenant\CustomerOrderController::class, 'store']);
+    Route::post('/customer/checkout', [\App\Http\Controllers\Tenant\CustomerOrderController::class, 'store'])->middleware('plan.limit:orders');
     Route::post('/customer/redeem-product', [CustomerRedemptionController::class, 'redeemProduct']);
     Route::post('/customer/validate-coupon', [\App\Http\Controllers\CouponValidationController::class, 'validate']);
 });
@@ -96,6 +108,7 @@ Route::middleware(['auth', \App\Http\Middleware\SuperAdminMiddleware::class])->p
     // Tenants Management
     Route::get('/tenants', [\App\Http\Controllers\Admin\AdminTenantController::class, 'index'])->name('tenants.index');
     Route::post('/tenants', [\App\Http\Controllers\Admin\AdminTenantController::class, 'store'])->name('tenants.store');
+    Route::get('/tenants/{id}/edit', [\App\Http\Controllers\Admin\AdminTenantController::class, 'edit'])->name('tenants.edit');
     Route::put('/tenants/{tenant}', [\App\Http\Controllers\Admin\AdminTenantController::class, 'update'])->name('tenants.update');
     Route::post('/tenants/{tenant}/suspend', [\App\Http\Controllers\Admin\AdminTenantController::class, 'suspend'])->name('tenants.suspend');
     Route::post('/tenants/{tenant}/restore', [\App\Http\Controllers\Admin\AdminTenantController::class, 'restore'])->name('tenants.restore');
@@ -128,11 +141,11 @@ Route::get('/{slug}/menu', [TenantMenuController::class, 'show'])->name('tenant.
 Route::get('/{slug}/menu/demo', [TenantMenuController::class, 'demo'])->name('tenant.menu.demo');
 
 Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified', 'subscription'])
+    ->middleware(['auth', 'verified', 'subscription', 'role:admin'])
     ->name('dashboard');
 
-// Subscription Management (accessible even if expired)
-Route::middleware(['auth', 'tenant.required'])->group(function () {
+// Subscription Management (accessible even if expired) - Admin only
+Route::middleware(['auth', 'tenant.required', 'role:admin'])->group(function () {
     Route::get('/assinatura', [\App\Http\Controllers\SubscriptionController::class, 'index'])->name('subscription.index');
     Route::post('/assinatura/downgrade', [\App\Http\Controllers\SubscriptionController::class, 'downgradeToFree'])->name('subscription.downgrade');
 });
@@ -145,69 +158,108 @@ Route::middleware('auth')->prefix('subscription')->name('subscription.')->group(
     Route::get('/status', [\App\Http\Controllers\SubscriptionController::class, 'status'])->name('status');
 });
 
+// Support Area
+Route::middleware(['auth'])->get('/suporte', [\App\Http\Controllers\SupportController::class, 'index'])->name('support.index');
+
 // Account Routes (authenticated but no subscription check)
 Route::middleware('auth')->prefix('account')->name('account.')->group(function () {
     Route::get('/suspended', [AccountController::class, 'suspended'])->name('suspended');
 });
 
+Route::middleware('auth')->group(function () {
+    // Account specific routes if any
+});
 
 
-Route::middleware(['auth', 'subscription'])->group(function () {
+
+// ============================================================================
+// ROTAS OPERACIONAIS - Admin + Employee (Dia a dia)
+// ============================================================================
+Route::middleware(['auth', 'subscription', 'role:admin,employee'])->group(function () {
+    // Orders Management
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}/print', [OrderController::class, 'print'])->name('orders.print');
     Route::post('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
-    Route::post('/orders/{order}/assign-motoboy', [OrderController::class, 'assignMotoboy'])->name('orders.assign-motoboy');
     Route::post('/orders/{order}/payment', [OrderController::class, 'updatePayment'])->name('orders.payment');
     Route::post('/orders/{order}/mode', [OrderController::class, 'updateMode'])->name('orders.mode');
     Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
     Route::put('/orders/{order}/items', [OrderController::class, 'updateItems'])->name('orders.update-items');
     Route::post('/orders/{order}/start-preparation', [OrderController::class, 'startPreparation'])->name('orders.start-preparation');
 
-    // PDV Routes
+    // Kitchen & PDV
+    Route::get('/kitchen', [KitchenController::class, 'index'])->name('kitchen.index');
+    Route::post('/kitchen/{order}/status', [KitchenController::class, 'updateStatus'])->name('kitchen.update-status');
+    Route::get('/pdv', [PdvController::class, 'index'])->name('pdv.index');
+    Route::post('/pdv', [PdvController::class, 'store'])->name('pdv.store')->middleware('plan.limit:orders');
 
+    // Products (Operação do Cardápio)
     Route::post('/products/{product}/toggle', [ProductController::class, 'toggle'])->name('products.toggle');
     Route::post('/products/{product}/toggle-featured', [ProductController::class, 'toggleFeatured'])->name('products.toggle-featured');
     Route::post('/products/{product}/toggle-badge', [ProductController::class, 'toggleBadge'])->name('products.toggle-badge');
-    Route::resource('products', ProductController::class);
-    Route::resource('categories', CategoryController::class);
-    Route::resource('complements', ComplementController::class);
+
+    // Stock Management
+    Route::resource('estoque', \App\Http\Controllers\StockController::class)->names('stock');
+
+    // Tables (Salão)
+    Route::resource('tables', TableController::class);
+    Route::post('/tables/{table}/toggle', [TableController::class, 'toggleStatus'])->name('tables.toggle');
+    Route::post('/tables/{table}/open', [TableController::class, 'open'])->name('tables.open');
+    Route::post('/tables/{table}/add-items', [TableController::class, 'addItems'])->name('tables.addItems');
+    Route::post('/tables/{table}/close', [TableController::class, 'close'])->name('tables.close');
+    Route::get('/tables/{table}', [TableController::class, 'show'])->name('tables.show');
+
+    // Menu Organization (Cardápio)
+    Route::get('/cardapio', [MenuController::class, 'index'])->name('menu.index');
+    Route::post('/cardapio/reorder', [MenuController::class, 'reorder'])->name('menu.reorder');
+    Route::post('/cardapio/categories/{category}/toggle', [MenuController::class, 'toggleVisibility'])->name('menu.toggle');
+});
+
+// ============================================================================
+// ROTAS ADMINISTRATIVAS - Admin + Employee (com bloqueio de DELETE)
+// ============================================================================
+Route::middleware(['auth', 'subscription', 'role:admin,employee'])->group(function () {
+    // Product & Menu Management - Employee pode fazer tudo MENOS deletar
+    Route::middleware(['plan.limit:products'])->group(function () {
+        Route::get('products/create', [ProductController::class, 'create'])->name('products.create');
+        Route::post('products', [ProductController::class, 'store'])->name('products.store');
+    });
+    Route::resource('products', ProductController::class)->except(['destroy', 'create', 'store']);
+    Route::resource('categories', CategoryController::class)->except(['destroy']);
+    Route::resource('complements', ComplementController::class)->except(['destroy']);
     Route::post('/complements/{id}/duplicate', [ComplementController::class, 'duplicate'])->name('complements.duplicate');
     Route::post('/complements/{groupId}/options/{optionId}/toggle', [ComplementController::class, 'toggleOption'])->name('complements.toggle-option');
 
-    // Ingredients Routes
-    Route::resource('ingredients', IngredientController::class);
+    // Ingredients - Employee pode fazer tudo MENOS deletar
+    Route::resource('ingredients', IngredientController::class)->except(['destroy']);
+});
+
+// ============================================================================
+// ROTAS EXCLUSIVAS ADMIN - Deletar produtos, categorias, complementos
+// ============================================================================
+Route::middleware(['auth', 'subscription', 'role:admin'])->group(function () {
+    // DELETE only - bloqueado para employee
+    Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
+    Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+    Route::delete('/complements/{complement}', [ComplementController::class, 'destroy'])->name('complements.destroy');
+    Route::delete('/ingredients/{ingredient}', [IngredientController::class, 'destroy'])->name('ingredients.destroy');
     Route::post('/ingredients/{id}/toggle', [IngredientController::class, 'toggle'])->name('ingredients.toggle');
     Route::get('/ingredients/{id}/impact', [IngredientController::class, 'getImpact'])->name('ingredients.impact');
     Route::post('/ingredients/reorder', [IngredientController::class, 'reorder'])->name('ingredients.reorder');
 
-    Route::get('/coupons', [CouponController::class, 'index'])->name('coupons.index');
-    Route::post('/coupons', [CouponController::class, 'store'])->name('coupons.store');
-    Route::put('/coupons/{coupon}', [CouponController::class, 'update'])->name('coupons.update');
-
-    // Loyalty Routes
+    // Coupons & Loyalty - Admin only
+    // Coupons & Loyalty - Admin only
+    Route::middleware(['plan.limit:coupons'])->group(function () {
+        Route::post('coupons', [CouponController::class, 'store'])->name('coupons.store');
+    });
+    Route::resource('coupons', CouponController::class)->except(['store']);
     Route::get('/fidelidade', [LoyaltyController::class, 'index'])->name('loyalty.index');
     Route::post('/fidelidade/settings', [LoyaltyController::class, 'updateSettings'])->name('loyalty.settings');
     Route::post('/fidelidade/adjust', [LoyaltyController::class, 'adjustPoints'])->name('loyalty.adjust');
 
-    // Customer Loyalty View (Agora via index)
-    // Route::get('/meus-pontos', [LoyaltyController::class, 'myPoints'])->name('loyalty.customer');
-
-    Route::get('/pdv', [PdvController::class, 'index'])->name('pdv.index');
-    Route::post('/pdv', [PdvController::class, 'store'])->name('pdv.store');
-
-    // Kitchen Routes
-    Route::get('/kitchen', [KitchenController::class, 'index'])->name('kitchen.index');
-    Route::post('/kitchen/{order}/status', [KitchenController::class, 'updateStatus'])->name('kitchen.update-status');
-
-    // Menu Management (Organize)
-    Route::get('/cardapio', [MenuController::class, 'index'])->name('menu.index');
-    Route::post('/cardapio/reorder', [MenuController::class, 'reorder'])->name('menu.reorder');
-    Route::post('/cardapio/categories/{category}/toggle', [MenuController::class, 'toggleVisibility'])->name('menu.toggle');
-
-    // Financial
+    // Financial Reports - Admin only
     Route::get('/financeiro', [FinancialController::class, 'index'])->name('financial.index');
 
-    // Store Settings
+    // Store Configuration - Admin only
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
     Route::post('/settings/upload-logo', [SettingsController::class, 'uploadLogo'])->name('settings.upload-logo');
@@ -216,24 +268,32 @@ Route::middleware(['auth', 'subscription'])->group(function () {
     Route::delete('/settings/remove-banner', [SettingsController::class, 'removeBanner'])->name('settings.remove-banner');
     Route::post('/settings/tokens/create', [SettingsController::class, 'createToken'])->name('api.tokens.create');
 
+    // Delivery Zones & Payment Methods - Admin only
     Route::resource('delivery-zones', \App\Http\Controllers\DeliveryZoneController::class);
     Route::resource('payment-methods', \App\Http\Controllers\PaymentMethodController::class);
 
+    // Customer Management - Admin only
     Route::resource('customers', CustomerController::class);
-    Route::resource('coupons', CouponController::class);
-    Route::resource('tables', TableController::class);
 
-    // Motoboys - Only for plans with motoboy_management feature (Básico+)
+    // Team Management - Admin only
+    Route::middleware(['plan.limit:users'])->group(function () {
+        Route::get('employees/create', [EmployeeController::class, 'create'])->name('employees.create');
+        Route::post('employees', [EmployeeController::class, 'store'])->name('employees.store');
+    });
+    Route::resource('employees', EmployeeController::class)->except(['create', 'store']);
+
+    // Motoboys - Only if plan has feature AND within limit
+    Route::middleware(['plan.limit:motoboys'])->group(function () {
+        Route::get('motoboys/create', [\App\Http\Controllers\MotoboyController::class, 'create'])->name('motoboys.create');
+        Route::post('motoboys', [\App\Http\Controllers\MotoboyController::class, 'store'])->name('motoboys.store');
+    });
     Route::resource('motoboys', \App\Http\Controllers\MotoboyController::class)
+        ->except(['create', 'store'])
         ->middleware('feature:motoboy_management');
 
-    Route::resource('employees', EmployeeController::class);
-    Route::resource('estoque', \App\Http\Controllers\StockController::class)->names('stock');
-    Route::post('/tables/{table}/toggle', [TableController::class, 'toggleStatus'])->name('tables.toggle');
-    Route::post('/tables/{table}/open', [TableController::class, 'open'])->name('tables.open');
-    Route::post('/tables/{table}/add-items', [TableController::class, 'addItems'])->name('tables.addItems');
-    Route::post('/tables/{table}/close', [TableController::class, 'close'])->name('tables.close');
-    Route::get('/tables/{table}', [TableController::class, 'show'])->name('tables.show');
+    // Assign Motoboy to Orders - Only if feature enabled
+    Route::post('/orders/{order}/assign-motoboy', [OrderController::class, 'assignMotoboy'])->name('orders.assign-motoboy')
+        ->middleware('feature:motoboy_management');
 
     // Two-Factor Authentication
     Route::prefix('settings/two-factor')->name('two-factor.')->group(function () {
@@ -245,15 +305,10 @@ Route::middleware(['auth', 'subscription'])->group(function () {
         Route::post('/regenerate-recovery-codes', [\App\Http\Controllers\TwoFactorController::class, 'regenerateRecoveryCodes'])->name('regenerate-recovery-codes');
     });
 
-    // System / Downloads
+    // System Downloads
     Route::get('/sistema/downloads', [\App\Http\Controllers\SystemController::class, 'downloads'])->name('system.downloads');
 
-    // Marketing (Future placeholder)
-    Route::prefix('marketing')->name('marketing.')->group(function () {
-        // Route::get('/', [MarketingController::class, 'index'])->name('index');
-    });
-
-    // WhatsApp - Only for plans with whatsapp_integration feature (Básico+)
+    // WhatsApp Integration - Only if feature enabled
     Route::middleware('feature:whatsapp_integration')->prefix('whatsapp')->name('whatsapp.')->group(function () {
         Route::get('/', [\App\Http\Controllers\WhatsAppController::class, 'index'])->name('index');
         Route::post('/toggle', [\App\Http\Controllers\WhatsAppController::class, 'toggleAutoMessages'])->name('toggle');
@@ -267,12 +322,12 @@ Route::middleware(['auth', 'subscription'])->group(function () {
         Route::post('/instances/{instance}/disconnect', [WhatsAppInstanceController::class, 'disconnect'])->name('instances.disconnect');
         Route::delete('/instances/{instance}', [WhatsAppInstanceController::class, 'destroy'])->name('instances.destroy');
     });
-
-
 });
 
-// Motoboy Routes
-Route::middleware(['auth', 'is_motoboy', 'check_subscription'])->prefix('/motoboy')->name('motoboy.')->group(function () {
+// ============================================================================
+// ROTAS MOTOBOY - Painel exclusivo para entregadores
+// ============================================================================
+Route::middleware(['auth', 'is_motoboy', 'check_subscription', 'feature:motoboy_management'])->prefix('/motoboy')->name('motoboy.')->group(function () {
     // Dashboard
     Route::get('/dashboard', [\App\Http\Controllers\Motoboy\MotoboysController::class, 'dashboard'])->name('dashboard');
 
@@ -308,7 +363,7 @@ Route::middleware(['auth', 'is_motoboy', 'check_subscription'])->prefix('/motobo
 });
 
 // API Routes for Motoboy Geolocation and Notifications
-Route::middleware(['auth', 'is_motoboy', 'throttle:60,1'])->prefix('/api/motoboy')->name('api.motoboy.')->group(function () {
+Route::middleware(['auth', 'is_motoboy', 'subscription', 'feature:motoboy_management', 'throttle:60,1'])->prefix('/api/motoboy')->name('api.motoboy.')->group(function () {
     // Location endpoints
     Route::post('/location', [\App\Http\Controllers\Api\Motoboy\LocationController::class, 'store'])->name('location.store');
     Route::get('/location', [\App\Http\Controllers\Api\Motoboy\LocationController::class, 'show'])->name('location.show');
@@ -326,15 +381,5 @@ Route::middleware(['auth', 'is_motoboy', 'throttle:60,1'])->prefix('/api/motoboy
 
 // Public Webhooks (Outside Auth)
 Route::post('/webhooks/whatsapp', [\App\Http\Controllers\WhatsAppWebhookController::class, 'handle'])->name('webhooks.whatsapp');
-
-// Rota TEMPORÁRIA para criar tabelas na Hostinger (sem SSH)
-Route::get('/setup-production-db', function () {
-    try {
-        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-        return 'Sucesso! Tabelas criadas. Agora você pode importar o arquivo hostinger_data.sql no PHPMyAdmin.';
-    } catch (\Exception $e) {
-        return 'Erro: ' . $e->getMessage();
-    }
-});
 
 require __DIR__ . '/auth.php';

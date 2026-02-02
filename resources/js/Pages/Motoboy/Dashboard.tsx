@@ -68,12 +68,9 @@ export default function Dashboard({
                 interval={30}
             />
 
-            <div className="space-y-8">
-                {/* STATUS SECTION */}
+            <div className="space-y-6">
+                {/* 1. STATUS TOGGLE (TOPO) */}
                 <section>
-                    <h2 className="text-xs font-black uppercase tracking-widest text-gray-600 mb-4">
-                        Situação Atual
-                    </h2>
                     <StatusToggle
                         isOnline={isOnline}
                         status={summary.status}
@@ -81,151 +78,22 @@ export default function Dashboard({
                     />
                 </section>
 
-                {/* KPI CARDS */}
-                <section>
-                    <h2 className="text-xs font-black uppercase tracking-widest text-gray-600 mb-4">
-                        Métricas do Dia
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        <DashboardCard
-                            icon={Zap}
-                            label="Entregas"
-                            value={summary.deliveries_today}
-                            color="orange"
-                            subtitle="completadas hoje"
-                        />
-                        <DashboardCard
-                            icon={TrendingUp}
-                            label="Ganho"
-                            value={`R$ ${summary.earnings_today.toFixed(2)}`}
-                            color="green"
-                            subtitle="do dia"
-                        />
-                        <DashboardCard
-                            icon={Star}
-                            label="Avaliação"
-                            value={summary.average_rating > 0 ? summary.average_rating.toFixed(1) : '---'}
-                            subtitle={summary.average_rating > 0 ? ratingStars : 'sem avaliações'}
-                            color="purple"
-                        />
-                        <DashboardCard
-                            icon={Package}
-                            label="Pendentes"
-                            value={summary.pending_orders_count}
-                            color="blue"
-                            subtitle="em processo"
-                        />
-                    </div>
-                </section>
-
-                {/* GEOLOCALIZAÇÃO */}
-                <section>
-                    <h2 className="text-xs font-black uppercase tracking-widest text-gray-600 mb-4">
-                        Geolocalização
-                    </h2>
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl border-2 border-blue-200 p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {/* Status de rastreamento */}
-                            <div className="flex items-center gap-4 p-4 bg-white rounded-xl border border-blue-100">
-                                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                                    locationTracking
-                                        ? 'bg-green-100 text-green-600 animate-pulse'
-                                        : 'bg-gray-100 text-gray-600'
-                                }`}>
-                                    <Navigation className="w-6 h-6" />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-xs font-bold text-gray-600 uppercase">Status</p>
-                                    <p className="text-sm font-black text-gray-900">
-                                        {locationTracking ? '🔴 Rastreando' : '⚪ Desativado'}
-                                    </p>
-                                    <button
-                                        onClick={() => setLocationTracking(!locationTracking)}
-                                        className={`text-xs font-bold mt-2 px-3 py-1 rounded transition-colors ${
-                                            locationTracking
-                                                ? 'text-red-600 hover:text-red-700'
-                                                : 'text-blue-600 hover:text-blue-700'
-                                        }`}
-                                    >
-                                        {locationTracking ? 'Desativar' : 'Ativar'}
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Link para mapa em tempo real */}
-                            <Link
-                                href={route('motoboy.location.index')}
-                                className="flex items-center gap-3 p-4 bg-white rounded-xl border border-blue-100 hover:border-blue-300 hover:shadow-md transition-all group"
-                            >
-                                <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
-                                    <Map className="w-6 h-6 text-orange-600" />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-xs font-bold text-gray-600 uppercase">Mapa</p>
-                                    <p className="text-sm font-black text-gray-900 group-hover:text-orange-600 transition-colors">
-                                        Localização Atual
-                                    </p>
-                                </div>
-                                <div className="text-2xl group-hover:translate-x-1 transition-transform">→</div>
-                            </Link>
-
-                            {/* Link para rastreamento avançado */}
-                            {pendingOrders.length > 0 && (
-                                <Link
-                                    href={route('motoboy.location.tracking')}
-                                    className="flex items-center gap-3 p-4 bg-white rounded-xl border border-blue-100 hover:border-blue-300 hover:shadow-md transition-all group"
-                                >
-                                    <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center group-hover:bg-purple-200 transition-colors">
-                                        <Navigation className="w-6 h-6 text-purple-600" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="text-xs font-bold text-gray-600 uppercase">Trajeto</p>
-                                        <p className="text-sm font-black text-gray-900 group-hover:text-purple-600 transition-colors">
-                                            Rastreamento
-                                        </p>
-                                    </div>
-                                    <div className="text-2xl group-hover:translate-x-1 transition-transform">→</div>
-                                </Link>
-                            )}
-
-                            {/* Link para histórico */}
-                            <Link
-                                href={route('motoboy.location.history')}
-                                className="flex items-center gap-3 p-4 bg-white rounded-xl border border-blue-100 hover:border-blue-300 hover:shadow-md transition-all group"
-                            >
-                                <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center group-hover:bg-green-200 transition-colors">
-                                    <History className="w-6 h-6 text-green-600" />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-xs font-bold text-gray-600 uppercase">Histórico</p>
-                                    <p className="text-sm font-black text-gray-900 group-hover:text-green-600 transition-colors">
-                                        Trajetos
-                                    </p>
-                                </div>
-                                <div className="text-2xl group-hover:translate-x-1 transition-transform">→</div>
-                            </Link>
-                        </div>
-                        <p className="text-xs text-blue-700 mt-4 text-center">
-                            ℹ️ Ative o rastreamento para começar a registrar sua localização em tempo real
-                        </p>
-                    </div>
-                </section>
-
-                {/* PEDIDOS DISPONÍVEIS */}
+                {/* 2. PEDIDOS DISPONÍVEIS (PRIORIDADE MÁXIMA) */}
                 <section>
                     <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xs font-black uppercase tracking-widest text-gray-600">
-                            Próximos Pedidos Disponíveis
+                        <h2 className="text-sm font-black uppercase tracking-widest text-gray-900 flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                            Pedidos Chegando
                         </h2>
                         {availableOrders.length > 0 && (
                             <span className="text-xs font-bold bg-[#ff3d03] text-white px-3 py-1 rounded-full">
-                                {availableOrders.length} pedido{availableOrders.length !== 1 ? 's' : ''}
+                                {availableOrders.length}
                             </span>
                         )}
                     </div>
 
                     {availableOrders.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 gap-4">
                             {availableOrders.map((order) => (
                                 <OrderCard
                                     key={order.id}
@@ -246,138 +114,58 @@ export default function Dashboard({
                             ))}
                         </div>
                     ) : (
-                        <div className="bg-white rounded-2xl border-2 border-gray-200 p-8">
-                            <EmptyState
-                                icon={Package}
-                                title="Nenhum pedido disponível"
-                                description="Quando novos pedidos chegarem, eles aparecerão aqui. Fique atento!"
-                            />
+                        <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-8 text-center opacity-70">
+                            <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                            <p className="text-sm font-bold text-gray-400">Aguardando novos pedidos...</p>
                         </div>
                     )}
                 </section>
 
-                {/* PEDIDOS EM ENTREGA */}
+                {/* 3. PEDIDOS EM ANDAMENTO (SE HOUVER) */}
                 {pendingOrders.length > 0 && (
                     <section>
                         <h2 className="text-xs font-black uppercase tracking-widest text-gray-600 mb-4">
-                            Pedidos em Entrega
+                            Em Entrega
                         </h2>
-                        <div className="bg-white rounded-2xl border-2 border-yellow-200 overflow-hidden">
-                            <div className="overflow-x-auto">
-                                <table className="w-full">
-                                    <thead>
-                                        <tr className="border-b-2 border-yellow-200 bg-yellow-50">
-                                            <th className="px-6 py-3 text-left text-xs font-black uppercase tracking-widest text-gray-900">
-                                                Pedido
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-black uppercase tracking-widest text-gray-900">
-                                                Cliente
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-black uppercase tracking-widest text-gray-900">
-                                                Endereço
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-black uppercase tracking-widest text-gray-900">
-                                                Status
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y-2 divide-yellow-100">
-                                        {pendingOrders.map((order) => (
-                                            <tr key={order.id} className="hover:bg-yellow-50 transition-colors">
-                                                <td className="px-6 py-4">
-                                                    <span className="font-black text-gray-900">#{order.order_number}</span>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <p className="font-bold text-gray-900">{order.customer_name}</p>
-                                                    <p className="text-xs text-gray-600">{order.customer_phone}</p>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <p className="text-sm text-gray-700 line-clamp-1">
-                                                        {order.delivery_address}
-                                                    </p>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span
-                                                        className={`
-                                                        text-xs font-black px-3 py-1 rounded-full
-                                                        ${order.status_code === 'out_for_delivery'
-                                                            ? 'bg-green-100 text-green-700'
-                                                            : order.status_code === 'motoboy_accepted'
-                                                                ? 'bg-blue-100 text-blue-700'
-                                                                : 'bg-yellow-100 text-yellow-700'
-                                                        }
-                                                    `}
-                                                    >
-                                                        {order.status}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                        <div className="grid grid-cols-1 gap-4">
+                            {pendingOrders.map((order) => (
+                                <div key={order.id} className="bg-white border-l-4 border-yellow-400 rounded-lg shadow-sm p-4">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <span className="text-xs font-bold bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">
+                                                #{order.order_number}
+                                            </span>
+                                            <h3 className="font-bold text-gray-900 mt-1">{order.customer_name}</h3>
+                                            <p className="text-sm text-gray-600 line-clamp-1">{order.delivery_address}</p>
+                                        </div>
+                                        <Link
+                                            href={route('motoboy.orders.show', order.id)}
+                                            className="text-[#ff3d03] font-bold text-sm bg-orange-50 px-3 py-2 rounded-lg"
+                                        >
+                                            Detalhes
+                                        </Link>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </section>
                 )}
 
-                {/* ÚLTIMAS ENTREGAS */}
-                {recentDeliveries.length > 0 && (
-                    <section>
-                        <h2 className="text-xs font-black uppercase tracking-widest text-gray-600 mb-4">
-                            Últimas Entregas
-                        </h2>
-                        <div className="bg-white rounded-2xl border-2 border-green-200 overflow-hidden">
-                            <div className="overflow-x-auto">
-                                <table className="w-full">
-                                    <thead>
-                                        <tr className="border-b-2 border-green-200 bg-green-50">
-                                            <th className="px-6 py-3 text-left text-xs font-black uppercase tracking-widest text-gray-900">
-                                                Pedido
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-black uppercase tracking-widest text-gray-900">
-                                                Cliente
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-black uppercase tracking-widest text-gray-900">
-                                                Hora
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-black uppercase tracking-widest text-gray-900">
-                                                Valor
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-black uppercase tracking-widest text-gray-900">
-                                                Avaliação
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y-2 divide-green-100">
-                                        {recentDeliveries.map((delivery) => (
-                                            <tr key={delivery.id} className="hover:bg-green-50 transition-colors">
-                                                <td className="px-6 py-4">
-                                                    <span className="font-black text-gray-900">#{delivery.order_number}</span>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <p className="font-bold text-gray-900">{delivery.customer_name}</p>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className="text-sm font-medium text-gray-700">
-                                                        {delivery.delivered_at}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className="font-bold text-green-700">
-                                                        R$ {delivery.delivery_fee.toFixed(2)}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className="text-lg">{delivery.rating_stars}</span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                {/* 4. METRICAS SIMPLIFICADAS (GANHOS) - RODAPÉ */}
+                <section className="pt-4 border-t border-gray-100">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-xs text-gray-500 font-bold uppercase">Ganhos Hoje</p>
+                            <p className="text-2xl font-black text-gray-900">R$ {summary.earnings_today.toFixed(2)}</p>
                         </div>
-                    </section>
-                )}
+                        <Link
+                            href={route('motoboy.metrics')}
+                            className="text-xs font-bold text-gray-500 hover:text-[#ff3d03] flex items-center gap-1"
+                        >
+                            Ver tudo <TrendingUp className="w-3 h-3" />
+                        </Link>
+                    </div>
+                </section>
             </div>
         </MotoboyLayout>
     );

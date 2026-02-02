@@ -112,7 +112,7 @@ export default function Authenticated({ user, header, children, tenant: propTena
             <Sidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
 
             {/* Main Content */}
-            <div className="flex flex-1 flex-col overflow-hidden">
+            <div className="flex flex-1 flex-col overflow-hidden lg:pl-72 transition-all duration-300">
                 <TopBar user={user || authUser} onMenuClick={() => setIsMobileMenuOpen(true)} hasUnread={hasUnread} onRead={() => setHasUnread(false)} />
                 {header && (
                     <header className="bg-white dark:bg-premium-card shadow">

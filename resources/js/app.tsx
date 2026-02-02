@@ -7,7 +7,7 @@ import { createRoot } from 'react-dom/client';
 import { ToastProvider } from '@/Contexts/ToastContext';
 import { ToastContainer } from '@/Components/Toast';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const appName = import.meta.env.VITE_APP_NAME || 'ÓoDelivery';
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
