@@ -226,6 +226,9 @@ class OoBotService
             'delivery_address' => $order->delivery_address ?? '',
             'payment_method' => $order->payment_method ?? '',
             'delivery_fee' => 'R$ ' . number_format($order->delivery_fee ?? 0, 2, ',', '.'),
+            'order_items' => $order->items->map(function ($item) {
+                return "{$item->quantity}x {$item->name}";
+            })->implode("\n"),
         ];
     }
 }

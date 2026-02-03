@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import {
     Users,
     Store,
@@ -20,6 +20,11 @@ interface DashboardProps {
         active_tenants: number;
         trial_tenants: number;
         mrr: number;
+        system_health?: {
+            evolution: { status: string; latency: string };
+            motoboy: { status: string; latency: string };
+            print: { status: string; latency: string };
+        };
     };
     recent_tenants: Array<{
         id: string;
@@ -186,8 +191,8 @@ export default function AdminDashboard({ auth, metrics, recent_tenants }: Dashbo
                                             </td>
                                             <td className="py-4 px-4">
                                                 <span className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 w-fit ${tenant.status === 'Ativo'
-                                                        ? 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400'
-                                                        : 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400'
+                                                    ? 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400'
+                                                    : 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400'
                                                     }`}>
                                                     <span className={`h-1.5 w-1.5 rounded-full ${tenant.status === 'Ativo' ? 'bg-green-500' : 'bg-red-500'
                                                         }`}></span>
@@ -216,40 +221,60 @@ export default function AdminDashboard({ auth, metrics, recent_tenants }: Dashbo
 
                             <h3 className="font-bold text-xl mb-6 relative z-10 flex items-center gap-2">
                                 <ShieldCheck className="h-5 w-5 text-[#ff3d03]" />
-                                Integridade
+                                Integridade do Sistema
                             </h3>
 
                             <div className="space-y-4 relative z-10">
+                                {/* Evolution API */}
                                 <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/10">
                                     <div className="flex items-center gap-3">
-                                        <div className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
-                                        <span className="font-medium text-sm">API Gateway</span>
+                                        <div className={`h-2 w-2 rounded-full shadow-[0_0_10px_rgba(34,197,94,0.5)] ${
+                                            // @ts-ignore
+                                            metrics.system_health?.evolution.status === 'connected' ? 'bg-green-500' : 'bg-red-500'
+                                            }`}></div>
+                                        <span className="font-medium text-sm">Evolution API (WhatsApp)</span>
                                     </div>
-                                    <span className="text-xs font-bold text-green-400">14ms</span>
+                                    <span className="text-xs font-bold text-gray-400">
+                                        {/* @ts-ignore */}
+                                        {metrics.system_health?.evolution.latency}
+                                    </span>
                                 </div>
+
+                                {/* Painel Motoboy */}
                                 <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/10">
                                     <div className="flex items-center gap-3">
-                                        <div className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
-                                        <span className="font-medium text-sm">Database (Primary)</span>
+                                        <div className={`h-2 w-2 rounded-full shadow-[0_0_10px_rgba(34,197,94,0.5)] ${
+                                            // @ts-ignore
+                                            metrics.system_health?.motoboy.status === 'active' ? 'bg-green-500' : 'bg-yellow-500'
+                                            }`}></div>
+                                        <span className="font-medium text-sm">Painel Motoboy</span>
                                     </div>
-                                    <span className="text-xs font-bold text-green-400">Stable</span>
+                                    <span className="text-xs font-bold text-gray-400">
+                                        {/* @ts-ignore */}
+                                        {metrics.system_health?.motoboy.latency}
+                                    </span>
                                 </div>
+
+                                {/* Sistema de Impressão */}
                                 <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/10">
                                     <div className="flex items-center gap-3">
-                                        <div className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
-                                        <span className="font-medium text-sm">Job Workers</span>
+                                        <div className={`h-2 w-2 rounded-full shadow-[0_0_10px_rgba(34,197,94,0.5)] ${
+                                            // @ts-ignore
+                                            metrics.system_health?.print.status === 'active' ? 'bg-green-500' : 'bg-blue-500'
+                                            }`}></div>
+                                        <span className="font-medium text-sm">Fila de Impressão</span>
                                     </div>
-                                    <span className="text-xs font-bold text-green-400">Idle</span>
+                                    <span className="text-xs font-bold text-gray-400">
+                                        {/* @ts-ignore */}
+                                        {metrics.system_health?.print.latency}
+                                    </span>
                                 </div>
                             </div>
 
                             <div className="mt-6 pt-6 border-t border-white/10">
                                 <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-400">Uso de CPU</span>
-                                    <span className="font-bold">12%</span>
-                                </div>
-                                <div className="w-full bg-white/10 h-1.5 rounded-full mt-2 overflow-hidden">
-                                    <div className="h-full bg-blue-500 w-[12%] rounded-full"></div>
+                                    <span className="text-gray-400">Status Geral</span>
+                                    <span className="font-bold text-green-400">Operacional</span>
                                 </div>
                             </div>
                         </div>
@@ -257,14 +282,14 @@ export default function AdminDashboard({ auth, metrics, recent_tenants }: Dashbo
                         <div className="bg-white dark:bg-[#1a1b1e] rounded-[32px] p-8 border border-gray-100 dark:border-white/5 shadow-sm">
                             <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-4">Ações Rápidas</h3>
                             <div className="grid grid-cols-2 gap-3">
-                                <button className="p-4 rounded-2xl bg-gray-50 dark:bg-white/5 hover:bg-orange-50 dark:hover:bg-[#ff3d03]/10 border border-transparent hover:border-[#ff3d03]/20 transition-all group text-left">
+                                <Link href={route('admin.tenants.create')} className="p-4 rounded-2xl bg-gray-50 dark:bg-white/5 hover:bg-orange-50 dark:hover:bg-[#ff3d03]/10 border border-transparent hover:border-[#ff3d03]/20 transition-all group text-left">
                                     <Store className="h-6 w-6 text-gray-400 group-hover:text-[#ff3d03] mb-2 transition-colors" />
                                     <span className="text-xs font-bold text-gray-600 dark:text-gray-300 group-hover:text-[#ff3d03]">Novo Tenant</span>
-                                </button>
-                                <button className="p-4 rounded-2xl bg-gray-50 dark:bg-white/5 hover:bg-orange-50 dark:hover:bg-[#ff3d03]/10 border border-transparent hover:border-[#ff3d03]/20 transition-all group text-left">
+                                </Link>
+                                <Link href={route('admin.users.index')} className="p-4 rounded-2xl bg-gray-50 dark:bg-white/5 hover:bg-orange-50 dark:hover:bg-[#ff3d03]/10 border border-transparent hover:border-[#ff3d03]/20 transition-all group text-left">
                                     <Users className="h-6 w-6 text-gray-400 group-hover:text-[#ff3d03] mb-2 transition-colors" />
                                     <span className="text-xs font-bold text-gray-600 dark:text-gray-300 group-hover:text-[#ff3d03]">Gerenciar Usuários</span>
-                                </button>
+                                </Link>
                             </div>
                         </div>
                     </div>

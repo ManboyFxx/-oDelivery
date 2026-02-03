@@ -1,9 +1,9 @@
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
-import { Head, Link, useForm, router } from '@inertiajs/react';
-import { FormEventHandler, useEffect, useState, useCallback } from 'react';
-import { User, Mail, Lock, ArrowRight, Check, Sparkles, Building2, Smartphone, Link2, Phone, Loader2, X, CheckCircle2 } from 'lucide-react';
+import { Head, Link, useForm } from '@inertiajs/react';
+import { FormEventHandler, useEffect, useState } from 'react';
+import { User, Mail, Lock, ArrowRight, Sparkles, Building2, Smartphone, Link2, Phone, Loader2, X, CheckCircle2, Eye, EyeOff, Package, Check, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
 
 // Debounce helper
@@ -61,6 +61,8 @@ export default function Register() {
     });
 
     const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const debouncedSlug = useDebounce(data.slug, 500);
 
@@ -126,24 +128,6 @@ export default function Register() {
         });
     };
 
-    const steps = [
-        {
-            icon: Building2,
-            title: 'Dados do Negócio',
-            desc: 'Configure o nome e perfil do seu estabelecimento em segundos.'
-        },
-        {
-            icon: Smartphone,
-            title: 'Cardápio Digital',
-            desc: 'Crie seu catálogo e comece a receber pedidos via QR Code.'
-        },
-        {
-            icon: Sparkles,
-            title: 'I.A. Assistente',
-            desc: 'Deixe nossa inteligência sugerir melhores horários e pratos.'
-        }
-    ];
-
     const useSuggested = () => {
         if (slugStatus.suggested) {
             setData('slug', slugStatus.suggested);
@@ -152,303 +136,276 @@ export default function Register() {
     };
 
     return (
-        <div className="min-h-screen bg-white font-sans selection:bg-[#ff3d03] selection:text-white antialiased">
+        <div className="min-h-screen bg-gray-100 flex flex-col justify-center py-8 sm:px-6 lg:px-8 font-sans selection:bg-[#ff3d03] selection:text-white antialiased">
             <Head title="Criar Conta Empresarial - ÓoDelivery" />
 
-            <div className="flex min-h-screen overflow-hidden">
-                {/* Form Side (Left) */}
-                <div className="w-full lg:w-1/2 flex flex-col justify-center px-6 sm:px-12 lg:px-16 xl:px-24 bg-white py-12 overflow-y-auto">
-                    <div className="max-w-lg w-full mx-auto">
-                        <div className="text-center mb-8">
-                            <Link href="/" className="text-4xl font-black text-[#ff3d03] tracking-tight hover:opacity-90 transition-opacity">
-                                ÓoDelivery.
-                            </Link>
-                        </div>
-                        <div className="mb-8">
-                            <div className="h-1.5 w-12 bg-[#ff3d03] rounded-full mb-4"></div>
-                            <h1 className="text-3xl font-black text-gray-900 tracking-tighter leading-none">
-                                Crie sua conta <span className="text-[#ff3d03]">gratuita.</span>
-                            </h1>
-                            <p className="text-gray-600 font-medium mt-3 text-sm">
-                                14 dias grátis do plano Básico. Sem cartão de crédito.
-                            </p>
-                        </div>
+            {/* Main Card Container */}
+            <div className="w-full max-w-6xl mx-auto bg-white rounded-[2rem] shadow-2xl overflow-hidden flex min-h-[600px] lg:min-h-[700px]">
 
-                        <form onSubmit={submit} className="space-y-5">
-                            {/* Store Name */}
-                            <div className="space-y-1.5">
-                                <InputLabel htmlFor="store_name" value="Nome do Estabelecimento" className="text-xs font-bold uppercase tracking-wider text-gray-900" />
-                                <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 transition-colors group-focus-within:text-[#ff3d03]">
-                                        <Building2 className="h-5 w-5" />
-                                    </div>
-                                    <input
-                                        id="store_name"
-                                        type="text"
-                                        name="store_name"
-                                        value={data.store_name}
-                                        className="block w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 focus:border-[#ff3d03] focus:ring-4 focus:ring-[#ff3d03]/10 rounded-xl text-gray-900 font-semibold placeholder-gray-600 transition-all"
-                                        autoComplete="organization"
-                                        onChange={(e) => handleStoreNameChange(e.target.value)}
-                                        placeholder="Ex: Pizzaria do João"
-                                        required
-                                    />
-                                </div>
-                                <InputError message={errors.store_name} className="mt-1" />
+                <div className="hidden lg:flex lg:w-1/2 bg-black relative items-center justify-center p-12 overflow-hidden">
+                    {/* Large Central Logo */}
+                    <div className="relative z-10 flex flex-col items-center justify-center transform transition-transform hover:scale-105 duration-500">
+                        <img
+                            src="/images/logo-hq.png"
+                            alt="ÓoDelivery"
+                            className="w-96 h-96 object-contain drop-shadow-2xl"
+                        />
+                    </div>
+                    {/* Subtle Texture */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
+                </div>
+
+                {/* Right Side - Form */}
+                <div className="w-full lg:w-1/2 p-8 sm:p-12 lg:p-16 flex flex-col justify-center relative bg-white h-full lg:overflow-y-auto lg:max-h-full text-center">
+
+                    {/* Back to Home Button */}
+                    <div className="absolute top-6 left-6 sm:top-10 sm:left-10 z-20">
+                        <Link href="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-[#ff3d03] transition-colors font-medium">
+                            <ArrowLeft className="w-5 h-5" />
+                            <span className="hidden sm:inline">Voltar</span>
+                        </Link>
+                    </div>
+
+                    <div className="max-w-md w-full mx-auto">
+                        <div className="space-y-4 mb-8">
+                            {/* Logo Centered */}
+                            <div className="flex justify-center items-center gap-2 mb-4">
+                                <img src="/images/logo-icon.png" alt="ÓoDelivery" className="h-10 w-auto" />
+                                <span className="text-2xl font-bold text-gray-900 tracking-tight">ÓoDelivery.</span>
                             </div>
+                            {/* Main Title - KEPT BOLD/BLACK */}
+                            <h1 className="text-3xl font-black text-gray-900 tracking-tight leading-tight">Comece grátis.</h1>
+                            <p className="text-gray-600 font-medium text-lg">Crie sua loja digital completa em segundos.</p>
+                        </div>
 
-                            {/* Slug */}
-                            <div className="space-y-1.5">
-                                <InputLabel htmlFor="slug" value="Seu Link Personalizado" className="text-xs font-bold uppercase tracking-wider text-gray-900" />
-                                <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 transition-colors group-focus-within:text-[#ff3d03]">
-                                        <Link2 className="h-5 w-5" />
-                                    </div>
-                                    <input
-                                        id="slug"
-                                        type="text"
-                                        name="slug"
-                                        value={data.slug}
-                                        className={`block w-full pl-12 pr-12 py-3.5 bg-white border focus:ring-4 rounded-xl text-gray-900 font-semibold placeholder-gray-600 transition-all ${slugStatus.available === true
-                                            ? 'border-green-500 focus:border-green-500 focus:ring-green-500/10'
-                                            : slugStatus.available === false
-                                                ? 'border-red-400 focus:border-red-400 focus:ring-red-500/10'
-                                                : 'border-gray-200 focus:border-[#ff3d03] focus:ring-[#ff3d03]/10'
-                                            }`}
-                                        autoComplete="off"
-                                        onChange={(e) => {
-                                            setSlugManuallyEdited(true);
-                                            setData('slug', generateSlug(e.target.value));
-                                        }}
-                                        placeholder="pizzaria-do-joao"
-                                        required
-                                    />
-                                    <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
-                                        {slugStatus.checking ? (
-                                            <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
-                                        ) : slugStatus.available === true ? (
-                                            <CheckCircle2 className="h-5 w-5 text-green-500" />
-                                        ) : slugStatus.available === false ? (
-                                            <X className="h-5 w-5 text-red-400" />
-                                        ) : null}
-                                    </div>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <p className="text-xs text-gray-500">
-                                        oodelivery.com.br/<span className="font-semibold text-gray-600">{data.slug || 'seu-link'}</span>
-                                    </p>
-                                    {slugStatus.message && (
-                                        <p className={`text-xs font-medium ${slugStatus.available ? 'text-green-600' : 'text-red-500'}`}>
-                                            {slugStatus.message}
-                                        </p>
-                                    )}
-                                </div>
-                                {slugStatus.suggested && (
-                                    <button
-                                        type="button"
-                                        onClick={useSuggested}
-                                        className="text-xs text-[#ff3d03] font-semibold hover:underline"
-                                    >
-                                        Usar sugestão: {slugStatus.suggested}
-                                    </button>
-                                )}
-                                <InputError message={errors.slug} className="mt-1" />
-                            </div>
-
-                            {/* Responsible Name and WhatsApp */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <InputLabel htmlFor="name" value="Seu Nome" className="text-xs font-bold uppercase tracking-wider text-gray-900" />
+                        <form onSubmit={submit} className="space-y-5 text-left">
+                            {/* Step 1: Store Info */}
+                            <div className="space-y-4">
+                                <div>
+                                    <InputLabel htmlFor="store_name" value="Nome do Estabelecimento" className="text-xs font-bold uppercase tracking-widest text-gray-700 mb-1.5" />
                                     <div className="relative group">
-                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 transition-colors group-focus-within:text-[#ff3d03]">
-                                            <User className="h-5 w-5" />
+                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-[#ff3d03] transition-colors">
+                                            <Building2 className="h-5 w-5" />
                                         </div>
                                         <input
-                                            id="name"
+                                            id="store_name"
                                             type="text"
-                                            name="name"
-                                            value={data.name}
-                                            className="block w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 focus:border-[#ff3d03] focus:ring-4 focus:ring-[#ff3d03]/10 rounded-xl text-gray-900 font-semibold placeholder-gray-600 transition-all"
-                                            autoComplete="name"
-                                            onChange={(e) => setData('name', e.target.value)}
-                                            placeholder="João Silva"
+                                            value={data.store_name}
+                                            onChange={(e) => handleStoreNameChange(e.target.value)}
+                                            className="block w-full pl-12 pr-4 py-4 bg-white border-2 border-gray-200 focus:border-[#ff3d03] focus:ring-0 rounded-xl text-gray-900 font-normal placeholder-gray-500 transition-colors shadow-sm"
+                                            placeholder="Ex: Pizzaria do João"
                                             required
                                         />
                                     </div>
-                                    <InputError message={errors.name} className="mt-1" />
+                                    <InputError message={errors.store_name} className="mt-1" />
                                 </div>
 
-                                <div className="space-y-1.5">
-                                    <InputLabel htmlFor="whatsapp" value="WhatsApp" className="text-xs font-bold uppercase tracking-wider text-gray-900" />
+                                <div>
+                                    <InputLabel htmlFor="slug" value="Link do Cardápio" className="text-xs font-bold uppercase tracking-widest text-gray-700 mb-1.5" />
                                     <div className="relative group">
-                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 transition-colors group-focus-within:text-[#ff3d03]">
-                                            <Phone className="h-5 w-5" />
+                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 font-medium group-focus-within:text-[#ff3d03] transition-colors text-sm">
+                                            app.oodelivery.com/
                                         </div>
                                         <input
-                                            id="whatsapp"
-                                            type="tel"
-                                            name="whatsapp"
-                                            value={data.whatsapp}
-                                            className="block w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 focus:border-[#ff3d03] focus:ring-4 focus:ring-[#ff3d03]/10 rounded-xl text-gray-900 font-semibold placeholder-gray-500 transition-all"
-                                            autoComplete="tel"
-                                            onChange={(e) => handleWhatsAppChange(e.target.value)}
-                                            placeholder="(11) 99999-9999"
+                                            id="slug"
+                                            type="text"
+                                            value={data.slug}
+                                            onChange={(e) => {
+                                                setData('slug', generateSlug(e.target.value));
+                                                setSlugManuallyEdited(true);
+                                            }}
+                                            className={`block w-full pl-[170px] pr-12 py-4 bg-white border-2 focus:ring-0 rounded-xl text-gray-900 font-normal placeholder-gray-500 transition-colors shadow-sm ${slugStatus.available === true ? 'border-green-500 focus:border-green-500' :
+                                                slugStatus.available === false ? 'border-red-500 focus:border-red-500' :
+                                                    'border-gray-200 focus:border-[#ff3d03]'
+                                                }`}
+                                            placeholder="seunome"
                                             required
                                         />
+                                        <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
+                                            {slugStatus.checking ? <Loader2 className="h-5 w-5 animate-spin text-gray-400" /> :
+                                                slugStatus.available === true ? <CheckCircle2 className="h-5 w-5 text-green-500" /> :
+                                                    slugStatus.available === false ? <X className="h-5 w-5 text-red-500" /> :
+                                                        <Link2 className="h-5 w-5 text-gray-400" />}
+                                        </div>
                                     </div>
-                                    <InputError message={errors.whatsapp} className="mt-1" />
+
+                                    {/* Slug Feedback */}
+                                    <div className="min-h-[24px]">
+                                        {slugStatus.available === false && (
+                                            <div className="flex items-center gap-2 mt-2">
+                                                <span className="text-sm font-medium text-red-500">{slugStatus.message}</span>
+                                                {slugStatus.suggested && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={useSuggested}
+                                                        className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded-md transition-colors font-bold"
+                                                    >
+                                                        Usar {slugStatus.suggested}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
+                                        {slugStatus.available === true && (
+                                            <p className="text-sm font-medium text-green-500 mt-1">Este link está disponível!</p>
+                                        )}
+                                    </div>
+                                    <InputError message={errors.slug} className="mt-1" />
                                 </div>
                             </div>
 
-                            {/* Email */}
-                            <div className="space-y-1.5">
-                                <InputLabel htmlFor="email" value="E-mail" className="text-xs font-bold uppercase tracking-wider text-gray-900" />
-                                <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 transition-colors group-focus-within:text-[#ff3d03]">
-                                        <Mail className="h-5 w-5" />
-                                    </div>
-                                    <input
-                                        id="email"
-                                        type="email"
-                                        name="email"
-                                        value={data.email}
-                                        className="block w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 focus:border-[#ff3d03] focus:ring-4 focus:ring-[#ff3d03]/10 rounded-xl text-gray-900 font-semibold placeholder-gray-500 transition-all"
-                                        autoComplete="username"
-                                        onChange={(e) => setData('email', e.target.value)}
-                                        placeholder="seu@email.com"
-                                        required
-                                    />
-                                </div>
-                                <InputError message={errors.email} className="mt-1" />
+                            <div className="relative flex items-center gap-4 py-2">
+                                <div className="h-px bg-gray-200 flex-1"></div>
+                                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Dados de Acesso</span>
+                                <div className="h-px bg-gray-200 flex-1"></div>
                             </div>
 
-                            {/* Password */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <InputLabel htmlFor="password" value="Senha" className="text-xs font-bold uppercase tracking-wider text-gray-900" />
-                                    <div className="relative group">
-                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 transition-colors group-focus-within:text-[#ff3d03]">
-                                            <Lock className="h-5 w-5" />
+                            {/* Step 2: Personal Info */}
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <InputLabel htmlFor="name" value="Seu Nome" className="text-xs font-bold uppercase tracking-widest text-gray-700 mb-1.5" />
+                                        <div className="relative group">
+                                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-[#ff3d03] transition-colors">
+                                                <User className="h-5 w-5" />
+                                            </div>
+                                            <input
+                                                id="name"
+                                                type="text"
+                                                value={data.name}
+                                                onChange={(e) => setData('name', e.target.value)}
+                                                className="block w-full pl-12 pr-4 py-4 bg-white border-2 border-gray-200 focus:border-[#ff3d03] focus:ring-0 rounded-xl text-gray-900 font-normal placeholder-gray-500 transition-colors shadow-sm"
+                                                placeholder="Nome Completo"
+                                                required
+                                            />
                                         </div>
-                                        <input
-                                            id="password"
-                                            type="password"
-                                            name="password"
-                                            value={data.password}
-                                            className="block w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 focus:border-[#ff3d03] focus:ring-4 focus:ring-[#ff3d03]/10 rounded-xl text-gray-900 font-semibold placeholder-gray-500 transition-all"
-                                            autoComplete="new-password"
-                                            onChange={(e) => setData('password', e.target.value)}
-                                            placeholder="••••••••"
-                                            required
-                                        />
+                                        <InputError message={errors.name} className="mt-1" />
                                     </div>
-                                    <InputError message={errors.password} className="mt-1" />
+                                    <div>
+                                        <InputLabel htmlFor="whatsapp" value="WhatsApp" className="text-xs font-bold uppercase tracking-widest text-gray-700 mb-1.5" />
+                                        <div className="relative group">
+                                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-[#ff3d03] transition-colors">
+                                                <Phone className="h-5 w-5" />
+                                            </div>
+                                            <input
+                                                id="whatsapp"
+                                                type="tel"
+                                                value={data.whatsapp}
+                                                onChange={(e) => handleWhatsAppChange(e.target.value)}
+                                                className="block w-full pl-12 pr-4 py-4 bg-white border-2 border-gray-200 focus:border-[#ff3d03] focus:ring-0 rounded-xl text-gray-900 font-normal placeholder-gray-500 transition-colors shadow-sm"
+                                                placeholder="(00) 00000-0000"
+                                                required
+                                            />
+                                        </div>
+                                        <InputError message={errors.whatsapp} className="mt-1" />
+                                    </div>
                                 </div>
 
-                                <div className="space-y-1.5">
-                                    <InputLabel htmlFor="password_confirmation" value="Confirmar" className="text-xs font-bold uppercase tracking-wider text-gray-900" />
+                                <div>
+                                    <InputLabel htmlFor="email" value="E-mail" className="text-xs font-bold uppercase tracking-widest text-gray-700 mb-1.5" />
                                     <div className="relative group">
-                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 transition-colors group-focus-within:text-[#ff3d03]">
-                                            <Lock className="h-5 w-5" />
+                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-[#ff3d03] transition-colors">
+                                            <Mail className="h-5 w-5" />
                                         </div>
                                         <input
-                                            id="password_confirmation"
-                                            type="password"
-                                            name="password_confirmation"
-                                            value={data.password_confirmation}
-                                            className="block w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 focus:border-[#ff3d03] focus:ring-4 focus:ring-[#ff3d03]/10 rounded-xl text-gray-900 font-semibold placeholder-gray-500 transition-all"
-                                            autoComplete="new-password"
-                                            onChange={(e) => setData('password_confirmation', e.target.value)}
-                                            placeholder="••••••••"
+                                            id="email"
+                                            type="email"
+                                            value={data.email}
+                                            onChange={(e) => setData('email', e.target.value)}
+                                            className="block w-full pl-12 pr-4 py-4 bg-white border-2 border-gray-200 focus:border-[#ff3d03] focus:ring-0 rounded-xl text-gray-900 font-normal placeholder-gray-500 transition-colors shadow-sm"
+                                            placeholder="seu@email.com"
                                             required
                                         />
                                     </div>
-                                    <InputError message={errors.password_confirmation} className="mt-1" />
+                                    <InputError message={errors.email} className="mt-1" />
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <InputLabel htmlFor="password" value="Senha" className="text-xs font-bold uppercase tracking-widest text-gray-700 mb-1.5" />
+                                        <div className="relative group">
+                                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-[#ff3d03] transition-colors">
+                                                <Lock className="h-5 w-5" />
+                                            </div>
+                                            <input
+                                                id="password"
+                                                type={showPassword ? 'text' : 'password'}
+                                                value={data.password}
+                                                onChange={(e) => setData('password', e.target.value)}
+                                                className="block w-full pl-12 pr-10 py-4 bg-white border-2 border-gray-200 focus:border-[#ff3d03] focus:ring-0 rounded-xl text-gray-900 font-normal placeholder-gray-500 transition-colors shadow-sm"
+                                                placeholder="••••••••"
+                                                required
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
+                                            >
+                                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                            </button>
+                                        </div>
+                                        <InputError message={errors.password} className="mt-1" />
+                                    </div>
+
+                                    <div>
+                                        <InputLabel htmlFor="password_confirmation" value="Confirmar" className="text-xs font-bold uppercase tracking-widest text-gray-700 mb-1.5" />
+                                        <div className="relative group">
+                                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-[#ff3d03] transition-colors">
+                                                <Lock className="h-5 w-5" />
+                                            </div>
+                                            <input
+                                                id="password_confirmation"
+                                                type={showConfirmPassword ? 'text' : 'password'}
+                                                value={data.password_confirmation}
+                                                onChange={(e) => setData('password_confirmation', e.target.value)}
+                                                className="block w-full pl-12 pr-10 py-4 bg-white border-2 border-gray-200 focus:border-[#ff3d03] focus:ring-0 rounded-xl text-gray-900 font-normal placeholder-gray-500 transition-colors shadow-sm"
+                                                placeholder="••••••••"
+                                                required
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
+                                            >
+                                                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                            </button>
+                                        </div>
+                                        <InputError message={errors.password_confirmation} className="mt-1" />
+                                    </div>
                                 </div>
                             </div>
 
                             <PrimaryButton
-                                className="w-full flex items-center justify-center gap-3 py-4 bg-[#ff3d03] hover:bg-[#e63700] text-white font-bold text-sm uppercase tracking-wider rounded-xl shadow-lg shadow-[#ff3d03]/20 transition-all active:scale-[0.98] mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
-                                disabled={processing || slugStatus.available === false}
+                                className="w-full flex items-center justify-center py-4 bg-[#ff3d03] hover:bg-[#e63700] text-white font-medium text-lg rounded-xl shadow-lg shadow-[#ff3d03]/30 transition-colors mt-6"
+                                disabled={processing}
                             >
                                 {processing ? (
                                     <>
-                                        <Loader2 className="h-5 w-5 animate-spin" />
-                                        Criando Conta...
+                                        <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                                        Criando Loja...
                                     </>
                                 ) : (
                                     <>
-                                        Criar Conta Grátis
-                                        <ArrowRight className="h-5 w-5" />
+                                        Criar Minha Loja Grátis
+                                        <ArrowRight className="w-5 h-5 ml-2" />
                                     </>
                                 )}
                             </PrimaryButton>
-
-                            <p className="text-xs text-center text-gray-500 mt-4">
-                                Ao criar sua conta, você concorda com nossos{' '}
-                                <a href="/termos" className="text-[#ff3d03] hover:underline">Termos de Uso</a>
-                                {' '}e{' '}
-                                <a href="/privacidade" className="text-[#ff3d03] hover:underline">Política de Privacidade</a>.
-                            </p>
                         </form>
 
-                        <div className="mt-8 text-center">
-                            <p className="text-gray-600 font-medium text-sm">
-                                Já possui uma conta?{' '}
+                        <div className="mt-8 text-center border-t border-gray-100 pt-6">
+                            <div className="text-sm font-medium text-gray-500">
+                                Já tem uma conta?{' '}
                                 <Link
                                     href={route('login')}
-                                    className="text-[#ff3d03] font-bold hover:underline decoration-2 underline-offset-4 transition-all"
+                                    className="text-[#ff3d03] hover:underline transition-all"
                                 >
                                     Fazer Login
                                 </Link>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Visual Side (Right) */}
-                <div className="hidden lg:flex lg:w-1/2 bg-gray-900 relative overflow-hidden items-center justify-center p-16 xl:p-24">
-                    <img
-                        src="/images/auth-background.jpg"
-                        alt="Background"
-                        className="absolute inset-0 w-full h-full object-cover opacity-50 mix-blend-overlay"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/40"></div>
-
-                    <div className="relative z-10 max-w-lg">
-                        <div className="mb-16 flex justify-center">
-                            <img src="/images/landing/header-icon.png" alt="ÓoDelivery" className="h-32 w-auto drop-shadow-2xl" />
-                        </div>
-
-                        <div className="space-y-10">
-                            {steps.map((step, i) => (
-                                <div key={i} className="flex gap-6 group">
-                                    <div className="shrink-0 w-14 h-14 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-[#ff3d03] group-hover:bg-[#ff3d03] group-hover:text-white transition-all duration-300">
-                                        <step.icon className="h-7 w-7" />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <h3 className="text-lg font-bold text-white tracking-tight">{step.title}</h3>
-                                        <p className="text-gray-300 font-medium leading-relaxed text-sm">{step.desc}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="mt-16 p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl">
-                            <div className="flex gap-1 mb-4">
-                                {[1, 2, 3, 4, 5].map((s) => (
-                                    <Check key={s} className="h-4 w-4 text-[#ff3d03]" />
-                                ))}
                             </div>
-                            <p className="text-white text-base font-medium italic leading-relaxed">
-                                "O ÓoDelivery mudou a forma como lidamos com os pedidos. O cardápio digital é impecável e a cozinha nunca esteve tão organizada."
-                            </p>
-                            <div className="mt-5 flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-full bg-gray-800 border-2 border-[#ff3d03]"></div>
-                                <div>
-                                    <div className="text-white font-bold text-sm">Marcelo Silva</div>
-                                    <div className="text-[#ff3d03] text-xs font-semibold">Dono de Hamburgueria</div>
-                                </div>
+                            <div className="mt-4 flex justify-center gap-4 text-xs font-medium text-gray-400">
+                                <Link href="#" className="hover:text-gray-600">Termos de Uso</Link>
+                                <span>•</span>
+                                <Link href="#" className="hover:text-gray-600">Privacidade</Link>
                             </div>
                         </div>
                     </div>

@@ -78,7 +78,9 @@ class SubscriptionController extends Controller
 
         // Simulating logic
         if ($plan === 'free') {
-            return $this->downgradeToFree();
+            if ($plan === 'free') {
+                return $this->downgradeToFree(new Request());
+            }
         }
 
         return Inertia::render('Subscription/Checkout', [
@@ -107,62 +109,58 @@ class SubscriptionController extends Controller
         }
 
         // TODO: Integrate with Stripe payment here
-        // For now, just update the plan (mock)
-        $tenant->update(['plan' => $requestedPlan]);
+        // For now, just update the plan (mock) with intelligent date calculation
+        try {
+            $tenant->upgradeTo($requestedPlan);
+        } catch (\Exception $e) {
+            return back()->withErrors(['plan' => $e->getMessage()]);
+        }
 
         return redirect()->route('dashboard')->with('success', "Plano atualizado para {$requestedPlan} com sucesso! (Modo de Teste)");
     }
 
-    public function downgradeToFree()
+    public function downgradeToFree(Request $request)
     {
         $tenant = auth()->user()->tenant;
-        $tenant->update(['plan' => 'free']);
+        $force = $request->input('force', false);
+
+        try {
+            $tenant->downgradeToFree($force);
+        } catch (\Exception $e) {
+            return back()->withErrors(['downgrade' => $e->getMessage()]);
+        }
 
         return redirect()->route('dashboard')->with('success', 'Plano alterado para Gratuito.');
     }
 
     public function expired()
     {
+        $tenant = auth()->user()->tenant;
+        $activePlans = PlanLimit::where('is_active', true)->orderBy('sort_order')->get();
+
+        $plans = $activePlans->map(function ($plan) {
+            return [
+                'id' => $plan->plan, // simplified mapping for this view
+                'plan' => $plan->plan,
+                'name' => $plan->display_name,
+                'price' => $plan->price_monthly,
+                'price_monthly' => $plan->price_monthly,
+                'price_yearly' => $plan->price_yearly,
+                'interval' => 'mês',
+                'features' => $plan->formatted_features,
+                'max_products' => $plan->max_products,
+                'max_users' => $plan->max_users,
+                'current' => auth()->user()->tenant->plan === $plan->plan,
+            ];
+        })->values();
+
+        // Check if downgrade is possible or needs warnings
+        $downgradeRisks = $tenant->canDowngradeTo('free');
+
         return Inertia::render('Subscription/Expired', [
-            'tenant' => auth()->user()->tenant,
-            'plans' => [
-                [
-                    'id' => 'free',
-                    'plan' => 'free', // Added for frontend match
-                    'name' => 'Gratuito',
-                    'price' => 0,
-                    'price_monthly' => 0, // Added for frontend match
-                    'price_yearly' => 0,
-                    'interval' => 'mês',
-                    'features' => [
-                        '30 produtos',
-                        '2 usuários',
-                        'Até 300 pedidos/mês',
-                    ],
-                    'max_products' => 30,
-                    'max_users' => 2,
-                    'current' => auth()->user()->tenant->plan === 'free',
-                ],
-                [
-                    'id' => 'price_basic',
-                    'plan' => 'basic', // Added for frontend match
-                    'name' => 'Básico',
-                    'price' => 79.90,
-                    'price_monthly' => 79.90, // Added for frontend match
-                    'price_yearly' => 79.90 * 10,
-                    'interval' => 'mês',
-                    'features' => [
-                        '250 produtos',
-                        '5 usuários',
-                        'Pedidos ilimitados',
-                        'Impressão automática',
-                        'Fidelidade',
-                    ],
-                    'max_products' => 250,
-                    'max_users' => 5,
-                    'current' => auth()->user()->tenant->plan === 'basic',
-                ],
-            ]
+            'tenant' => $tenant,
+            'plans' => $plans,
+            'downgradeRisks' => $downgradeRisks
         ]);
     }
 

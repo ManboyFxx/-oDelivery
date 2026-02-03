@@ -55,6 +55,7 @@ class EmployeeController extends Controller implements HasMiddleware
         return Inertia::render('Employees/Index', [
             'employees' => $employees,
             'current_user_id' => $request->user()->id,
+            'can_create_motoboy' => $tenant->hasFeature('motoboy_management'),
         ]);
     }
 
@@ -77,7 +78,15 @@ class EmployeeController extends Controller implements HasMiddleware
                 Rule::unique('users')->where('tenant_id', $tenant->id),
             ],
             'phone' => 'required|string|max:20',
-            'role' => 'required|in:admin,employee,motoboy',
+            'role' => [
+                'required',
+                'in:admin,employee,motoboy',
+                function ($attribute, $value, $fail) use ($tenant) {
+                    if ($value === 'motoboy' && !$tenant->hasFeature('motoboy_management')) {
+                        $fail('Seu plano atual não permite cadastrar motoboys.');
+                    }
+                },
+            ],
             'password' => 'required|string|min:8|confirmed',
         ]);
 
@@ -118,7 +127,15 @@ class EmployeeController extends Controller implements HasMiddleware
                 Rule::unique('users')->ignore($employee->id)->where('tenant_id', $tenant->id),
             ],
             'phone' => 'required|string|max:20',
-            'role' => 'required|in:admin,employee,motoboy',
+            'role' => [
+                'required',
+                'in:admin,employee,motoboy',
+                function ($attribute, $value, $fail) use ($tenant) {
+                    if ($value === 'motoboy' && !$tenant->hasFeature('motoboy_management')) {
+                        $fail('Seu plano atual não permite cadastrar motoboys.');
+                    }
+                },
+            ],
             'is_active' => 'boolean',
         ]);
 

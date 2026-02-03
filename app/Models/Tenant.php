@@ -369,17 +369,39 @@ class Tenant extends Model
 
         $oldPlan = $this->plan;
 
+        // Calculate new expiration date
+        // Logic: If currently active and in future, add time to current end date.
+        // If expired or null, start from NOW.
+        $currentExpiry = $this->subscription_ends_at;
+        $startFrom = ($currentExpiry && $currentExpiry->isFuture()) ? $currentExpiry->copy() : now();
+
+        $newExpiry = $billingCycle === 'yearly'
+            ? $startFrom->addYear()
+            : $startFrom->addMonth();
+
         $this->update([
             'plan' => $plan,
             'billing_cycle' => $billingCycle,
             'subscription_status' => 'active',
-            'subscription_ends_at' => $billingCycle === 'yearly'
-                ? now()->addYear()
-                : now()->addMonth(),
+            'subscription_ends_at' => $newExpiry,
             'trial_ends_at' => null, // Clear trial
         ]);
 
         SubscriptionHistory::recordUpgrade($this, $oldPlan, $plan, $amount, $billingCycle);
+    }
+
+    /**
+     * Extend subscription by a number of days.
+     */
+    public function extendSubscription(int $days): void
+    {
+        $currentExpiry = $this->subscription_ends_at;
+        $startFrom = ($currentExpiry && $currentExpiry->isFuture()) ? $currentExpiry->copy() : now();
+
+        $this->update([
+            'subscription_ends_at' => $startFrom->addDays($days),
+            'subscription_status' => 'active', // Reactivate if it was expired
+        ]);
     }
 
     /**

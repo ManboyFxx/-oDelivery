@@ -36,6 +36,13 @@ export default function AdminTenantIndex({ tenants, metrics }: IndexProps) {
                         <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Lojas</h2>
                         <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Gerenciamento de assinantes</p>
                     </div>
+                    <Link
+                        href={route('admin.tenants.create')}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#ff3d03] text-white rounded-xl font-bold text-sm shadow-lg shadow-[#ff3d03]/20 hover:bg-[#e63700] transition-colors"
+                    >
+                        <Store className="w-4 h-4" />
+                        Nova Loja
+                    </Link>
                 </div>
 
                 {/* Tenants Table */}

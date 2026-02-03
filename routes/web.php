@@ -107,6 +107,7 @@ Route::middleware(['auth', \App\Http\Middleware\SuperAdminMiddleware::class])->p
 
     // Tenants Management
     Route::get('/tenants', [\App\Http\Controllers\Admin\AdminTenantController::class, 'index'])->name('tenants.index');
+    Route::get('/tenants/create', [\App\Http\Controllers\Admin\AdminTenantController::class, 'create'])->name('tenants.create');
     Route::post('/tenants', [\App\Http\Controllers\Admin\AdminTenantController::class, 'store'])->name('tenants.store');
     Route::get('/tenants/{id}/edit', [\App\Http\Controllers\Admin\AdminTenantController::class, 'edit'])->name('tenants.edit');
     Route::put('/tenants/{tenant}', [\App\Http\Controllers\Admin\AdminTenantController::class, 'update'])->name('tenants.update');
@@ -114,6 +115,11 @@ Route::middleware(['auth', \App\Http\Middleware\SuperAdminMiddleware::class])->p
     Route::post('/tenants/{tenant}/restore', [\App\Http\Controllers\Admin\AdminTenantController::class, 'restore'])->name('tenants.restore');
     Route::get('/tenants/{tenant}/metrics', [\App\Http\Controllers\Admin\AdminTenantController::class, 'metrics'])->name('tenants.metrics');
     Route::put('/tenants/{tenant}/plan', [\App\Http\Controllers\Admin\AdminTenantController::class, 'updatePlan'])->name('tenants.update-plan');
+
+    // Global User Management
+    Route::get('/users', [\App\Http\Controllers\Admin\AdminUserController::class, 'index'])->name('users.index');
+    Route::put('/users/{user}/reset-password', [\App\Http\Controllers\Admin\AdminUserController::class, 'resetPassword'])->name('users.reset-password');
+    Route::put('/users/{user}', [\App\Http\Controllers\Admin\AdminUserController::class, 'update'])->name('users.update');
 
     // API Keys Management
     Route::get('/api-keys', [\App\Http\Controllers\Admin\AdminApiKeysController::class, 'index'])->name('api-keys.index');
@@ -383,3 +389,9 @@ Route::middleware(['auth', 'is_motoboy', 'subscription', 'feature:motoboy_manage
 Route::post('/webhooks/whatsapp', [\App\Http\Controllers\WhatsAppWebhookController::class, 'handle'])->name('webhooks.whatsapp');
 
 require __DIR__ . '/auth.php';
+
+
+
+Route::get('/debug-templates', function () {
+    return \App\Models\WhatsAppTemplate::all(['key', 'name', 'message', 'is_active']);
+});

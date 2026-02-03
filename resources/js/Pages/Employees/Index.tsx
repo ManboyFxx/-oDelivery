@@ -19,6 +19,7 @@ interface Employee {
 interface Props {
     employees: Employee[];
     current_user_id: string;
+    can_create_motoboy: boolean;
 }
 
 const roleLabels: Record<string, string> = {
@@ -33,7 +34,7 @@ const roleColors: Record<string, string> = {
     motoboy: 'bg-green-100 text-green-700',
 };
 
-export default function EmployeesIndex({ employees, current_user_id }: Props) {
+export default function EmployeesIndex({ employees, current_user_id, can_create_motoboy }: Props) {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
@@ -43,7 +44,7 @@ export default function EmployeesIndex({ employees, current_user_id }: Props) {
         name: '',
         email: '',
         phone: '',
-        role: 'employee' as const,
+        role: 'employee' as Employee['role'],
         password: '',
         password_confirmation: '',
     });
@@ -52,7 +53,7 @@ export default function EmployeesIndex({ employees, current_user_id }: Props) {
         name: '',
         email: '',
         phone: '',
-        role: 'employee' as const,
+        role: 'employee' as Employee['role'],
         is_active: true,
     });
 
@@ -282,8 +283,19 @@ export default function EmployeesIndex({ employees, current_user_id }: Props) {
                                 >
                                     <option value="employee" className="bg-white dark:bg-[#1a1b1e] text-gray-900 dark:text-white">Funcionário</option>
                                     <option value="admin" className="bg-white dark:bg-[#1a1b1e] text-gray-900 dark:text-white">Administrador</option>
-                                    <option value="motoboy" className="bg-white dark:bg-[#1a1b1e] text-gray-900 dark:text-white">Motoboy</option>
+                                    <option
+                                        value="motoboy"
+                                        className="bg-white dark:bg-[#1a1b1e] text-gray-900 dark:text-white disabled:text-gray-400"
+                                        disabled={!can_create_motoboy}
+                                    >
+                                        Motoboy {!can_create_motoboy && '(Upgrade Necessário)'}
+                                    </option>
                                 </select>
+                                {!can_create_motoboy && (
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        Para cadastrar motoboys, seu plano precisa ter o recurso habilitado.
+                                    </p>
+                                )}
                             </div>
 
                             <div>
@@ -394,7 +406,13 @@ export default function EmployeesIndex({ employees, current_user_id }: Props) {
                                 >
                                     <option value="employee" className="bg-white dark:bg-[#1a1b1e] text-gray-900 dark:text-white">Funcionário</option>
                                     <option value="admin" className="bg-white dark:bg-[#1a1b1e] text-gray-900 dark:text-white">Administrador</option>
-                                    <option value="motoboy" className="bg-white dark:bg-[#1a1b1e] text-gray-900 dark:text-white">Motoboy</option>
+                                    <option
+                                        value="motoboy"
+                                        className="bg-white dark:bg-[#1a1b1e] text-gray-900 dark:text-white disabled:text-gray-400"
+                                        disabled={!can_create_motoboy}
+                                    >
+                                        Motoboy {!can_create_motoboy && '(Upgrade Necessário)'}
+                                    </option>
                                 </select>
                             </div>
 

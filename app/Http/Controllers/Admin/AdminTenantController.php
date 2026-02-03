@@ -28,6 +28,52 @@ class AdminTenantController extends Controller
         ]);
     }
 
+    public function create()
+    {
+        return Inertia::render('Admin/Tenants/Create');
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'slug' => 'required|string|max:255|unique:tenants,slug',
+            'email' => 'required|email|max:255|unique:tenants,email',
+            'owner_name' => 'required|string|max:255',
+            'owner_email' => 'required|email|max:255|unique:users,email',
+            'password' => 'required|string|min:8',
+            'plan' => 'required|string|in:free,starter,basic,pro,custom',
+        ]);
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($validated) {
+            // 1. Create Tenant
+            $tenant = Tenant::create([
+                'name' => $validated['name'],
+                'slug' => $validated['slug'],
+                'email' => $validated['email'],
+                'plan' => $validated['plan'],
+                'is_active' => true,
+                'subscription_status' => 'active',
+                'features' => [], // Default features can be set here
+            ]);
+
+            // 2. Create Owner User
+            $user = \App\Models\User::create([
+                'tenant_id' => $tenant->id,
+                'name' => $validated['owner_name'],
+                'email' => $validated['owner_email'],
+                'password' => \Illuminate\Support\Facades\Hash::make($validated['password']),
+                'role' => 'admin', // Tenant Admin
+                'is_active' => true,
+            ]);
+
+            // Assign role if using Spatie permissions (optional, but good practice)
+            // $user->assignRole('admin'); 
+        });
+
+        return redirect()->route('admin.tenants.index')->with('success', 'Loja criada com sucesso!');
+    }
+
     public function suspend(Request $request, Tenant $tenant)
     {
         $tenant->update([
@@ -99,7 +145,7 @@ class AdminTenantController extends Controller
     }
     public function edit(string $id)
     {
-        $tenant = Tenant::findOrFail($id);
+        $tenant = Tenant::with(['users'])->findOrFail($id);
 
         // Load plan limits for reference
         $plans = \App\Models\PlanLimit::where('is_active', true)->orderBy('sort_order')->get();
@@ -130,6 +176,9 @@ class AdminTenantController extends Controller
             'max_users' => 'nullable|integer',
             'max_orders_per_month' => 'nullable|integer',
             'max_motoboys' => 'nullable|integer',
+            'subscription_status' => 'required|string|in:active,inactive,past_due,canceled,trialing',
+            'subscription_ends_at' => 'nullable|date',
+            'trial_ends_at' => 'nullable|date',
         ]);
 
         // If not custom, we clear the overrides to respect the plan limits

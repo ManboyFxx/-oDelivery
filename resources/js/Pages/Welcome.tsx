@@ -124,7 +124,7 @@ export default function Welcome({ auth }: PageProps) {
                         <div className="flex items-center gap-4">
                             <Link
                                 href={route('login')}
-                                className="text-sm font-bold text-gray-700 hover:text-[#ff3d03] transition-colors hidden sm:block"
+                                className="text-sm font-bold text-gray-700 hover:text-[#ff3d03] transition-colors block"
                             >
                                 Entrar
                             </Link>
@@ -151,7 +151,7 @@ export default function Welcome({ auth }: PageProps) {
                                 </div>
 
                                 {/* New Headline */}
-                                <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-gray-900 leading-tight mb-8">
+                                <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-gray-900 leading-tight mb-8">
                                     Crie seu <span className="text-[#ff3d03]">Cardápio Digital</span> gratuito e comece a receber pedidos hoje mesmo!
                                 </h1>
                             </div>
