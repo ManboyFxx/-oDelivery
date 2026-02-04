@@ -62,4 +62,32 @@ class WhatsAppInstance extends Model
             ->where('status', 'connected')
             ->first();
     }
+
+    /**
+     * Mark instance as connected with phone number
+     */
+    public function markAsConnected(string $phoneNumber = ''): self
+    {
+        $this->update([
+            'status' => 'connected',
+            'phone_number' => $phoneNumber ?: $this->phone_number,
+            'last_connected_at' => now(),
+            'qr_code' => null,
+        ]);
+
+        return $this->refresh();
+    }
+
+    /**
+     * Mark instance as disconnected
+     */
+    public function markAsDisconnected(): self
+    {
+        $this->update([
+            'status' => 'disconnected',
+            'qr_code' => null,
+        ]);
+
+        return $this->refresh();
+    }
 }

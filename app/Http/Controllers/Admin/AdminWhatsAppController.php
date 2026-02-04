@@ -129,10 +129,8 @@ class AdminWhatsAppController extends Controller
             if (($status['state'] ?? '') === 'open') {
                 $instance->markAsConnected($status['instance']['owner'] ?? '');
             } else {
-                // Only update to disconnected if not connecting
-                if ($instance->status !== 'connecting') {
-                    $instance->markAsDisconnected();
-                }
+                // Always update to disconnected when state is not 'open'
+                $instance->markAsDisconnected();
             }
 
             return response()->json([

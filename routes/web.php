@@ -385,8 +385,10 @@ Route::middleware(['auth', 'is_motoboy', 'subscription', 'feature:motoboy_manage
     Route::delete('/notifications/{id}', [\App\Http\Controllers\Api\Motoboy\NotificationController::class, 'destroy'])->name('notifications.destroy');
 });
 
-// Public Webhooks (Outside Auth)
-Route::post('/webhooks/whatsapp', [\App\Http\Controllers\WhatsAppWebhookController::class, 'handle'])->name('webhooks.whatsapp');
+// Public Webhooks (Outside Auth) - Protected with signature verification
+Route::post('/webhooks/whatsapp', [\App\Http\Controllers\WhatsAppWebhookController::class, 'handle'])
+    ->middleware(\App\Http\Middleware\VerifyWhatsAppWebhookSignature::class)
+    ->name('webhooks.whatsapp');
 
 require __DIR__ . '/auth.php';
 
