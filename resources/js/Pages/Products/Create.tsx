@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm, Link } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
+import { FormEventHandler, useState } from 'react';
 
 interface Category {
     id: string;
@@ -15,14 +15,24 @@ interface Group {
 }
 
 export default function Create({ categories, complement_groups = [] }: { categories: Category[], complement_groups: Group[] }) {
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         price: '',
         description: '',
         category_id: '',
         complement_groups: [] as string[],
-        // image: null,
+        image: null as File | null,
     });
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setData('image', file);
+            setImagePreview(URL.createObjectURL(file));
+        }
+    };
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -41,7 +51,36 @@ export default function Create({ categories, complement_groups = [] }: { categor
                     </p>
                 </div>
 
-                <form onSubmit={submit} className="space-y-6">
+                <form onSubmit={submit} className="space-y-6" encType="multipart/form-data">
+                    {/* Image Upload */}
+                    <div>
+                        <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">Foto do Produto</label>
+                        <div className="mt-2 flex items-center gap-x-3">
+                            {imagePreview ? (
+                                <img src={imagePreview} alt="Preview" className="h-24 w-24 rounded-lg object-cover bg-gray-100" />
+                            ) : (
+                                <div className="h-24 w-24 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-400">
+                                    Sem foto
+                                </div>
+                            )}
+                            <label
+                                htmlFor="image-upload"
+                                className="rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-white dark:ring-gray-600 dark:hover:bg-gray-700 cursor-pointer"
+                            >
+                                Enviar Foto
+                                <input
+                                    id="image-upload"
+                                    name="image"
+                                    type="file"
+                                    className="sr-only"
+                                    onChange={handleImageChange}
+                                    accept="image/*"
+                                />
+                            </label>
+                        </div>
+                        {errors.image && <p className="mt-2 text-sm text-red-600">{errors.image}</p>}
+                    </div>
+
                     {/* Name */}
                     <div>
                         <label htmlFor="name" className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
