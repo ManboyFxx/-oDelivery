@@ -16,9 +16,12 @@ class PdvController extends Controller
 {
     public function index()
     {
-        $categories = Category::with('products')->get();
+        $tenantId = auth()->user()->tenant_id;
+
+        $categories = Category::where('tenant_id', $tenantId)->with('products')->get();
         // Fallback if no categories but products exist: group by null or show all
-        $allProducts = Product::where('is_available', true)
+        $allProducts = Product::where('tenant_id', $tenantId)
+            ->where('is_available', true)
             ->with([
                 'complementGroups.options' => function ($q) {
                     $q->where('is_available', true)
@@ -29,10 +32,14 @@ class PdvController extends Controller
             ->get();
 
         // Fetch customers for the combobox
-        $customers = \App\Models\Customer::select('id', 'name', 'phone', 'loyalty_points')->orderBy('name')->get();
+        $customers = \App\Models\Customer::where('tenant_id', $tenantId)
+            ->select('id', 'name', 'phone', 'loyalty_points')
+            ->orderBy('name')
+            ->get();
 
         // Fetch tables with current order details
-        $tables = \App\Models\Table::with(['currentOrder.items', 'currentOrder.customer'])
+        $tables = \App\Models\Table::where('tenant_id', $tenantId)
+            ->with(['currentOrder.items', 'currentOrder.customer'])
             ->orderBy('number')
             ->get();
 
@@ -46,12 +53,14 @@ class PdvController extends Controller
 
     public function store(Request $request)
     {
+        $tenantId = auth()->user()->tenant_id;
+
         $validated = $request->validate([
             'items' => 'required|array|min:1',
-            'items.*.id' => 'required|exists:products,id',
+            'items.*.id' => "required|exists:products,id,tenant_id,{$tenantId}",
             'items.*.quantity' => 'required|integer|min:1',
             'customer_name' => 'nullable|string',
-            'customer_id' => 'nullable|exists:customers,id', // Validate customer_id
+            'customer_id' => "nullable|exists:customers,id,tenant_id,{$tenantId}",
             'payment_method' => 'required|in:cash,credit_card,debit_card,pix',
             'order_mode' => 'required|in:delivery,pickup,table',
             'total' => 'required|numeric'
@@ -62,21 +71,19 @@ class PdvController extends Controller
 
             // 1. Create Order
             // Fix: Handle string order numbers (e.g., #0001)
-            $maxOrder = Order::max('order_number');
+            $maxOrder = Order::where('tenant_id', $tenantId)->max('order_number');
             // Extract numeric part or default to 0
             $nextNum = $maxOrder ? (int) preg_replace('/\D/', '', $maxOrder) + 1 : 1;
             $orderNumber = '#' . str_pad($nextNum, 4, '0', STR_PAD_LEFT);
-
-            // Dummy tenant ID handling for now since we are in single-tenant dev mode mostly
-            // In real app, get from auth user or middleware
-            $tenantId = auth()->user()->tenant_id ?? 'default_tenant';
 
             // Determine customer name
             $customerName = $validated['customer_name'] ?? 'Cliente Balcão';
             $customerId = $validated['customer_id'] ?? null;
 
             if ($customerId) {
-                $customer = \App\Models\Customer::find($customerId);
+                $customer = \App\Models\Customer::where('id', $customerId)
+                    ->where('tenant_id', $tenantId)
+                    ->first();
                 if ($customer) {
                     $customerName = $customer->name;
                 }

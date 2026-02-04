@@ -22,6 +22,7 @@ class OrderItem extends Model
         'complements_price',
         'subtotal',
         'notes',
+        'is_loyalty_redemption',
     ];
 
     protected $casts = [
@@ -29,6 +30,7 @@ class OrderItem extends Model
         'unit_price' => 'float',
         'complements_price' => 'float',
         'subtotal' => 'float',
+        'is_loyalty_redemption' => 'boolean',
     ];
 
     // Relationships

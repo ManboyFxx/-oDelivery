@@ -78,9 +78,7 @@ class SubscriptionController extends Controller
 
         // Simulating logic
         if ($plan === 'free') {
-            if ($plan === 'free') {
-                return $this->downgradeToFree(new Request());
-            }
+            return $this->downgradeToFree(new Request());
         }
 
         return Inertia::render('Subscription/Checkout', [

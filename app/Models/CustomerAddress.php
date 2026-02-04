@@ -17,6 +17,7 @@ class CustomerAddress extends Model
 
     protected $fillable = [
         'customer_id',
+        'tenant_id',
         'label',
         'street',
         'number',

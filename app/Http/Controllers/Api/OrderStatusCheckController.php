@@ -27,7 +27,7 @@ class OrderStatusCheckController extends Controller
             ->pluck('id');
 
         $canceledOrderIds = Order::where('tenant_id', $tenantId)
-            ->where('status', 'canceled')
+            ->where('status', 'cancelled')
             ->where('updated_at', '>=', Carbon::now()->subSeconds(20))
             ->pluck('id');
 

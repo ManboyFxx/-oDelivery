@@ -12,7 +12,6 @@ use App\Models\Coupon;
 use App\Models\CouponUsage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Events\OrderCreated;
 
 class CustomerOrderController extends Controller
 {
@@ -270,10 +269,8 @@ class CustomerOrderController extends Controller
 
             // 5. Create Payment Record
             $order->payments()->create([
-                'tenant_id' => $validated['tenant_id'],
                 'method' => $validated['payment_method'],
                 'amount' => $total,
-                'status' => 'pending'
             ]);
 
             // 5.1 Register Coupon Usage

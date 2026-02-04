@@ -25,15 +25,6 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/setup-production-db', function () {
-    try {
-        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-        return 'Sucesso! Tabelas criadas. Agora você pode importar o arquivo hostinger_data.sql no PHPMyAdmin.';
-    } catch (\Exception $e) {
-        return 'Erro: ' . $e->getMessage();
-    }
-});
-
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
@@ -391,9 +382,3 @@ Route::post('/webhooks/whatsapp', [\App\Http\Controllers\WhatsAppWebhookControll
     ->name('webhooks.whatsapp');
 
 require __DIR__ . '/auth.php';
-
-
-
-Route::get('/debug-templates', function () {
-    return \App\Models\WhatsAppTemplate::all(['key', 'name', 'message', 'is_active']);
-});
