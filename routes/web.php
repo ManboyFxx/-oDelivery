@@ -138,7 +138,7 @@ Route::get('/{slug}/menu', [TenantMenuController::class, 'show'])->name('tenant.
 Route::get('/{slug}/menu/demo', [TenantMenuController::class, 'demo'])->name('tenant.menu.demo');
 
 Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified', 'subscription', 'role:admin'])
+    ->middleware(['auth', 'verified', 'subscription', 'role:admin|super_admin'])
     ->name('dashboard');
 
 // Subscription Management (accessible even if expired) - Admin only

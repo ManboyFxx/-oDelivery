@@ -17,6 +17,10 @@ class DashboardController extends Controller
             return redirect()->route('motoboy.dashboard');
         }
 
+        if (Auth::user()->isSuperAdmin()) {
+            return redirect()->route('admin.dashboard');
+        }
+
         $tenantId = Auth::user()->tenant_id;
 
         // 1. Faturamento do Dia
