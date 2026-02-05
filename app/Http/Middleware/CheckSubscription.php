@@ -36,7 +36,7 @@ class CheckSubscription
         $tenant = $user->tenant;
 
         // Super admin (no tenant) always has access
-        if (!$tenant) {
+        if ($user->isSuperAdmin() || !$tenant) {
             return $next($request);
         }
 

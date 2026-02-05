@@ -18,7 +18,7 @@ class RoleBasedAccessMiddleware
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next, string $allowedRoles): Response
+    public function handle(Request $request, Closure $next, ...$roles): Response
     {
         // Verify user is authenticated
         if (!auth()->check()) {
@@ -26,11 +26,16 @@ class RoleBasedAccessMiddleware
         }
 
         $user = auth()->user();
-        $roles = explode(',', $allowedRoles);
+
+        // Flatten roles if using pipe syntax within any argument
+        $allowedRoles = [];
+        foreach ($roles as $role) {
+            $allowedRoles = array_merge($allowedRoles, explode('|', $role));
+        }
 
         // Check if user has one of the allowed roles
         $hasRole = false;
-        foreach ($roles as $role) {
+        foreach ($allowedRoles as $role) {
             $role = trim($role);
 
             // Check by role column (e.g., $user->role === 'admin')
