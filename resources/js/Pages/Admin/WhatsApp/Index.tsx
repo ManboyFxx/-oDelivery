@@ -37,6 +37,7 @@ export default function AdminWhatsAppIndex({ instance, logs, currentConfig }: Pr
     const [instanceName, setInstanceName] = useState(instance?.instance_name || 'odelivery_master');
     const [evolutionUrl, setEvolutionUrl] = useState(currentConfig.url);
     const [evolutionApiKey, setEvolutionApiKey] = useState(currentConfig.apikey);
+    const [qrCodeLoading, setQrCodeLoading] = useState(false);
 
     const handleConnect = () => {
         setLoading(true);
@@ -59,14 +60,21 @@ export default function AdminWhatsAppIndex({ instance, logs, currentConfig }: Pr
         setLoading(true);
         try {
             const response = await fetch(route('admin.whatsapp.qrcode'));
+            if (!response.ok) {
+                if (response.status === 404) {
+                    console.log('QR Code still not available, will retry...');
+                    return;
+                }
+                const error = await response.json();
+                console.error('Error fetching QR code:', error);
+                return;
+            }
             const data = await response.json();
             if (data.qr_code) {
                 setQrCode(data.qr_code);
-            } else {
-                alert('QR Code não disponível. Tente novamente em instantes.');
             }
         } catch (error) {
-            console.error(error);
+            console.error('Failed to load QR code:', error);
         } finally {
             setLoading(false);
         }
@@ -90,11 +98,27 @@ export default function AdminWhatsAppIndex({ instance, logs, currentConfig }: Pr
     };
 
     useEffect(() => {
-        let interval: NodeJS.Timeout;
+        let statusInterval: NodeJS.Timeout;
+        let qrCodeInterval: NodeJS.Timeout;
+
         if (localStatus === 'connecting' || qrCode) {
-            interval = setInterval(checkStatus, 3000);
+            statusInterval = setInterval(checkStatus, 3000);
         }
-        return () => clearInterval(interval);
+
+        if (localStatus === 'connecting' && !qrCode) {
+            setQrCodeLoading(true);
+            qrCodeInterval = setInterval(async () => {
+                await loadQrCode();
+            }, 4000);
+        }
+
+        return () => {
+            clearInterval(statusInterval);
+            clearInterval(qrCodeInterval);
+            if (localStatus === 'connecting' && !qrCode) {
+                setQrCodeLoading(false);
+            }
+        };
     }, [localStatus, qrCode]);
 
     return (
@@ -196,12 +220,17 @@ export default function AdminWhatsAppIndex({ instance, logs, currentConfig }: Pr
                                     <>
                                         <button
                                             onClick={loadQrCode}
-                                            disabled={loading}
-                                            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2"
+                                            disabled={loading || qrCodeLoading}
+                                            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                                         >
                                             <QrCode className="h-4 w-4" />
                                             Ler QR Code
                                         </button>
+                                        {qrCodeLoading && (
+                                            <p className="text-sm text-gray-500 text-center py-2">
+                                                Preparando QR Code...
+                                            </p>
+                                        )}
                                         <button
                                             onClick={handleDisconnect}
                                             className="w-full py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"

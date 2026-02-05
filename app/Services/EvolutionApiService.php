@@ -19,15 +19,16 @@ class EvolutionApiService
             ->latest()
             ->first();
 
-        $this->baseUrl = rtrim(config('services.evolution.url') ?? '', '/');
+        $credentialValue = $credential ? $credential->decrypted_value : null;
 
-        $dbKey = $credential ? $credential->decrypted_value : null;
-
-        if (is_array($dbKey)) {
-            $dbKey = $dbKey['apikey'] ?? null;
+        // Extract URL from credential if available
+        if (is_array($credentialValue)) {
+            $this->baseUrl = rtrim($credentialValue['url'] ?? config('services.evolution.url') ?? '', '/');
+            $this->apiKey = (string) ($credentialValue['apikey'] ?? config('services.evolution.api_key') ?? '');
+        } else {
+            $this->baseUrl = rtrim(config('services.evolution.url') ?? '', '/');
+            $this->apiKey = (string) ($credentialValue ?? config('services.evolution.api_key') ?? '');
         }
-
-        $this->apiKey = (string) ($dbKey ?? config('services.evolution.api_key') ?? '');
     }
 
     /**

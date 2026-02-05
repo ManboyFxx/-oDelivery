@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\WhatsAppInstance;
+use App\Models\ApiCredential;
 use App\Services\EvolutionApiService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -61,11 +62,39 @@ class AdminWhatsAppController extends Controller
     {
         $validated = $request->validate([
             'instance_name' => 'required|string|max:255',
+            'evolution_url' => 'nullable|string|url',
+            'evolution_apikey' => 'nullable|string',
         ]);
 
         $instanceName = $validated['instance_name'];
+        $evolutionUrl = $validated['evolution_url'];
+        $evolutionApiKey = $validated['evolution_apikey'];
 
         try {
+            // Save Evolution credentials if provided
+            if ($evolutionUrl && $evolutionApiKey) {
+                $credential = ApiCredential::where('service', 'evolution')
+                    ->whereNull('tenant_id')
+                    ->where('is_active', true)
+                    ->first();
+
+                $credentialData = [
+                    'url' => $evolutionUrl,
+                    'apikey' => $evolutionApiKey,
+                ];
+
+                if ($credential) {
+                    $credential->update(['value' => $credentialData]);
+                } else {
+                    ApiCredential::create([
+                        'service' => 'evolution',
+                        'tenant_id' => null,
+                        'value' => $credentialData,
+                        'is_active' => true,
+                    ]);
+                }
+            }
+
             // Check if exists in DB
             $instance = WhatsAppInstance::where('instance_type', 'shared')->first();
 
