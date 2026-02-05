@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { Smartphone, QrCode, Wifi, WifiOff, RefreshCw, Trash2, MessageSquare, Key } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -138,6 +138,30 @@ export default function AdminWhatsAppIndex({ instance, logs, currentConfig }: Pr
                         Gerencie a conexão principal compartilhada (Planos Basic/Pro).
                     </p>
                 </div>
+
+                {/* @ts-ignore */}
+                {/* Display Flash Messages */}
+                {/* @ts-ignore */}
+                {usePage().props.flash?.error && (
+                    <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm font-medium">
+                        {/* @ts-ignore */}
+                        {usePage().props.flash.error}
+                    </div>
+                )}
+                {/* @ts-ignore */}
+                {usePage().props.errors?.error && (
+                    <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm font-medium">
+                        {/* @ts-ignore */}
+                        {usePage().props.errors.error}
+                    </div>
+                )}
+                {/* @ts-ignore */}
+                {usePage().props.flash?.success && (
+                    <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-xl text-sm font-medium">
+                        {/* @ts-ignore */}
+                        {usePage().props.flash.success}
+                    </div>
+                )}
 
 
 

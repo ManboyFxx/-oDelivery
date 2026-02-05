@@ -13,7 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Global middleware - applied to all routes
-        $middleware->append(\App\Http\Middleware\GlobalRateLimiter::class);
+        // $middleware->append(\App\Http\Middleware\GlobalRateLimiter::class);
 
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,

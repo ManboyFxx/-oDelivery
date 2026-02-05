@@ -89,6 +89,7 @@ class AdminWhatsAppController extends Controller
                     ApiCredential::create([
                         'service' => 'evolution',
                         'tenant_id' => null,
+                        'key_name' => 'master_connection',
                         'encrypted_value' => $credentialData,
                         'is_active' => true,
                     ]);
