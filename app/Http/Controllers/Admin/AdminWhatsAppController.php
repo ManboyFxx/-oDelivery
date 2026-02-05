@@ -99,24 +99,42 @@ class AdminWhatsAppController extends Controller
             // Check if exists in DB
             $instance = WhatsAppInstance::where('instance_type', 'shared')->first();
 
+            // Try to sync status from API immediately
+            $apiStatus = $this->evolutionApi->getInstanceStatus($instanceName);
+            $isAlreadyConnected = ($apiStatus['state'] ?? '') === 'open';
+            $owerPhone = $apiStatus['instance']['owner'] ?? null;
+
             if ($instance) {
                 // Update name if changed
-                if ($instance->instance_name !== $instanceName) {
-                    $instance->update(['instance_name' => $instanceName]);
+                $updates = ['instance_name' => $instanceName];
+
+                if ($isAlreadyConnected) {
+                    $updates['status'] = 'connected';
+                    $updates['phone_number'] = $owerPhone;
+                    $updates['last_connected_at'] = now();
+                    $updates['qr_code'] = null; // Clear any old QR code
                 }
+
+                $instance->update($updates);
             } else {
-                // Create logic
-                // Try to create in Evolution first
-                try {
-                    $this->evolutionApi->createInstance($instanceName);
-                } catch (\Exception $e) {
-                    // Ignore if already exists, or handle gracefuly
+                // Determine initial status based on API reality
+                $initialStatus = $isAlreadyConnected ? 'connected' : 'connecting';
+
+                // Only try to create if NOT connected and NOT exists in API (implied by create failure usually, but here we just try if not connected)
+                if (!$isAlreadyConnected) {
+                    try {
+                        $this->evolutionApi->createInstance($instanceName);
+                    } catch (\Exception $e) {
+                        // Ignore if already exists
+                    }
                 }
 
                 $instance = WhatsAppInstance::create([
                     'instance_name' => $instanceName,
                     'instance_type' => 'shared',
-                    'status' => 'connecting',
+                    'status' => $initialStatus,
+                    'phone_number' => $owerPhone,
+                    'last_connected_at' => $isAlreadyConnected ? now() : null,
                 ]);
             }
 
