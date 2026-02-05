@@ -84,12 +84,12 @@ class AdminWhatsAppController extends Controller
                 ];
 
                 if ($credential) {
-                    $credential->update(['value' => $credentialData]);
+                    $credential->update(['encrypted_value' => $credentialData]);
                 } else {
                     ApiCredential::create([
                         'service' => 'evolution',
                         'tenant_id' => null,
-                        'value' => $credentialData,
+                        'encrypted_value' => $credentialData,
                         'is_active' => true,
                     ]);
                 }
