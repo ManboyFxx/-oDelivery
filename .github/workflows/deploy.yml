@@ -21,7 +21,6 @@ jobs:
           coverage: none
 
       - name: 📦 Install Composer dependencies
-        working-directory: ./happy-place
         run: composer update --no-interaction --no-progress --prefer-dist --optimize-autoloader
 
       - name: 🔧 Setup Node.js
@@ -30,11 +29,9 @@ jobs:
           node-version: '20'
 
       - name: 📦 Install Node dependencies
-        working-directory: ./happy-place
         run: npm ci
 
       - name: 🏗️ Build frontend assets
-        working-directory: ./happy-place
         run: npm run build
 
       - name: 🤐 Zip Release
@@ -42,7 +39,7 @@ jobs:
         with:
           type: 'zip'
           filename: 'deploy.zip'
-          directory: './happy-place'
+          directory: '.'
           path: '.'
           exclusions: '*.git* /*node_modules/* /*tests/* /*storage/*.key'
 
@@ -53,7 +50,7 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: ./
-          local-dir: ./happy-place/
+          local-dir: ./
           include: |
             deploy.zip
             unzip_deploy.php
