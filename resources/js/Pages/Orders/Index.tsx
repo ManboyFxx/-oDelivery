@@ -1,15 +1,23 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
 import OrderCard, { Order, OrderAction } from './Partials/OrderCard';
+import DraggableOrderCard from './Partials/DraggableOrderCard';
+import OrderDrawer from './Partials/OrderDrawer';
 import { useState, useEffect, useRef } from 'react';
 import { router } from '@inertiajs/react';
 import { useAudio } from '@/Hooks/useAudio';
 import { useToast } from '@/Hooks/useToast';
 import { CancelOrderModal, ChangeModeModal, ChangePaymentModal, EditOrderModal } from './Partials/ActionModals';
-import { Circle, Clock, CheckCircle, Truck, Package } from 'lucide-react';
+import { Circle, Clock, CheckCircle, Truck, Package, Filter, X, MapPin, Bike, CreditCard } from 'lucide-react';
+import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+
+import { useMemo, useCallback } from 'react';
+
+// ... imports
 
 export default function OrdersIndex({ orders, motoboys = [], products = [] }: { orders: Order[], motoboys: any[], products: any[] }) {
-    const columns = [
+    const columns = useMemo(() => [
         {
             id: 'new',
             title: 'Novos',
@@ -54,12 +62,53 @@ export default function OrdersIndex({ orders, motoboys = [], products = [] }: { 
             containerBg: 'bg-indigo-50/30',
             badgeColor: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-700/10'
         },
-    ];
+    ], []);
 
-    const getOrdersForColumn = (columnId: string, customStatuses?: string[]) => {
+    // Filters State
+    const [filters, setFilters] = useState({
+        neighborhood: '',
+        motoboy: '',
+        paymentStatus: '',
+    });
+    const [showFilters, setShowFilters] = useState(false);
+
+    // Drawer State
+    const [drawerOrder, setDrawerOrder] = useState<Order | null>(null);
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+    const openDrawer = useCallback((order: Order) => {
+        setDrawerOrder(order);
+        setIsDrawerOpen(true);
+    }, []);
+
+    const closeDrawer = useCallback(() => {
+        setIsDrawerOpen(false);
+        setTimeout(() => setDrawerOrder(null), 300);
+    }, []);
+
+    // Get unique neighborhoods and motoboys for filters
+    const neighborhoods = useMemo(() => Array.from(new Set(orders.filter(o => o.address?.neighborhood).map(o => o.address!.neighborhood))), [orders]);
+
+    // Memoize available motoboys
+    const availableMotoboys = useMemo(() => {
+        return Array.from(new Set(orders.filter(o => o.motoboy).map(o => o.motoboy!.id))).map(id => {
+            const order = orders.find(o => o.motoboy?.id === id);
+            return order?.motoboy;
+        }).filter(Boolean);
+    }, [orders]);
+
+    // Apply filters
+    const filteredOrders = useMemo(() => orders.filter(order => {
+        if (filters.neighborhood && order.address?.neighborhood !== filters.neighborhood) return false;
+        if (filters.motoboy && order.motoboy?.id !== filters.motoboy) return false;
+        if (filters.paymentStatus && order.payment_status !== filters.paymentStatus) return false;
+        return true;
+    }), [orders, filters]);
+
+    const getOrdersForColumn = useCallback((columnId: string, customStatuses?: string[]) => {
         const targetStatuses = customStatuses || [columnId];
-        return orders.filter(o => targetStatuses.includes(o.status));
-    };
+        return filteredOrders.filter(o => targetStatuses.includes(o.status));
+    }, [filteredOrders]);
 
     // Audio & Polling
     const { play, initializeAudio } = useAudio();
@@ -137,7 +186,7 @@ export default function OrdersIndex({ orders, motoboys = [], products = [] }: { 
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [modalType, setModalType] = useState<OrderAction | null>(null);
 
-    const handleAction = (action: OrderAction, order: Order) => {
+    const handleAction = useCallback((action: OrderAction, order: Order) => {
         setSelectedOrder(order);
         if (action === 'print') {
             window.open(`/orders/${order.id}/print`, '_blank', 'width=400,height=600');
@@ -151,11 +200,66 @@ export default function OrdersIndex({ orders, motoboys = [], products = [] }: { 
         } else {
             setModalType(action);
         }
-    };
+    }, []);
 
     const closeModal = () => {
         setModalType(null);
         setSelectedOrder(null);
+    };
+
+    // Drag & Drop
+    const [activeOrder, setActiveOrder] = useState<Order | null>(null);
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8, // Require 8px movement before drag starts
+            },
+        })
+    );
+
+    const handleDragStart = (event: any) => {
+        const { active } = event;
+        const order = orders.find(o => o.id === active.id);
+        setActiveOrder(order || null);
+    };
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        setActiveOrder(null);
+
+        if (!over) return;
+
+        const orderId = active.id as string;
+        const newStatus = over.id as string;
+
+        // Find the order
+        const order = orders.find(o => o.id === orderId);
+        if (!order || order.status === newStatus) return;
+
+        // Map column IDs to actual statuses
+        const statusMap: Record<string, string> = {
+            'new': 'new',
+            'preparing': 'preparing',
+            'ready': 'ready',
+            'out_for_delivery': 'out_for_delivery',
+        };
+
+        const targetStatus = statusMap[newStatus];
+        if (!targetStatus) return;
+
+        // Update status via API
+        router.post(route('orders.status', order.id), { status: targetStatus }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                const statusLabels: Record<string, string> = {
+                    'new': 'Novo',
+                    'preparing': 'Em Preparo',
+                    'ready': 'Pronto',
+                    'out_for_delivery': 'Em Entrega',
+                };
+                success('Status Atualizado', `Pedido #${order.order_number} → ${statusLabels[targetStatus]}`);
+            }
+        });
     };
 
     return (
@@ -178,63 +282,180 @@ export default function OrdersIndex({ orders, motoboys = [], products = [] }: { 
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
+                    {/* Filter Button */}
+                    <button
+                        onClick={() => setShowFilters(!showFilters)}
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold transition-colors shadow-sm ${showFilters || Object.values(filters).some(v => v)
+                            ? 'bg-[#ff3d03] text-white'
+                            : 'bg-white dark:bg-[#1a1b1e] border border-gray-100 dark:border-white/5 text-gray-700 dark:text-gray-300 hover:border-[#ff3d03]'
+                            }`}
+                    >
+                        <Filter className="w-4 h-4" />
+                        Filtros
+                        {Object.values(filters).filter(v => v).length > 0 && (
+                            <span className="bg-white text-[#ff3d03] px-1.5 py-0.5 rounded-full text-xs font-black">
+                                {Object.values(filters).filter(v => v).length}
+                            </span>
+                        )}
+                    </button>
+
                     <div className="flex items-center gap-2 bg-white dark:bg-[#1a1b1e] border border-gray-100 dark:border-white/5 px-4 py-2.5 rounded-2xl text-sm font-bold text-gray-700 dark:text-gray-300 shadow-sm">
                         <span className="relative flex h-2.5 w-2.5 mr-1">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
                         </span>
-                        {orders.length} pedidos ativos
+                        {filteredOrders.length} pedidos {Object.values(filters).some(v => v) ? 'filtrados' : 'ativos'}
                     </div>
                 </div>
             </div>
 
+            {/* Filters Panel */}
+            {showFilters && (
+                <div className="bg-white dark:bg-[#1a1b1e] border border-gray-200 dark:border-white/10 rounded-2xl p-4 mb-4 shadow-sm">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Neighborhood Filter */}
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                <MapPin className="w-4 h-4 inline mr-1" />
+                                Bairro
+                            </label>
+                            <select
+                                value={filters.neighborhood}
+                                onChange={(e) => setFilters({ ...filters, neighborhood: e.target.value })}
+                                className="w-full px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:border-[#ff3d03] focus:ring-0"
+                            >
+                                <option value="">Todos os bairros</option>
+                                {neighborhoods.map(n => (
+                                    <option key={n} value={n}>{n}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Motoboy Filter */}
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                <Bike className="w-4 h-4 inline mr-1" />
+                                Entregador
+                            </label>
+                            <select
+                                value={filters.motoboy}
+                                onChange={(e) => setFilters({ ...filters, motoboy: e.target.value })}
+                                className="w-full px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:border-[#ff3d03] focus:ring-0"
+                            >
+                                <option value="">Todos os entregadores</option>
+                                {availableMotoboys.map(m => m && (
+                                    <option key={m.id} value={m.id}>{m.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Payment Status Filter */}
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                <CreditCard className="w-4 h-4 inline mr-1" />
+                                Pagamento
+                            </label>
+                            <select
+                                value={filters.paymentStatus}
+                                onChange={(e) => setFilters({ ...filters, paymentStatus: e.target.value })}
+                                className="w-full px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:border-[#ff3d03] focus:ring-0"
+                            >
+                                <option value="">Todos os status</option>
+                                <option value="paid">Pago</option>
+                                <option value="pending">Pendente</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Clear Filters */}
+                    {Object.values(filters).some(v => v) && (
+                        <button
+                            onClick={() => setFilters({ neighborhood: '', motoboy: '', paymentStatus: '' })}
+                            className="mt-3 flex items-center gap-2 text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-[#ff3d03] transition-colors"
+                        >
+                            <X className="w-4 h-4" />
+                            Limpar filtros
+                        </button>
+                    )}
+                </div>
+            )}
+
+
 
             {/* Modern Kanban Board - Responsive Grid/Scroll Layout */}
-            <div className="flex lg:grid lg:grid-cols-4 gap-4 flex-1 h-[calc(100vh-14rem)] overflow-x-auto lg:overflow-x-visible px-1 pb-2">
-                {columns.map((column) => {
-                    const columnOrders = getOrdersForColumn(column.id, column.statuses);
-                    const Icon = column.icon;
+            <DndContext
+                sensors={sensors}
+                collisionDetection={closestCorners}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+            >
+                <div className="flex lg:grid lg:grid-cols-4 gap-4 flex-1 h-[calc(100vh-14rem)] overflow-x-auto lg:overflow-x-visible px-1 pb-2">
+                    {columns.map((column) => {
+                        const columnOrders = getOrdersForColumn(column.id, column.statuses);
+                        const Icon = column.icon;
 
-                    return (
-                        <div key={column.id} className={`flex h-full flex-col rounded-[24px] bg-gray-50 dark:bg-[#1a1b1e] border border-gray-200 dark:border-white/5 shadow-xl shadow-gray-200/50 dark:shadow-none min-w-[280px] lg:min-w-0`}>
-                            {/* Column Header */}
-                            <div className="p-3 bg-gray-50 dark:bg-[#1a1b1e] z-10 rounded-t-[24px]">
-                                <div className={`flex items-center justify-between rounded-xl p-3 bg-white dark:bg-black/20 border border-gray-100 dark:border-white/5 shadow-sm`}>
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <div className={`p-2 rounded-lg bg-gray-50 dark:bg-white/5 flex-shrink-0 ${column.iconColor}`}>
-                                            <Icon className="h-4 w-4" />
+                        return (
+                            <SortableContext
+                                key={column.id}
+                                id={column.id}
+                                items={columnOrders.map(o => o.id)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                <div className={`flex h-full flex-col rounded-[24px] bg-gray-50 dark:bg-[#1a1b1e] border border-gray-200 dark:border-white/5 shadow-xl shadow-gray-200/50 dark:shadow-none min-w-[280px] lg:min-w-0`}>
+                                    {/* Column Header */}
+                                    <div className="p-3 bg-gray-50 dark:bg-[#1a1b1e] z-10 rounded-t-[24px]">
+                                        <div className={`flex items-center justify-between rounded-xl p-3 bg-white dark:bg-black/20 border border-gray-100 dark:border-white/5 shadow-sm`}>
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <div className={`p-2 rounded-lg bg-gray-50 dark:bg-white/5 flex-shrink-0 ${column.iconColor}`}>
+                                                    <Icon className="h-4 w-4" />
+                                                </div>
+                                                <span className="font-extrabold text-gray-900 dark:text-white text-sm tracking-tight truncate">{column.title}</span>
+                                            </div>
+                                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-black flex-shrink-0 ${column.badgeColor}`}>
+                                                {columnOrders.length}
+                                            </span>
                                         </div>
-                                        <span className="font-extrabold text-gray-900 dark:text-white text-sm tracking-tight truncate">{column.title}</span>
                                     </div>
-                                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-black flex-shrink-0 ${column.badgeColor}`}>
-                                        {columnOrders.length}
-                                    </span>
+
+                                    <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-3">
+                                        {columnOrders.map((order) => (
+                                            <DraggableOrderCard
+                                                key={order.id}
+                                                order={order}
+                                                motoboys={motoboys}
+                                                onAction={handleAction}
+                                                onQuickView={openDrawer}
+                                            />
+                                        ))}
+
+                                        {columnOrders.length === 0 && (
+                                            <div className="flex flex-col items-center justify-center h-full max-h-48 rounded-[20px] border-2 border-dashed border-gray-200 dark:border-gray-800 text-gray-400 dark:text-gray-600 gap-2 mt-2 bg-gray-50/50 dark:bg-white/5 opacity-60">
+                                                <div className="p-3 bg-white dark:bg-black/20 rounded-full">
+                                                    <Icon className="h-6 w-6 opacity-40" />
+                                                </div>
+                                                <span className="text-[10px] font-bold opacity-60 uppercase tracking-widest text-center leading-tight">Sem<br />pedidos</span>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
+                            </SortableContext>
+                        );
+                    })}
+                </div>
 
-                            <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-3">
-                                {columnOrders.map((order) => (
-                                    <OrderCard
-                                        key={order.id}
-                                        order={order}
-                                        motoboys={motoboys}
-                                        onAction={handleAction}
-                                    />
-                                ))}
-
-                                {columnOrders.length === 0 && (
-                                    <div className="flex flex-col items-center justify-center h-full max-h-48 rounded-[20px] border-2 border-dashed border-gray-200 dark:border-gray-800 text-gray-400 dark:text-gray-600 gap-2 mt-2 bg-gray-50/50 dark:bg-white/5 opacity-60">
-                                        <div className="p-3 bg-white dark:bg-black/20 rounded-full">
-                                            <Icon className="h-6 w-6 opacity-40" />
-                                        </div>
-                                        <span className="text-[10px] font-bold opacity-60 uppercase tracking-widest text-center leading-tight">Sem<br />pedidos</span>
-                                    </div>
-                                )}
-                            </div>
+                {/* Drag Overlay - Shows ghost of dragged item */}
+                <DragOverlay>
+                    {activeOrder ? (
+                        <div className="rotate-3 scale-105 opacity-90">
+                            <OrderCard
+                                order={activeOrder}
+                                motoboys={motoboys}
+                                onAction={() => { }}
+                            />
                         </div>
-                    );
-                })}
-            </div>
+                    ) : null}
+                </DragOverlay>
+            </DndContext>
 
             {/* Modals */}
             <CancelOrderModal
@@ -257,6 +478,14 @@ export default function OrdersIndex({ orders, motoboys = [], products = [] }: { 
                 show={modalType === 'mode'}
                 onClose={closeModal}
                 order={selectedOrder}
+            />
+
+            {/* Order Drawer */}
+            <OrderDrawer
+                order={drawerOrder}
+                isOpen={isDrawerOpen}
+                onClose={closeDrawer}
+                onAction={handleAction}
             />
         </AuthenticatedLayout>
     );

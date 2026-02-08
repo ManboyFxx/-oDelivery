@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react'; // Add usePage
+import ActivationChecklist from '@/Components/ActivationChecklist'; // Import Checklist
 import {
     TrendingUp,
     ShoppingBag,
@@ -36,6 +37,15 @@ interface MetricProps {
 }
 
 export default function Dashboard({ auth, metrics }: any) {
+    const { props } = usePage();
+    const tenant = (props as any).tenant;
+    const limits = tenant?.limits;
+
+    // Checklist Data
+    const hasProducts = (limits?.products?.used || 0) > 0;
+    const hasOrders = (limits?.orders?.used || 0) > 0;
+    const whatsappConnected = tenant?.whatsapp_status === 'connected';
+
     const {
         todayRevenue = 0,
         todayOrders = 0,
@@ -122,21 +132,12 @@ export default function Dashboard({ auth, metrics }: any) {
                     </div>
                 </div>
 
-                {/* Empty State / Onboarding Hint */}
-                {todayOrders === 0 && (
-                    <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 flex items-start gap-3">
-                        <AlertCircle className="h-5 w-5 text-[#ff3d03] mt-0.5" />
-                        <div>
-                            <h3 className="text-sm font-bold text-gray-900">Nenhum pedido hoje?</h3>
-                            <p className="text-xs text-gray-600 mt-1">
-                                Compartilhe seu cardápio digital no WhatsApp para começar a receber pedidos!
-                                <br />
-                                <span className="font-semibold text-[#ff3d03]">Link da sua loja: </span>
-                                {window.location.protocol}//{window.location.host}/{auth.user?.tenant?.slug || 'sua-loja'}
-                            </p>
-                        </div>
-                    </div>
-                )}
+                {/* Activation Checklist (Replaces Empty State) */}
+                <ActivationChecklist
+                    hasProducts={hasProducts}
+                    hasOrders={hasOrders}
+                    whatsappConnected={whatsappConnected}
+                />
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

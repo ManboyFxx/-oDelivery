@@ -1,6 +1,6 @@
-import { Link, router, useForm } from '@inertiajs/react'; // Added useForm
-import { Plus, Pencil, Trash2, Search, Image as ImageIcon, X, Upload, Check } from 'lucide-react';
-import { useState } from 'react';
+import { Link, router, useForm } from '@inertiajs/react';
+import { Plus, Pencil, Trash2, Search, Image as ImageIcon, X, Upload, Check, Zap, Lock } from 'lucide-react';
+import { useState, useCallback } from 'react';
 import { useToast } from '@/Hooks/useToast';
 import Modal from '@/Components/Modal';
 import TextInput from '@/Components/TextInput';
@@ -10,7 +10,14 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import Checkbox from '@/Components/Checkbox';
 import InputError from '@/Components/InputError';
 import { Switch } from '@headlessui/react';
+import QuickEditField from '@/Components/QuickEditField';
+import UpgradeModal from '@/Components/UpgradeModal';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
+import DraggableProductCard from '../Partials/DraggableProductCard';
+import BulkActionsBar from '../Partials/BulkActionsBar';
 
+// ... (interfaces remain same)
 interface Category {
     id: string;
     name: string;
@@ -34,6 +41,7 @@ interface Product {
     category?: Category;
     complement_groups?: ComplementGroup[];
     complementGroups?: ComplementGroup[];
+    sort_order?: number;
 }
 
 interface Props {
@@ -43,14 +51,33 @@ interface Props {
     };
     categories: Category[];
     complement_groups: ComplementGroup[];
+    usage: {
+        products: number;
+        limit: number | null;
+        canAdd: boolean;
+    };
 }
 
-export default function ProductsTab({ products, categories, complement_groups }: Props) {
+export default function ProductsTab({ products: initialProducts, categories, complement_groups, usage }: Props) {
+    const [products, setProducts] = useState(initialProducts.data);
     const [search, setSearch] = useState('');
     const [showModal, setShowModal] = useState(false);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const { success, error: showError, info } = useToast();
+
+    // DND & Bulk Actions State
+    const [activeId, setActiveId] = useState<string | null>(null);
+    const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+    const [bulkLoading, setBulkLoading] = useState(false);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
 
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
@@ -68,12 +95,141 @@ export default function ProductsTab({ products, categories, complement_groups }:
 
     // Filter products locally for instant search (if pagination allows, otherwise server search is better but this matches previous behavior)
     // Note: The products prop is paginated, so this filter only affects the current page.
-    const filteredProducts = products.data.filter(product =>
+    const filteredProducts = products.filter(product =>
         product.name.toLowerCase().includes(search.toLowerCase()) ||
         product.description.toLowerCase().includes(search.toLowerCase())
     );
 
-    const openCreateModal = () => {
+    function handleDragEnd(event: DragEndEvent) {
+        const { active, over } = event;
+        setActiveId(null);
+
+        if (active.id !== over?.id) {
+            setProducts((items) => {
+                const oldIndex = items.findIndex((i) => i.id === active.id);
+                const newIndex = items.findIndex((i) => i.id === over?.id);
+                const newOrder = arrayMove(items, oldIndex, newIndex);
+
+                // Send new order to backend
+                router.post(route('products.reorder'), {
+                    products: newOrder.map((item, index) => ({
+                        id: item.id,
+                        sort_order: index
+                    }))
+                }, {
+                    preserveState: true,
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        // Silent success or maybe a small toast
+                    }
+                });
+
+                return newOrder;
+            });
+        }
+    }
+
+    const handleSelectProduct = useCallback((productId: string, checked: boolean) => {
+        if (checked) {
+            setSelectedProducts(prev => [...prev, productId]);
+        } else {
+            setSelectedProducts(prev => prev.filter(id => id !== productId));
+        }
+    }, []);
+
+    const handleClearSelection = useCallback(() => {
+        setSelectedProducts([]);
+    }, []);
+
+    const handleBulkActivate = () => {
+        // ... (bulk actions implementation remains same, can be memoized if passed to child)
+        if (bulkLoading) return;
+        setBulkLoading(true);
+        router.post(route('products.bulk-update'), {
+            ids: selectedProducts,
+            action: 'activate'
+        }, {
+            onSuccess: () => {
+                success('Sucesso', `${selectedProducts.length} produtos ativados.`);
+                setSelectedProducts([]);
+                setProducts(products.map(p =>
+                    selectedProducts.includes(p.id) ? { ...p, is_available: true } : p
+                ));
+            },
+            onFinish: () => setBulkLoading(false)
+        });
+    };
+
+    const handleBulkDeactivate = () => {
+        if (bulkLoading) return;
+        setBulkLoading(true);
+        router.post(route('products.bulk-update'), {
+            ids: selectedProducts,
+            action: 'deactivate'
+        }, {
+            onSuccess: () => {
+                success('Sucesso', `${selectedProducts.length} produtos pausados.`);
+                setSelectedProducts([]);
+                setProducts(products.map(p =>
+                    selectedProducts.includes(p.id) ? { ...p, is_available: false } : p
+                ));
+            },
+            onFinish: () => setBulkLoading(false)
+        });
+    };
+
+    const handleBulkDelete = () => {
+        if (bulkLoading || !confirm(`Tem certeza que deseja excluir ${selectedProducts.length} produtos?`)) return;
+        setBulkLoading(true);
+        router.delete(route('products.bulk-delete'), {
+            data: { ids: selectedProducts },
+            onSuccess: () => {
+                success('Sucesso', `${selectedProducts.length} produtos excluídos.`);
+                setProducts(products.filter(p => !selectedProducts.includes(p.id)));
+                setSelectedProducts([]);
+            },
+            onFinish: () => setBulkLoading(false)
+        });
+    };
+
+    // Duplicate not supported in bulk yet by backend method but we can iterate or add support later.
+    // For now, let's just support single duplicate in valid actions or implement basic bulk logic if backend supports it.
+    // Wait, I implemented bulkUpdate, bulkChangeCategory. duplicate is single.
+    // Let's implement bulk duplicate in frontend by iterating? No, better add backend support if needed.
+    // For now I will OMIT duplicate from bulk actions bar or implement it as "Activate/Deactivate/Delete/Move"
+
+    // Actually loop for duplicate?
+    const handleBulkDuplicate = () => {
+        // Implementation pending backend support for bulk duplicate or loop
+        alert('Duplicação em massa em breve!');
+    };
+
+    const handleBulkChangeCategory = () => {
+        const categoryId = prompt('Digite o ID da nova categoria (temporário, ideal seria um modal):');
+        if (!categoryId || bulkLoading) return;
+
+        setBulkLoading(true);
+        router.post(route('products.bulk-change-category'), {
+            ids: selectedProducts,
+            category_id: categoryId
+        }, {
+            onSuccess: () => {
+                success('Sucesso', 'Categorias atualizadas.');
+                setSelectedProducts([]);
+                // Reload to get fresh data is easier for category names
+                router.reload();
+            },
+            onFinish: () => setBulkLoading(false)
+        });
+    };
+
+    const openCreateModal = useCallback(() => {
+        // Check if can add product
+        if (!usage.canAdd) {
+            setShowUpgradeModal(true);
+            return;
+        }
+
         setEditingProduct(null);
         setImagePreview(null);
         reset();
@@ -91,9 +247,9 @@ export default function ProductsTab({ products, categories, complement_groups }:
             loyalty_points_cost: 0
         });
         setShowModal(true);
-    };
+    }, [usage.canAdd]); // usage.canAdd dependency
 
-    const openEditModal = (product: Product) => {
+    const openEditModal = useCallback((product: Product) => {
         setEditingProduct(product);
         setImagePreview(product.image_url || null);
         setData({
@@ -110,7 +266,7 @@ export default function ProductsTab({ products, categories, complement_groups }:
             loyalty_points_cost: (product as any).loyalty_points_cost || 0
         });
         setShowModal(true);
-    };
+    }, []);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -144,22 +300,28 @@ export default function ProductsTab({ products, categories, complement_groups }:
         }
     };
 
-    const handleDelete = (id: string) => {
+    const handleDelete = useCallback((id: string) => {
         if (confirm('Tem certeza que deseja excluir este produto?')) {
             router.delete(route('products.destroy', id), {
                 onSuccess: () => success('Produto Excluído', 'Produto removido com sucesso.')
             });
         }
-    };
+    }, []);
 
-    const handleToggleAvailability = (product: Product) => {
+    const handleToggleAvailability = useCallback((product: Product) => {
         router.post(route('products.toggle', product.id), {}, {
             preserveScroll: true,
             onSuccess: () => {
                 success('Produto Atualizado', `O produto "${product.name}" foi ${!product.is_available ? 'ativado' : 'pausado'}.`);
             }
         });
-    };
+    }, []);
+
+    const handlePriceUpdate = useCallback((id: string, newPrice: number) => {
+        router.patch(route('products.quick-update', id), { price: newPrice }, {
+            preserveScroll: true
+        });
+    }, []);
 
     const toggleComplementGroup = (id: string) => {
         const groups = data.complement_groups.includes(id)
@@ -172,9 +334,27 @@ export default function ProductsTab({ products, categories, complement_groups }:
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Header / Actions Row */}
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white hidden md:block">
-                    Gerenciar Itens
-                </h3>
+                <div className="flex items-center gap-3">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white hidden md:block">
+                        Gerenciar Itens
+                    </h3>
+                    {/* Limit Badge */}
+                    {usage.limit !== null ? (
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${usage.products >= usage.limit
+                            ? 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400'
+                            : usage.products >= usage.limit * 0.8
+                                ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400'
+                                : 'bg-gray-100 text-gray-600 dark:bg-white/5 dark:text-gray-400'
+                            }`}>
+                            {usage.products}/{usage.limit} produtos
+                        </span>
+                    ) : (
+                        <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-[#ff3d03] to-[#e63700] text-white">
+                            <Zap className="h-3 w-3 inline mr-1" />
+                            Ilimitado
+                        </span>
+                    )}
+                </div>
 
                 <div className="flex gap-4 w-full md:w-auto">
                     {/* Search */}
@@ -191,105 +371,45 @@ export default function ProductsTab({ products, categories, complement_groups }:
 
                     <button
                         onClick={openCreateModal}
-                        className="flex items-center gap-2 rounded-2xl bg-[#ff3d03] px-6 py-3 text-sm font-bold text-white shadow-lg shadow-[#ff3d03]/20 hover:bg-[#e63700] hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
+                        disabled={!usage.canAdd}
+                        className={`flex items-center gap-2 rounded-2xl px-6 py-3 text-sm font-bold text-white shadow-lg transition-all whitespace-nowrap ${usage.canAdd
+                            ? 'bg-[#ff3d03] shadow-[#ff3d03]/20 hover:bg-[#e63700] hover:scale-105 active:scale-95'
+                            : 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed opacity-60'
+                            }`}
+                        title={!usage.canAdd ? `Limite de ${usage.limit} produtos atingido` : ''}
                     >
-                        <Plus className="h-5 w-5" />
+                        {usage.canAdd ? <Plus className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
                         Novo Produto
                     </button>
                 </div>
             </div>
 
-            {/* Product GRID View */}
+            {/* Product GRID View with DND */}
             {filteredProducts.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                    {filteredProducts.map((product) => (
-                        <div key={product.id} className="group relative bg-white dark:bg-[#0f1012] rounded-[24px] shadow-lg shadow-gray-200/50 dark:shadow-none hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 dark:border-white/5 overflow-hidden flex flex-col">
-                            {/* Image Area */}
-                            <div className="relative aspect-[4/3] bg-gray-100 dark:bg-white/5 overflow-hidden">
-                                {product.image_url ? (
-                                    <img
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                        src={product.image_url}
-                                        alt={product.name}
-                                    />
-                                ) : (
-                                    <div className="flex items-center justify-center h-full">
-                                        <ImageIcon className="h-10 w-10 text-gray-300 dark:text-gray-600" />
-                                    </div>
-                                )}
-                                {/* Action Overlay */}
-                                <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 translate-y-2 group-hover:translate-y-0">
-                                    <button
-                                        onClick={() => openEditModal(product)}
-                                        className="bg-white/90 dark:bg-black/80 text-gray-700 dark:text-gray-200 p-2 rounded-xl hover:text-[#ff3d03] shadow-lg backdrop-blur-sm transition-colors"
-                                        title="Editar"
-                                    >
-                                        <Pencil className="h-4 w-4" />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(product.id)}
-                                        className="bg-white/90 dark:bg-black/80 text-gray-700 dark:text-gray-200 p-2 rounded-xl hover:text-red-500 shadow-lg backdrop-blur-sm transition-colors"
-                                        title="Excluir"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </button>
-                                </div>
-
-                                {/* Availability Toggle */}
-                                <div className="absolute top-3 left-3 z-10" onClick={(e) => e.stopPropagation()}>
-                                    <Switch
-                                        checked={product.is_available}
-                                        onChange={() => handleToggleAvailability(product)}
-                                        className={`${product.is_available ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
-                                            } relative inline-flex h-6 w-10 items-center rounded-full transition-colors focus:outline-none shadow-lg`}
-                                    >
-                                        <span
-                                            className={`${product.is_available ? 'translate-x-5' : 'translate-x-1'
-                                                } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
-                                        />
-                                    </Switch>
-                                </div>
-
-                                {!product.is_available && (
-                                    <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-[1px] flex items-center justify-center pointer-events-none">
-                                        <span className="bg-black/70 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-md">Indisponível</span>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Content */}
-                            <div className="p-5 flex flex-col flex-1">
-                                <div className="flex justify-between items-start mb-2">
-                                    <div>
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#ff3d03] mb-1">
-                                            {product.category?.name || 'Sem Categoria'}
-                                        </p>
-                                        <h3 className="text-lg font-black text-gray-900 dark:text-white line-clamp-1 leading-tight" title={product.name}>
-                                            {product.name}
-                                        </h3>
-                                    </div>
-                                </div>
-
-                                <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 min-h-[2.5rem] leading-relaxed mb-4">
-                                    {product.description || 'Sem descrição'}
-                                </p>
-
-                                <div className="mt-auto pt-4 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
-                                    <span className="text-xl font-black text-gray-900 dark:text-white tracking-tight">
-                                        R$ {Number(product.price).toFixed(2).replace('.', ',')}
-                                    </span>
-                                    <div className="flex gap-1.5">
-                                        {product.complementGroups && product.complementGroups.length > 0 && (
-                                            <span className="px-2 py-1 rounded-md bg-gray-100 dark:bg-white/10 text-xs font-bold text-gray-600 dark:text-gray-300" title="Possui complementos">
-                                                +Opções
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragStart={({ active }) => setActiveId(active.id as string)}
+                    onDragEnd={handleDragEnd}
+                >
+                    <SortableContext items={filteredProducts.map(p => p.id)} strategy={rectSortingStrategy}>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                            {filteredProducts.map((product) => (
+                                <DraggableProductCard
+                                    key={product.id}
+                                    product={product}
+                                    selected={selectedProducts.includes(product.id)}
+                                    onSelect={handleSelectProduct}
+                                    onEdit={openEditModal}
+                                    onDelete={handleDelete}
+                                    onToggleAvailability={handleToggleAvailability}
+                                    onPriceUpdate={handlePriceUpdate}
+                                    isDragging={activeId === product.id}
+                                />
+                            ))}
                         </div>
-                    ))}
-                </div>
+                    </SortableContext>
+                </DndContext>
             ) : (
                 <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-[#0f1012] rounded-[32px] border border-dashed border-gray-200 dark:border-gray-800">
                     <div className="h-16 w-16 bg-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center mb-4">
@@ -308,6 +428,20 @@ export default function ProductsTab({ products, categories, complement_groups }:
                     </div>
                 </div>
             )}
+
+            {/* Bulk Actions Bar */}
+            <BulkActionsBar
+                selectedCount={selectedProducts.length}
+                loading={bulkLoading}
+                actions={{
+                    onActivate: handleBulkActivate,
+                    onDeactivate: handleBulkDeactivate,
+                    onChangeCategory: handleBulkChangeCategory,
+                    onDuplicate: handleBulkDuplicate,
+                    onDelete: handleBulkDelete,
+                    onClearSelection: handleClearSelection
+                }}
+            />
 
             {/* Create/Edit Modal */}
             <Modal show={showModal} onClose={() => setShowModal(false)} maxWidth="2xl">
@@ -552,6 +686,14 @@ export default function ProductsTab({ products, categories, complement_groups }:
                     </div>
                 </form>
             </Modal>
+
+            {/* Upgrade Modal */}
+            <UpgradeModal
+                isOpen={showUpgradeModal}
+                onClose={() => setShowUpgradeModal(false)}
+                resource="produtos"
+                currentLimit={usage.limit || 0}
+            />
         </div>
     );
 }

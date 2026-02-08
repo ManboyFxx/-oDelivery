@@ -36,9 +36,33 @@ return [
     ],
 
     'evolution' => [
-        'url' => env('EVOLUTION_API_URL', 'http://localhost:8080'),
+        'url' => env('EVOLUTION_API_URL', 'http://104.243.41.159:8080'),
         'api_key' => env('EVOLUTION_API_KEY'),
         'webhook_url' => env('APP_URL') . '/webhooks/whatsapp',
+    ],
+
+    'stripe' => [
+        'key' => env('STRIPE_KEY'),
+        'secret' => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+        'price_basic_monthly' => env('STRIPE_PRICE_BASIC_MONTHLY'),
+        'price_basic_yearly' => env('STRIPE_PRICE_BASIC_YEARLY'),
+        'price_pro_monthly' => env('STRIPE_PRICE_PRO_MONTHLY'),
+        'price_pro_yearly' => env('STRIPE_PRICE_PRO_YEARLY'),
+        'price_custom_monthly' => env('STRIPE_PRICE_CUSTOM_MONTHLY'),
+        'price_custom_yearly' => env('STRIPE_PRICE_CUSTOM_YEARLY'),
+    ],
+
+    'mercadopago' => [
+        'public_key' => env('MERCADOPAGO_PUBLIC_KEY'),
+        'access_token' => env('MERCADOPAGO_ACCESS_TOKEN'),
+    ],
+
+    'payment' => [
+        'default_gateway' => env('PAYMENT_GATEWAY', 'stripe'),
+        'retry_attempts' => env('PAYMENT_RETRY_ATTEMPTS', 3),
+        'retry_interval_days' => env('PAYMENT_RETRY_INTERVAL_DAYS', 2),
+        'checkout_abandonment_hours' => env('CHECKOUT_ABANDONMENT_HOURS', 1),
     ],
 
 ];

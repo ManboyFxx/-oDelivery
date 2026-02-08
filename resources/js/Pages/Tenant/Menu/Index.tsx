@@ -1595,7 +1595,11 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                                                     <div key={`featured-${product.id}`} className={`snap-center shrink-0 min-w-[260px] w-[260px] bg-white rounded-xl overflow-hidden shadow-md border border-yellow-100 flex flex-col ${isOutOfStock ? 'opacity-70 grayscale' : 'hover:shadow-lg hover:border-yellow-300 transition-all duration-300'}`}>
                                                         <div className="h-32 w-full bg-gray-100 relative overflow-hidden">
                                                             {product.image_url ? (
-                                                                <img src={product.image_url} className="h-full w-full object-cover hover:scale-105 transition-transform duration-500" />
+                                                                <img
+                                                                    src={product.image_url}
+                                                                    loading="lazy"
+                                                                    className="h-full w-full object-cover hover:scale-105 transition-transform duration-500"
+                                                                />
                                                             ) : (
                                                                 <div className="h-full w-full flex items-center justify-center bg-gray-50 text-gray-300">
                                                                     <ShoppingBag className="h-12 w-12" />
@@ -1721,7 +1725,11 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                                                         {/* Image */}
                                                         <div className="h-32 md:h-48 w-full bg-gray-100 relative overflow-hidden">
                                                             {product.image_url ? (
-                                                                <img src={product.image_url} className="h-full w-full object-cover hover:scale-105 transition-transform duration-500" />
+                                                                <img
+                                                                    src={product.image_url}
+                                                                    loading="lazy"
+                                                                    className="h-full w-full object-cover hover:scale-105 transition-transform duration-500"
+                                                                />
                                                             ) : (
                                                                 <div className="h-full w-full flex items-center justify-center bg-gray-50 text-gray-300">
                                                                     <ShoppingBag className="h-12 w-12" />
@@ -1825,7 +1833,11 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                                                 <div key={product.id} className={`bg-white rounded-2xl overflow-hidden shadow-sm transition-all duration-300 group border border-gray-100 flex flex-col ${isOutOfStock ? 'opacity-70 grayscale' : 'hover:shadow-xl'}`}>
                                                     <div className="h-32 md:h-48 w-full bg-gray-100 relative overflow-hidden">
                                                         {product.image_url ? (
-                                                            <img src={product.image_url} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                                            <img
+                                                                src={product.image_url}
+                                                                loading="lazy"
+                                                                className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                            />
                                                         ) : (
                                                             <div className="h-full w-full flex items-center justify-center bg-gray-50 text-gray-300">
                                                                 <ShoppingBag className="h-12 w-12" />
@@ -1887,6 +1899,16 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                                                                     </div>
                                                                 </div>
                                                             </div>
+
+                                                            {/* Stock Warning */}
+                                                            {product.track_stock && product.stock_quantity !== null && product.stock_quantity > 0 && product.stock_quantity <= 5 && (
+                                                                <div className="mb-3 px-2 py-1.5 bg-orange-50 border border-orange-200 rounded-lg">
+                                                                    <p className="text-xs font-bold text-orange-600 text-center flex items-center justify-center gap-1">
+                                                                        ⚠️ Últimas {product.stock_quantity} unidades!
+                                                                    </p>
+                                                                </div>
+                                                            )}
+
                                                             <button
                                                                 onClick={() => !isOutOfStock && openProductModal(product)}
                                                                 disabled={isOutOfStock}
@@ -1913,8 +1935,13 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                     {cart.length > 0 && (
                         <button
                             onClick={() => setShowCart(true)}
-                            className="fixed bottom-6 right-6 bg-[#ff3d03] text-white rounded-full h-16 px-6 flex items-center gap-3 shadow-2xl hover:scale-105 transition-transform z-40"
+                            className="fixed bottom-6 right-6 bg-[#ff3d03] text-white rounded-full h-16 px-6 flex items-center gap-3 shadow-2xl hover:scale-105 transition-transform z-40 relative"
                         >
+                            {/* Badge with item count */}
+                            <div className="absolute -top-2 -right-2 bg-white text-[#ff3d03] rounded-full h-8 w-8 flex items-center justify-center font-black text-sm border-4 border-[#ff3d03] shadow-lg animate-pulse">
+                                {getCartCount()}
+                            </div>
+
                             <ShoppingCart className="h-6 w-6" />
                             <span className="font-bold">{getCartCount()}</span>
                             <span className="h-6 w-px bg-white/30"></span>

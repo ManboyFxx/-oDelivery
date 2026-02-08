@@ -298,43 +298,47 @@ class Tenant extends Model
      */
     public function getUsageStats(): array
     {
-        $planLimits = $this->getPlanLimits();
+        $cacheKey = "tenant_{$this->id}_usage_stats";
 
-        return [
-            'products' => [
-                'used' => $this->products()->count(),
-                'max' => $this->getLimit('max_products'),
-            ],
-            'users' => [
-                'used' => $this->users()->count(),
-                'max' => $this->getLimit('max_users'),
-            ],
-            'categories' => [
-                'used' => $this->categories()->count(),
-                'max' => $this->getLimit('max_categories'),
-            ],
-            'coupons' => [
-                'used' => $this->coupons()->where('is_active', true)->count(),
-                'max' => $this->getLimit('max_coupons'),
-            ],
-            'motoboys' => [
-                'used' => $this->motoboys()->count(),
-                'max' => $this->getLimit('max_motoboys'),
-            ],
-            'stock_items' => [
-                'used' => $this->products()
-                    ->whereHas('stockMovements')
-                    ->count(),
-                'max' => $this->getLimit('max_stock_items'),
-            ],
-            'orders_this_month' => [
-                'used' => $this->orders()
-                    ->whereMonth('created_at', now()->month)
-                    ->whereYear('created_at', now()->year)
-                    ->count(),
-                'max' => $this->getLimit('max_orders_per_month'),
-            ],
-        ];
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () { // 5 minutes cache
+            // $planLimits = $this->getPlanLimits(); // Unused variable
+
+            return [
+                'products' => [
+                    'used' => $this->products()->count(),
+                    'max' => $this->getLimit('max_products'),
+                ],
+                'users' => [
+                    'used' => $this->users()->count(),
+                    'max' => $this->getLimit('max_users'),
+                ],
+                'categories' => [
+                    'used' => $this->categories()->count(),
+                    'max' => $this->getLimit('max_categories'),
+                ],
+                'coupons' => [
+                    'used' => $this->coupons()->where('is_active', true)->count(),
+                    'max' => $this->getLimit('max_coupons'),
+                ],
+                'motoboys' => [
+                    'used' => $this->motoboys()->count(),
+                    'max' => $this->getLimit('max_motoboys'),
+                ],
+                'stock_items' => [
+                    'used' => $this->products()
+                        ->whereHas('stockMovements')
+                        ->count(),
+                    'max' => $this->getLimit('max_stock_items'),
+                ],
+                'orders_this_month' => [
+                    'used' => $this->orders()
+                        ->whereMonth('created_at', now()->month)
+                        ->whereYear('created_at', now()->year)
+                        ->count(),
+                    'max' => $this->getLimit('max_orders_per_month'),
+                ],
+            ];
+        });
     }
 
     /**
@@ -407,12 +411,12 @@ class Tenant extends Model
     /**
      * Downgrade to free plan.
      */
-    public function downgradeToFree(): void
+    public function downgradeToFree(bool $force = false): void
     {
         // ✅ Validar antes de fazer downgrade
         $validation = $this->canDowngradeTo('free');
 
-        if (!$validation['can_downgrade']) {
+        if (!$validation['can_downgrade'] && !$force) {
             throw new \Exception(
                 'Não é possível fazer downgrade. ' .
                 implode(' ', array_column($validation['issues'], 'action'))

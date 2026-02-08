@@ -269,13 +269,43 @@ export default function EditTenant({ tenant, plans, currentLimits }: Props) {
 
                             <div>
                                 <InputLabel htmlFor="trial_ends_at" value="Fim do Teste (Trial)" />
-                                <TextInput
-                                    id="trial_ends_at"
-                                    type="date"
-                                    className="mt-1 block w-full"
-                                    value={data.trial_ends_at}
-                                    onChange={(e) => setData('trial_ends_at', e.target.value)}
-                                />
+                                <div className="flex gap-2">
+                                    <TextInput
+                                        id="trial_ends_at"
+                                        type="date"
+                                        className="mt-1 block w-full"
+                                        value={data.trial_ends_at}
+                                        onChange={(e) => setData('trial_ends_at', e.target.value)}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const today = new Date();
+                                            today.setDate(today.getDate() + 7);
+                                            setData((data) => ({
+                                                ...data,
+                                                trial_ends_at: today.toISOString().split('T')[0],
+                                                subscription_status: 'trialing'
+                                            }));
+                                        }}
+                                        className="mt-1 px-3 py-2 bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 rounded-lg text-xs font-bold hover:bg-blue-100 dark:hover:bg-blue-500/20"
+                                        title="Reiniciar Trial (7 dias)"
+                                    >
+                                        Reiniciar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const current = data.trial_ends_at ? new Date(data.trial_ends_at) : new Date();
+                                            current.setDate(current.getDate() + 7);
+                                            setData('trial_ends_at', current.toISOString().split('T')[0]);
+                                        }}
+                                        className="mt-1 px-3 py-2 bg-gray-100 dark:bg-white/5 rounded-lg text-xs font-bold hover:bg-gray-200 dark:hover:bg-white/10"
+                                        title="Estender +7 dias"
+                                    >
+                                        +7d
+                                    </button>
+                                </div>
                                 <InputError className="mt-2" message={errors.trial_ends_at} />
                             </div>
                         </div>

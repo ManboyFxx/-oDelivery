@@ -60,4 +60,62 @@ class CategoryController extends Controller
         $category->delete();
         return redirect()->back()->with('success', 'Categoria removida!');
     }
+
+    public function reorder(Request $request)
+    {
+        $request->validate([
+            'categories' => 'required|array',
+            'categories.*.id' => 'required|exists:categories,id',
+            'categories.*.sort_order' => 'required|integer',
+        ]);
+
+        foreach ($request->categories as $item) {
+            Category::where('id', $item['id'])
+                ->where('tenant_id', auth()->user()->tenant_id)
+                ->update(['sort_order' => $item['sort_order']]);
+        }
+
+        return back();
+    }
+
+    public function bulkUpdate(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:categories,id',
+            'action' => 'required|in:delete',
+        ]);
+
+        $query = Category::whereIn('id', $request->ids)
+            ->where('tenant_id', auth()->user()->tenant_id);
+
+        switch ($request->action) {
+            case 'delete':
+                // Check if categories have products before deleting? 
+                // For now, let's just delete (database cascade might handle or not, ideally set null)
+                // Assuming standard behavior
+                $query->delete();
+                break;
+        }
+
+        return back()->with('success', 'Ação em massa realizada com sucesso!');
+    }
+
+    public function duplicate(Category $category)
+    {
+        if ($category->tenant_id !== auth()->user()->tenant_id) {
+            abort(403);
+        }
+
+        $tenant = auth()->user()->tenant;
+        if (!$tenant->canAdd('categories')) {
+            return back()->withErrors(['error' => 'Limite de categorias atingido.']);
+        }
+
+        $newCategory = $category->replicate();
+        $newCategory->name = $category->name . ' (Cópia)';
+        $newCategory->save();
+
+        return back()->with('success', 'Categoria duplicada com sucesso!');
+    }
 }

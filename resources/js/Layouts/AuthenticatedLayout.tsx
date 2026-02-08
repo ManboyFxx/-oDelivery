@@ -3,6 +3,7 @@ import { usePage } from '@inertiajs/react';
 import Sidebar from '@/Components/Sidebar';
 import TopBar from '@/Components/TopBar';
 import TrialExpiringModal from '@/Components/TrialExpiringModal';
+import TrialBanner from '@/Components/TrialBanner';
 import { NotificationSettingsSync } from '@/Components/Toast/NotificationSettingsSync';
 import { useToast } from '@/Hooks/useToast';
 import { useAudio } from '@/Hooks/useAudio';
@@ -104,6 +105,7 @@ export default function Authenticated({ user, header, children, tenant: propTena
     }, [tenant?.id]); // Only re-run if tenant ID changes, NOT on every render/prop change
 
     const showTrialModal = tenant?.is_trial_expiring_soon && (tenant?.trial_days_remaining ?? 0) > 0;
+    const isTrial = (tenant?.trial_days_remaining !== undefined && tenant?.trial_days_remaining !== null);
 
     return (
         <div className="flex h-screen bg-gray-50 dark:bg-premium-dark transition-colors">
@@ -114,6 +116,17 @@ export default function Authenticated({ user, header, children, tenant: propTena
             {/* Main Content */}
             <div className="flex flex-1 flex-col overflow-hidden lg:pl-72 transition-all duration-300">
                 <TopBar user={user || authUser} onMenuClick={() => setIsMobileMenuOpen(true)} hasUnread={hasUnread} onRead={() => setHasUnread(false)} />
+
+                {/* Trial Banner Global */}
+                {isTrial && (
+                    <div className="sticky top-0 z-30">
+                        <TrialBanner
+                            daysRemaining={tenant.trial_days_remaining}
+                            planName={tenant.plan_display_name}
+                        />
+                    </div>
+                )}
+
                 {header && (
                     <header className="bg-white dark:bg-premium-card shadow">
                         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">

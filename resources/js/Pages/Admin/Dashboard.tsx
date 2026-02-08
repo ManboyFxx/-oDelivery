@@ -1,30 +1,22 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
 import {
-    Users,
-    Store,
-    CreditCard,
-    Activity,
-    ArrowUpRight,
-    Search,
-    Filter,
-    MoreHorizontal,
-    TrendingUp,
-    ShieldCheck
+    Users, Store, ShoppingBag, TrendingUp, AlertTriangle,
+    CheckCircle, XCircle, Activity, Server, Printer, MessageCircle
 } from 'lucide-react';
+import { Pie } from 'react-chartjs-2';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 interface DashboardProps {
-    auth: any;
     metrics: {
         total_tenants: number;
         active_tenants: number;
         trial_tenants: number;
+        new_tenants: number;
+        total_orders: number;
         mrr: number;
-        system_health?: {
-            evolution: { status: string; latency: string };
-            motoboy: { status: string; latency: string };
-            print: { status: string; latency: string };
-        };
     };
     recent_tenants: Array<{
         id: string;
@@ -34,43 +26,50 @@ interface DashboardProps {
         status: string;
         created_at: string;
     }>;
+    system_health: {
+        evolution: { status: string; latency: string };
+        motoboy: { status: string; latency: string };
+        print: { status: string; latency: string };
+    };
 }
 
-export default function AdminDashboard({ auth, metrics, recent_tenants }: DashboardProps) {
-    const stats = [
-        {
-            title: 'Total de Lojas',
-            value: metrics.total_tenants.toString(),
-            change: '+12.5%',
-            trend: 'up',
-            icon: Store,
-            primary: true,
-        },
-        {
-            title: 'Lojas Ativas',
-            value: metrics.active_tenants.toString(),
-            change: '+5.2%',
-            trend: 'up',
-            icon: Activity,
-            primary: false,
-        },
-        {
-            title: 'Em Trial',
-            value: metrics.trial_tenants.toString(),
-            change: '+2.1%',
-            trend: 'up',
-            icon: Users,
-            primary: false,
-        },
-        {
-            title: 'MRR Estimado',
-            value: `R$ ${metrics.mrr.toFixed(2)}`,
-            change: '+0.0%',
-            trend: 'neutral',
-            icon: CreditCard,
-            primary: false,
-        },
-    ];
+export default function AdminDashboard({ metrics, recent_tenants, system_health }: DashboardProps) {
+    const pieData = {
+        labels: ['Ativos', 'Trial', 'Inativos'],
+        datasets: [
+            {
+                data: [
+                    metrics.active_tenants - metrics.trial_tenants,
+                    metrics.trial_tenants,
+                    metrics.total_tenants - metrics.active_tenants
+                ],
+                backgroundColor: ['#10b981', '#3b82f6', '#ef4444'],
+                borderWidth: 0,
+            },
+        ],
+    };
+
+    const getHealthColor = (status: string) => {
+        switch (status) {
+            case 'connected':
+            case 'active':
+                return 'text-green-500';
+            case 'disconnected':
+            case 'calibration_needed':
+                return 'text-yellow-500';
+            case 'error':
+                return 'text-red-500';
+            default:
+                return 'text-gray-400';
+        }
+    };
+
+    const formatCurrency = (value: number) => {
+        return new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+        }).format(value);
+    };
 
     return (
         <AuthenticatedLayout>
@@ -78,218 +77,222 @@ export default function AdminDashboard({ auth, metrics, recent_tenants }: Dashbo
 
             <div className="space-y-8">
                 {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <div className="flex items-center gap-2 mb-1">
-                            <span className="px-2 py-0.5 rounded-md bg-[#ff3d03]/10 text-[#ff3d03] text-[10px] font-bold uppercase tracking-wider">
-                                Super Admin
-                            </span>
-                        </div>
-                        <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Visão Geral do Sistema</h2>
-                        <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Monitoramento global da plataforma ÓoDelivery</p>
-                    </div>
-
-                    <div className="flex gap-3">
-                        <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#1a1b1e] text-gray-700 dark:text-gray-300 rounded-xl font-bold text-sm shadow-sm hover:bg-gray-50 dark:hover:bg-[#25262b] transition-colors border border-gray-100 dark:border-white/5">
-                            <Filter className="h-4 w-4 text-gray-400" />
-                            <span>Filtros</span>
-                        </button>
-                        <button className="flex items-center gap-2 px-6 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-bold text-sm shadow-lg hover:opacity-90 transition-all">
-                            <TrendingUp className="h-4 w-4" />
-                            Relatórios
-                        </button>
-                    </div>
+                <div>
+                    <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+                        Visão Geral
+                    </h2>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
+                        Monitoramento global da plataforma
+                    </p>
                 </div>
 
-                {/* Stats Grid */}
+                {/* KPI Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {stats.map((stat, index) => (
-                        <div
-                            key={index}
-                            className="group relative overflow-hidden rounded-[24px] p-6 bg-white dark:bg-[#1a1b1e] border border-gray-100 dark:border-white/5 shadow-sm hover:shadow-lg transition-all duration-300"
-                        >
-                            <div className="flex items-start justify-between mb-4">
-                                <div className={`p-3 rounded-2xl transition-colors ${stat.primary
-                                    ? 'bg-[#ff3d03] text-white shadow-lg shadow-[#ff3d03]/30'
-                                    : 'bg-orange-50 dark:bg-orange-500/10 text-[#ff3d03] group-hover:bg-[#ff3d03] group-hover:text-white'
-                                    }`}>
-                                    <stat.icon className="h-6 w-6" />
-                                </div>
-                                {stat.change && (
-                                    <div className="flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400">
-                                        <ArrowUpRight className="h-3 w-3" />
-                                        {stat.change}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div>
-                                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                                    {stat.title}
-                                </p>
-                                <h3 className="text-3xl font-black tracking-tight text-gray-900 dark:text-white">
-                                    {stat.value}
-                                </h3>
-                            </div>
-
-                            {/* Decorative gradient */}
-                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#ff3d03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    {/* Active Tenants */}
+                    <div className="bg-white dark:bg-[#1a1b1e] p-6 rounded-[32px] border border-gray-100 dark:border-white/5 shadow-sm relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                            <Store className="w-16 h-16 text-[#ff3d03]" />
                         </div>
-                    ))}
-                </div>
-
-                {/* Recent Tenants Section */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 bg-white dark:bg-[#1a1b1e] rounded-[32px] border border-gray-100 dark:border-white/5 shadow-sm p-8">
-                        <div className="flex items-center justify-between mb-8">
-                            <div>
-                                <h3 className="font-bold text-xl text-gray-900 dark:text-white flex items-center gap-2">
-                                    <Store className="h-5 w-5 text-[#ff3d03]" />
-                                    Lojas Recentes
-                                </h3>
-                                <p className="text-sm text-gray-500 mt-1">Últimos cadastros na plataforma</p>
+                        <div className="relative z-10">
+                            <div className="w-12 h-12 rounded-2xl bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center mb-4 text-[#ff3d03]">
+                                <Store className="w-6 h-6" />
                             </div>
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Buscar loja..."
-                                    className="pl-9 pr-4 py-2 rounded-xl bg-gray-50 dark:bg-white/5 border-none text-sm focus:ring-2 focus:ring-[#ff3d03]/20"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="border-b border-gray-100 dark:border-white/5">
-                                        <th className="text-left py-4 px-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Loja</th>
-                                        <th className="text-left py-4 px-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Plano</th>
-                                        <th className="text-left py-4 px-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Status</th>
-                                        <th className="text-left py-4 px-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Cadastro</th>
-                                        <th className="text-right py-4 px-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {recent_tenants.map((tenant) => (
-                                        <tr key={tenant.id} className="group hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                                            <td className="py-4 px-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-white/10 dark:to-white/5 flex items-center justify-center font-bold text-gray-500 dark:text-gray-400 text-sm">
-                                                        {tenant.slug.substring(0, 2).toUpperCase()}
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-bold text-gray-900 dark:text-white text-sm">{tenant.name}</p>
-                                                        <p className="text-xs text-gray-500">/{tenant.slug}</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="py-4 px-4">
-                                                <span className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 text-xs font-bold">
-                                                    {tenant.plan}
-                                                </span>
-                                            </td>
-                                            <td className="py-4 px-4">
-                                                <span className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 w-fit ${tenant.status === 'Ativo'
-                                                    ? 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400'
-                                                    : 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400'
-                                                    }`}>
-                                                    <span className={`h-1.5 w-1.5 rounded-full ${tenant.status === 'Ativo' ? 'bg-green-500' : 'bg-red-500'
-                                                        }`}></span>
-                                                    {tenant.status}
-                                                </span>
-                                            </td>
-                                            <td className="py-4 px-4 text-sm text-gray-500 font-medium">
-                                                {tenant.created_at}
-                                            </td>
-                                            <td className="py-4 px-4 text-right">
-                                                <button className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-white/10 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                            <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                                Lojas Ativas
+                            </p>
+                            <h3 className="text-3xl font-black text-gray-900 dark:text-white">
+                                {metrics.active_tenants}
+                            </h3>
+                            <p className="text-xs font-bold text-green-500 mt-2 flex items-center gap-1">
+                                <TrendingUp className="w-3 h-3" />
+                                +{metrics.new_tenants} este mês
+                            </p>
                         </div>
                     </div>
 
-                    {/* Quick Monitoring */}
-                    <div className="space-y-6">
-                        <div className="bg-[#111827] dark:bg-[#000000] rounded-[32px] p-8 text-white relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-[#ff3d03] opacity-20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
-
-                            <h3 className="font-bold text-xl mb-6 relative z-10 flex items-center gap-2">
-                                <ShieldCheck className="h-5 w-5 text-[#ff3d03]" />
-                                Integridade do Sistema
+                    {/* MRR */}
+                    <div className="bg-white dark:bg-[#1a1b1e] p-6 rounded-[32px] border border-gray-100 dark:border-white/5 shadow-sm relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                            <Users className="w-16 h-16 text-blue-500" />
+                        </div>
+                        <div className="relative z-10">
+                            <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center mb-4 text-blue-500">
+                                <Users className="w-6 h-6" />
+                            </div>
+                            <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                                MRR (Estimado)
+                            </p>
+                            <h3 className="text-3xl font-black text-gray-900 dark:text-white">
+                                {formatCurrency(metrics.mrr)}
                             </h3>
+                            <p className="text-xs font-bold text-blue-500 mt-2 flex items-center gap-1">
+                                <CheckCircle className="w-3 h-3" />
+                                Receita Recorrente
+                            </p>
+                        </div>
+                    </div>
 
-                            <div className="space-y-4 relative z-10">
-                                {/* Evolution API */}
-                                <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/10">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`h-2 w-2 rounded-full shadow-[0_0_10px_rgba(34,197,94,0.5)] ${
-                                            // @ts-ignore
-                                            metrics.system_health?.evolution.status === 'connected' ? 'bg-green-500' : 'bg-red-500'
-                                            }`}></div>
-                                        <span className="font-medium text-sm">Evolution API (WhatsApp)</span>
+                    {/* Total Orders */}
+                    <div className="bg-white dark:bg-[#1a1b1e] p-6 rounded-[32px] border border-gray-100 dark:border-white/5 shadow-sm relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                            <ShoppingBag className="w-16 h-16 text-purple-500" />
+                        </div>
+                        <div className="relative z-10">
+                            <div className="w-12 h-12 rounded-2xl bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center mb-4 text-purple-500">
+                                <ShoppingBag className="w-6 h-6" />
+                            </div>
+                            <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                                Pedidos Globais
+                            </p>
+                            <h3 className="text-3xl font-black text-gray-900 dark:text-white">
+                                {metrics.total_orders}
+                            </h3>
+                            <p className="text-xs font-bold text-purple-500 mt-2 flex items-center gap-1">
+                                <TrendingUp className="w-3 h-3" />
+                                Todas as lojas
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Trials */}
+                    <div className="bg-white dark:bg-[#1a1b1e] p-6 rounded-[32px] border border-gray-100 dark:border-white/5 shadow-sm relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                            <Activity className="w-16 h-16 text-green-500" />
+                        </div>
+                        <div className="relative z-10">
+                            <div className="w-12 h-12 rounded-2xl bg-green-100 dark:bg-green-900/20 flex items-center justify-center mb-4 text-green-500">
+                                <Activity className="w-6 h-6" />
+                            </div>
+                            <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                                Em Trial
+                            </p>
+                            <h3 className="text-3xl font-black text-gray-900 dark:text-white">
+                                {metrics.trial_tenants}
+                            </h3>
+                            <p className="text-xs font-bold text-green-500 mt-2 flex items-center gap-1">
+                                <Users className="w-3 h-3" />
+                                Potenciais clientes
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Recent Tenants List */}
+                    <div className="lg:col-span-2 bg-white dark:bg-[#1a1b1e] p-6 rounded-[32px] border border-gray-100 dark:border-white/5 shadow-sm">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <Store className="w-5 h-5 text-[#ff3d03]" />
+                                Lojas Recentes
+                            </h3>
+                            <Link
+                                href={route('admin.tenants.index')}
+                                className="text-sm font-bold text-[#ff3d03] hover:underline"
+                            >
+                                Ver todas
+                            </Link>
+                        </div>
+
+                        <div className="space-y-4">
+                            {recent_tenants.map(tenant => (
+                                <div key={tenant.id} className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ff3d03] to-[#e63700] flex items-center justify-center text-white font-bold text-sm">
+                                            {tenant.slug.substring(0, 2).toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-gray-900 dark:text-white text-sm">{tenant.name}</p>
+                                            <p className="text-xs text-gray-500">/{tenant.slug}</p>
+                                        </div>
                                     </div>
-                                    <span className="text-xs font-bold text-gray-400">
-                                        {/* @ts-ignore */}
-                                        {metrics.system_health?.evolution.latency}
-                                    </span>
+                                    <div className="text-right">
+                                        <span className={`px-2 py-1 rounded-lg text-xs font-bold ${tenant.status === 'Ativo'
+                                                ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                                                : 'bg-red-100 text-red-700'
+                                            }`}>
+                                            {tenant.status}
+                                        </span>
+                                        <p className="text-xs text-gray-400 mt-1">{tenant.created_at}</p>
+                                    </div>
                                 </div>
+                            ))}
+                        </div>
+                    </div>
 
-                                {/* Painel Motoboy */}
-                                <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/10">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`h-2 w-2 rounded-full shadow-[0_0_10px_rgba(34,197,94,0.5)] ${
-                                            // @ts-ignore
-                                            metrics.system_health?.motoboy.status === 'active' ? 'bg-green-500' : 'bg-yellow-500'
-                                            }`}></div>
-                                        <span className="font-medium text-sm">Painel Motoboy</span>
+                    {/* System Health */}
+                    <div className="bg-white dark:bg-[#1a1b1e] p-6 rounded-[32px] border border-gray-100 dark:border-white/5 shadow-sm">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-6">
+                            <Activity className="w-5 h-5 text-blue-500" />
+                            Saúde do Sistema
+                        </h3>
+
+                        <div className="space-y-6">
+                            {/* Evolution API */}
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-green-100 dark:bg-green-900/20 flex items-center justify-center text-green-600">
+                                        <MessageCircle className="w-5 h-5" />
                                     </div>
-                                    <span className="text-xs font-bold text-gray-400">
-                                        {/* @ts-ignore */}
-                                        {metrics.system_health?.motoboy.latency}
-                                    </span>
+                                    <div>
+                                        <p className="font-bold text-gray-900 dark:text-white text-sm">WhatsApp API</p>
+                                        <p className="text-xs text-gray-500">Evolution</p>
+                                    </div>
                                 </div>
-
-                                {/* Sistema de Impressão */}
-                                <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/10">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`h-2 w-2 rounded-full shadow-[0_0_10px_rgba(34,197,94,0.5)] ${
-                                            // @ts-ignore
-                                            metrics.system_health?.print.status === 'active' ? 'bg-green-500' : 'bg-blue-500'
-                                            }`}></div>
-                                        <span className="font-medium text-sm">Fila de Impressão</span>
+                                <div className="text-right">
+                                    <div className={`flex items-center gap-1.5 text-xs font-bold ${getHealthColor(system_health.evolution.status)}`}>
+                                        <div className="w-2 h-2 rounded-full bg-current animate-pulse" />
+                                        {system_health.evolution.status}
                                     </div>
-                                    <span className="text-xs font-bold text-gray-400">
-                                        {/* @ts-ignore */}
-                                        {metrics.system_health?.print.latency}
-                                    </span>
+                                    <p className="text-xs text-gray-400">{system_health.evolution.latency}</p>
                                 </div>
                             </div>
 
-                            <div className="mt-6 pt-6 border-t border-white/10">
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-400">Status Geral</span>
-                                    <span className="font-bold text-green-400">Operacional</span>
+                            {/* Motoboy */}
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center text-blue-600">
+                                        <Users className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-gray-900 dark:text-white text-sm">Painel Motoboy</p>
+                                        <p className="text-xs text-gray-500">Rastreamento</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className={`flex items-center gap-1.5 text-xs font-bold ${getHealthColor(system_health.motoboy.status)}`}>
+                                        <div className="w-2 h-2 rounded-full bg-current" />
+                                        {system_health.motoboy.status}
+                                    </div>
+                                    <p className="text-xs text-gray-400">{system_health.motoboy.latency}</p>
+                                </div>
+                            </div>
+
+                            {/* Print System */}
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center text-purple-600">
+                                        <Printer className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-gray-900 dark:text-white text-sm">Sistema de Impressão</p>
+                                        <p className="text-xs text-gray-500">Fila de Jobs</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className={`flex items-center gap-1.5 text-xs font-bold ${getHealthColor(system_health.print.status)}`}>
+                                        <div className="w-2 h-2 rounded-full bg-current" />
+                                        {system_health.print.status}
+                                    </div>
+                                    <p className="text-xs text-gray-400">{system_health.print.latency}</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="bg-white dark:bg-[#1a1b1e] rounded-[32px] p-8 border border-gray-100 dark:border-white/5 shadow-sm">
-                            <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-4">Ações Rápidas</h3>
-                            <div className="grid grid-cols-2 gap-3">
-                                <Link href={route('admin.tenants.create')} className="p-4 rounded-2xl bg-gray-50 dark:bg-white/5 hover:bg-orange-50 dark:hover:bg-[#ff3d03]/10 border border-transparent hover:border-[#ff3d03]/20 transition-all group text-left">
-                                    <Store className="h-6 w-6 text-gray-400 group-hover:text-[#ff3d03] mb-2 transition-colors" />
-                                    <span className="text-xs font-bold text-gray-600 dark:text-gray-300 group-hover:text-[#ff3d03]">Novo Tenant</span>
-                                </Link>
-                                <Link href={route('admin.users.index')} className="p-4 rounded-2xl bg-gray-50 dark:bg-white/5 hover:bg-orange-50 dark:hover:bg-[#ff3d03]/10 border border-transparent hover:border-[#ff3d03]/20 transition-all group text-left">
-                                    <Users className="h-6 w-6 text-gray-400 group-hover:text-[#ff3d03] mb-2 transition-colors" />
-                                    <span className="text-xs font-bold text-gray-600 dark:text-gray-300 group-hover:text-[#ff3d03]">Gerenciar Usuários</span>
-                                </Link>
+                        {/* Chart Preview (Optional) */}
+                        <div className="mt-8 pt-6 border-t border-gray-100 dark:border-white/5">
+                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-4">Distribuição de Lojas</h4>
+                            <div className="h-48 flex justify-center">
+                                <Pie data={pieData} options={{ maintainAspectRatio: false }} />
                             </div>
                         </div>
                     </div>

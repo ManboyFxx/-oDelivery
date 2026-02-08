@@ -7,18 +7,39 @@ import TextInput from '@/Components/TextInput';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import InputError from '@/Components/InputError';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import DraggableCategoryItem from '../Partials/DraggableCategoryItem';
 
 interface Category {
     id: string;
     name: string;
     description: string;
     image_url?: string;
+    sort_order?: number;
 }
 
-export default function CategoriesTab({ categories }: { categories: Category[] }) {
+export default function CategoriesTab({ categories: initialCategories }: { categories: Category[] }) {
+    // Local state for immediate UI feedback on reorder
+    // Note: In a real app we might rely on props update, but for DND smooth experience local state is better
+    const [categories, setCategories] = useState(initialCategories);
+
+    // Update local state when props change (e.g. after search filtering or CRUD)
+    // However, filtering complicates this. DND usually works best on the full list or filtered list.
+    // If we filter, we can only reorder visible items relative to each other?
+    // Let's DND on filtered list.
+
     const [search, setSearch] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+    const [activeId, setActiveId] = useState<string | null>(null);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
 
     const { data, setData, post, put, processing, reset, errors, delete: destroy } = useForm({
         name: '',
@@ -29,6 +50,36 @@ export default function CategoriesTab({ categories }: { categories: Category[] }
     const filteredCategories = categories.filter(cat =>
         cat.name.toLowerCase().includes(search.toLowerCase())
     );
+
+    // Sync state with props IF props change significantly (length) or we want to force update
+    // But be careful not to overwrite local DND state during drag.
+    // Simplified: just initialize. If reordering happens, we update local and backend.
+
+    function handleDragEnd(event: DragEndEvent) {
+        const { active, over } = event;
+        setActiveId(null);
+
+        if (active.id !== over?.id) {
+            setCategories((items) => {
+                const oldIndex = items.findIndex((i) => i.id === active.id);
+                const newIndex = items.findIndex((i) => i.id === over?.id);
+                const newOrder = arrayMove(items, oldIndex, newIndex);
+
+                // Send to backend
+                router.post(route('categories.reorder'), {
+                    categories: newOrder.map((item, index) => ({
+                        id: item.id,
+                        sort_order: index
+                    }))
+                }, {
+                    preserveScroll: true,
+                    // preserveState: true // We want to keep our local state until page reload
+                });
+
+                return newOrder;
+            });
+        }
+    }
 
     const openCreateModal = () => {
         setEditingCategory(null);
@@ -49,14 +100,21 @@ export default function CategoriesTab({ categories }: { categories: Category[] }
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (editingCategory) {
-            // Using router.put instead of form.put to allow existing resource controller
-            // Actually, we can use the form helper if we re-initialize it correctly or just use router manually
             router.put(route('categories.update', editingCategory.id), data, {
-                onSuccess: () => setIsModalOpen(false)
+                onSuccess: () => {
+                    setIsModalOpen(false);
+                    // Update local state to reflect changes (optional if page reloads)
+                    setCategories(categories.map(c => c.id === editingCategory.id ? { ...c, ...data } : c));
+                }
             });
         } else {
             post(route('categories.store'), {
-                onSuccess: () => setIsModalOpen(false)
+                onSuccess: () => {
+                    setIsModalOpen(false);
+                    // We would need the new ID to add to local state properly without reload, 
+                    // but Inertia will reload props. We might need useEffect to sync props to state or just rely on reload.
+                    window.location.reload(); // Simple brute force for now or let Inertia handle it
+                }
             });
         }
     };
@@ -64,7 +122,10 @@ export default function CategoriesTab({ categories }: { categories: Category[] }
     const handleDelete = (id: string) => {
         if (confirm('Tem certeza que deseja excluir esta categoria? Produtos vinculados podem ficar sem categoria.')) {
             router.delete(route('categories.destroy', id), {
-                preserveScroll: true
+                preserveScroll: true,
+                onSuccess: () => {
+                    setCategories(categories.filter(c => c.id !== id));
+                }
             });
         }
     };
@@ -100,48 +161,36 @@ export default function CategoriesTab({ categories }: { categories: Category[] }
                 </div>
             </div>
 
-            {/* List */}
+            {/* List with DND */}
             <div className="bg-white dark:bg-[#1a1b1e] rounded-[24px] shadow-sm border border-gray-100 dark:border-white/5 overflow-hidden">
-                <ul className="divide-y divide-gray-100 dark:divide-white/5">
-                    {filteredCategories.map((cat) => (
-                        <li key={cat.id} className="p-4 group hover:bg-orange-50/50 dark:hover:bg-white/5 transition-colors flex justify-between items-center">
-                            <div className="flex items-center gap-4">
-                                <div className="h-12 w-12 rounded-xl bg-orange-100 dark:bg-white/10 flex items-center justify-center text-[#ff3d03] font-bold text-lg group-hover:scale-110 transition-transform">
-                                    {cat.name.substring(0, 1)}
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-gray-900 dark:text-white text-lg">{cat.name}</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">{cat.description || 'Sem descrição'}</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button
-                                    onClick={() => openEditModal(cat)}
-                                    className="p-2 text-gray-400 hover:text-[#ff3d03] hover:bg-orange-50 dark:hover:bg-white/10 rounded-lg transition-colors"
-                                    title="Editar"
-                                >
-                                    <Pencil className="h-5 w-5" />
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(cat.id)}
-                                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-white/10 rounded-lg transition-colors"
-                                    title="Excluir"
-                                >
-                                    <Trash2 className="h-5 w-5" />
-                                </button>
-                            </div>
-                        </li>
-                    ))}
-                    {filteredCategories.length === 0 && (
-                        <li className="p-12 text-center flex flex-col items-center justify-center text-gray-500">
-                            <div className="h-16 w-16 bg-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center mb-4">
-                                <Search className="h-8 w-8 text-gray-300" />
-                            </div>
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Nenhuma categoria encontrada</h3>
-                        </li>
-                    )}
-                </ul>
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragStart={({ active }) => setActiveId(active.id as string)}
+                    onDragEnd={handleDragEnd}
+                >
+                    <SortableContext items={filteredCategories.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                        <ul className="divide-y divide-gray-100 dark:divide-white/5">
+                            {filteredCategories.map((cat) => (
+                                <DraggableCategoryItem
+                                    key={cat.id}
+                                    category={cat}
+                                    onEdit={openEditModal}
+                                    onDelete={handleDelete}
+                                    isDragging={activeId === cat.id}
+                                />
+                            ))}
+                            {filteredCategories.length === 0 && (
+                                <li className="p-12 text-center flex flex-col items-center justify-center text-gray-500">
+                                    <div className="h-16 w-16 bg-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center mb-4">
+                                        <Search className="h-8 w-8 text-gray-300" />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">Nenhuma categoria encontrada</h3>
+                                </li>
+                            )}
+                        </ul>
+                    </SortableContext>
+                </DndContext>
             </div>
 
             <Modal show={isModalOpen} onClose={() => setIsModalOpen(false)} maxWidth="md">

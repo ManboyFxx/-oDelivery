@@ -1,6 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
-import { ChefHat, Check, X, ArrowRight, HelpCircle } from 'lucide-react';
-import { useState } from 'react';
+import { ChefHat, Check, X, ArrowRight, HelpCircle, ShieldCheck } from 'lucide-react';
+import React, { useState } from 'react';
 
 export default function Pricing() {
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
@@ -148,8 +148,8 @@ export default function Pricing() {
                             <button
                                 onClick={() => setBillingCycle('monthly')}
                                 className={`px-6 py-2 rounded-md font-bold text-sm transition-all ${billingCycle === 'monthly'
-                                        ? 'bg-gray-100 text-gray-900'
-                                        : 'text-gray-500 hover:text-gray-900'
+                                    ? 'bg-gray-100 text-gray-900'
+                                    : 'text-gray-500 hover:text-gray-900'
                                     }`}
                             >
                                 Mensal
@@ -157,8 +157,8 @@ export default function Pricing() {
                             <button
                                 onClick={() => setBillingCycle('yearly')}
                                 className={`px-6 py-2 rounded-md font-bold text-sm transition-all ${billingCycle === 'yearly'
-                                        ? 'bg-gray-100 text-gray-900'
-                                        : 'text-gray-500 hover:text-gray-900'
+                                    ? 'bg-gray-100 text-gray-900'
+                                    : 'text-gray-500 hover:text-gray-900'
                                     }`}
                             >
                                 Anual
@@ -175,8 +175,8 @@ export default function Pricing() {
                                 <div
                                     key={index}
                                     className={`relative p-8 bg-white rounded-xl ${plan.popular
-                                            ? 'border-2 border-[#ff3d03] shadow-lg'
-                                            : 'border border-gray-200 shadow-sm'
+                                        ? 'border-2 border-[#ff3d03] shadow-lg'
+                                        : 'border border-gray-200 shadow-sm'
                                         }`}
                                 >
                                     {plan.popular && (
@@ -209,8 +209,8 @@ export default function Pricing() {
                                     <Link
                                         href={route('register')}
                                         className={`block w-full py-3 rounded-lg font-bold text-center transition-all mb-8 ${plan.popular
-                                                ? 'bg-[#ff3d03] hover:bg-[#d13302] text-white'
-                                                : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
+                                            ? 'bg-[#ff3d03] hover:bg-[#d13302] text-white'
+                                            : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
                                             }`}
                                     >
                                         {plan.cta}
@@ -236,6 +236,73 @@ export default function Pricing() {
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* Comparison Table */}
+                <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50 border-t border-gray-200">
+                    <div className="max-w-7xl mx-auto">
+                        <h2 className="text-3xl font-black text-gray-900 text-center mb-16 tracking-tight">
+                            Comparativo Detalhado
+                        </h2>
+
+                        <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm bg-white">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr>
+                                        <th className="py-6 px-6 bg-gray-50 text-sm font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 w-1/4">Recursos</th>
+                                        <th className="py-6 px-6 bg-white text-center text-xl font-bold text-gray-900 border-b border-gray-200 w-1/4">Gratuito</th>
+                                        <th className="py-6 px-6 bg-orange-50 text-center text-xl font-bold text-[#ff3d03] border-b border-gray-200 w-1/4 relative">
+                                            <div className="absolute top-0 left-0 w-full h-1 bg-[#ff3d03]"></div>
+                                            Básico
+                                        </th>
+                                        <th className="py-6 px-6 bg-white text-center text-xl font-bold text-gray-900 border-b border-gray-200 w-1/4">Pro</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200">
+                                    {allFeatures.map((category, idx) => (
+                                        <React.Fragment key={idx}>
+                                            <tr>
+                                                <td colSpan={4} className="py-4 px-6 bg-gray-100 text-sm font-black text-gray-700 uppercase tracking-wider">
+                                                    {category.category}
+                                                </td>
+                                            </tr>
+                                            {category.items.map((item, itemIdx) => (
+                                                <tr key={itemIdx} className="hover:bg-gray-50 transition-colors group">
+                                                    <td className="py-4 px-6 text-sm font-medium text-gray-900 flex items-center gap-2">
+                                                        {item.name}
+                                                        <div className="group/tooltip relative">
+                                                            <HelpCircle className="h-4 w-4 text-gray-400 cursor-help opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-48 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10 pointer-events-none text-center">
+                                                                Mais detalhes sobre {item.name}
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-4 px-6 text-center">{renderFeatureValue(item.free)}</td>
+                                                    <td className="py-4 px-6 text-center bg-orange-50/30 font-bold text-gray-900 border-x border-orange-100">{renderFeatureValue(item.pro)}</td>
+                                                    <td className="py-4 px-6 text-center">{renderFeatureValue(item.enterprise)}</td>
+                                                </tr>
+                                            ))}
+                                        </React.Fragment>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Guarantee Seal */}
+                        <div className="mt-16 flex justify-center">
+                            <div className="inline-flex items-center gap-4 bg-white p-6 rounded-2xl shadow-lg border border-gray-100 max-w-lg">
+                                <div className="p-3 bg-green-100 rounded-full shrink-0">
+                                    <ShieldCheck className="h-8 w-8 text-green-600" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="font-bold text-lg text-gray-900">Garantia Incondicional de 7 Dias</p>
+                                    <p className="text-sm text-gray-600 leading-relaxed">
+                                        Assine o plano Básico ou Pro e teste por 7 dias. Se não gostar, devolvemos 100% do seu dinheiro. Sem perguntas, sem burocracia.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>

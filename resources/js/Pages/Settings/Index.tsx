@@ -29,6 +29,8 @@ import { Switch } from '@headlessui/react';
 import Modal from '@/Components/Modal';
 import PageHeader from '@/Components/PageHeader';
 import PrinterSettings from './Partials/PrinterSettings';
+import WeeklySchedule from './Partials/WeeklySchedule';
+import SecondaryButton from '@/Components/SecondaryButton';
 
 interface Tab {
     id: string;
@@ -418,6 +420,20 @@ export default function SettingsIndex({ auth, settings, success, paymentMethods 
         return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
     };
 
+    const replicateHours = (sourceDay: string, targetDays: string[]) => {
+        if (!confirm('Isso irá copiar o horário de ' + dayNames[sourceDay] + ' para os outros dias selecionados. Continuar?')) return;
+
+        const source = businessHours[sourceDay];
+        const updated = { ...businessHours };
+
+        targetDays.forEach(day => {
+            updated[day] = { ...source };
+        });
+
+        setBusinessHours(updated);
+        setData('business_hours', JSON.stringify(updated));
+    };
+
     return (
         <AuthenticatedLayout>
             <Head title="Configurações" />
@@ -697,6 +713,32 @@ export default function SettingsIndex({ auth, settings, success, paymentMethods 
                                     <p className="font-medium">Integração com Menu Público</p>
                                     <p className="mt-1">Os horários configurados aqui serão exibidos no menu público. Quando fora do horário, será mostrado um banner "Fechado".</p>
                                 </div>
+                            </div>
+
+                            <WeeklySchedule hours={businessHours} />
+
+                            <div className="flex flex-wrap gap-2 mb-4">
+                                <SecondaryButton
+                                    type="button"
+                                    onClick={() => replicateHours('monday', ['tuesday', 'wednesday', 'thursday', 'friday'])}
+                                    className="text-xs"
+                                >
+                                    Copiar Seg ➔ Sex
+                                </SecondaryButton>
+                                <SecondaryButton
+                                    type="button"
+                                    onClick={() => replicateHours('monday', ['tuesday', 'wednesday', 'thursday', 'friday', 'saturday'])}
+                                    className="text-xs"
+                                >
+                                    Copiar Seg ➔ Sáb
+                                </SecondaryButton>
+                                <SecondaryButton
+                                    type="button"
+                                    onClick={() => replicateHours('monday', ['tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'])}
+                                    className="text-xs"
+                                >
+                                    Copiar Seg ➔ Todos
+                                </SecondaryButton>
                             </div>
 
                             <div className="space-y-4">

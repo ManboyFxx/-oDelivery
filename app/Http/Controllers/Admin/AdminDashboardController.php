@@ -21,11 +21,53 @@ class AdminDashboardController extends Controller
     {
         // Calculate Metrics
         $totalTenants = Tenant::count();
+        $activeTenants = Tenant::where('is_active', true)->where('plan', '!=', 'free')->count(); // Active paid/trial tenants? Or just active status?
+        // Usually active tenants means those who can access. Let's stick to 'is_active' = true.
+        // But for dashboard stats, "Active Tenants" often implies paying or valid ones.
+        // Let's keep it simple: is_active = true.
         $activeTenants = Tenant::where('is_active', true)->count();
-        $trialTenants = Tenant::where('plan', 'trial')->where('is_active', true)->count();
 
-        // Mocking MRR for now until Stripe is fully integrated
-        $mrr = 0; // Placeholder
+        $newTenants = Tenant::where('created_at', '>=', now()->subDays(30))->count();
+
+        // Total Global Orders (ignoring tenant scope)
+        $totalOrders = \App\Models\Order::withoutGlobalScope(\App\Scopes\TenantScope::class)->count();
+
+        $trialTenants = Tenant::where(function ($q) {
+            $q->where('plan', 'trial')
+                ->orWhere(function ($sub) {
+                    $sub->whereNotNull('trial_ends_at')
+                        ->where('trial_ends_at', '>', now());
+                });
+        })->where('is_active', true)->count();
+
+        // Calculate MRR (Monthly Recurring Revenue)
+        // We need to sum up the valid subscriptions
+        $plans = \App\Models\PlanLimit::all()->keyBy('plan');
+
+        $mrr = Tenant::where('is_active', true)
+            ->where('plan', '!=', 'free')
+            ->where(function ($q) {
+                // Only count if subscription is active or in trial (if we count trial value? usually no)
+                // MRR usually only counts PAYING customers.
+                $q->where('subscription_status', 'active')
+                    ->orWhere('subscription_status', 'trialing'); // Stripe status
+            })
+            ->get()
+            ->sum(function ($tenant) use ($plans) {
+                $plan = $plans[$tenant->plan] ?? null;
+                if (!$plan)
+                    return 0;
+
+                // If trial, MRR is 0 (potential MRR, but not realized)
+                if ($tenant->isTrialActive())
+                    return 0;
+
+                if ($tenant->billing_cycle === 'yearly') {
+                    return $plan->price_yearly / 12;
+                }
+
+                return $plan->price_monthly;
+            });
 
         // Recent Tenants
         $recentTenants = Tenant::latest()
@@ -43,6 +85,7 @@ class AdminDashboardController extends Controller
             });
 
         // --- System Health Checks ---
+        // ... (Keep existing health checks)
 
         // 1. Evolution API (WhatsApp)
         $evolutionStatus = 'disconnected';
@@ -51,7 +94,6 @@ class AdminDashboardController extends Controller
             $instance = WhatsAppInstance::where('instance_type', 'shared')->first();
             if ($instance) {
                 $start = microtime(true);
-                // We just check purely if we can get status, assuming 'open' means healthy
                 $state = $this->evolutionApi->getInstanceStatus($instance->instance_name);
                 $end = microtime(true);
                 $evolutionLatency = round(($end - $start) * 1000) . 'ms';
@@ -65,13 +107,10 @@ class AdminDashboardController extends Controller
         }
 
         // 2. Painel Motoboy (Integrity Check)
-        // Check if we have active motoboys or recent location updates
-        // For now, simple DB check if table exists and is accessible
         $motoboyStatus = 'calibration_needed';
         $motoboyLatency = 'N/A';
         try {
             $start = microtime(true);
-            // Just a lightweight query to check module health
             DB::table('users')->where('role', 'motoboy')->exists();
             $end = microtime(true);
             $motoboyLatency = round(($end - $start) * 1000) . 'ms';
@@ -81,13 +120,10 @@ class AdminDashboardController extends Controller
         }
 
         // 3. Sistema de Impressão (OoPrint)
-        // Check for recent polling or heartbeat if available. 
-        // For now, check if we have print jobs in queue
         $printStatus = 'idle';
         $printLatency = 'N/A';
         try {
             $start = microtime(true);
-            // Simple check on jobs table or similar
             DB::table('jobs')->exists();
             $end = microtime(true);
             $printLatency = round(($end - $start) * 1000) . 'ms';
@@ -100,13 +136,15 @@ class AdminDashboardController extends Controller
             'metrics' => [
                 'total_tenants' => $totalTenants,
                 'active_tenants' => $activeTenants,
+                'new_tenants' => $newTenants,
+                'total_orders' => $totalOrders,
                 'trial_tenants' => $trialTenants,
                 'mrr' => $mrr,
             ],
             'recent_tenants' => $recentTenants,
             'system_health' => [
                 'evolution' => [
-                    'status' => $evolutionStatus, // connected, disconnected, error
+                    'status' => $evolutionStatus,
                     'latency' => $evolutionLatency
                 ],
                 'motoboy' => [

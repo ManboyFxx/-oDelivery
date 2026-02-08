@@ -48,62 +48,71 @@ class TenantMenuController extends Controller
             ->orderBy('display_order')
             ->get();
 
-        $categories = Category::where('tenant_id', $tenantId)
-            ->with([
-                'products' => function ($query) {
-                    $query->where('is_available', true)
-                        ->select('id', 'tenant_id', 'category_id', 'name', 'description', 'price', 'promotional_price', 'image_url', 'track_stock', 'stock_quantity', 'is_available', 'is_featured', 'is_promotional', 'is_new', 'is_exclusive', 'loyalty_earns_points', 'loyalty_redeemable', 'loyalty_points_cost')
-                        ->with([
-                            'complementGroups.options' => function ($q) {
-                                $q->where('is_available', true)
-                                    ->orderBy('sort_order')
-                                    ->select('id', 'group_id', 'name', 'price', 'is_available', 'max_quantity', 'sort_order');
-                            }
-                        ]);
-                }
-            ])
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->get();
+        // ✅ Cache Menu Structure (60 minutes)
+        // Invalidation: Product/Category observers should clear this cache
+        $cacheKey = "tenant_menu_{$tenantId}";
+        $sanitizedCategories = \Illuminate\Support\Facades\Cache::remember($cacheKey, 60 * 60, function () use ($tenantId) {
+            $categories = Category::where('tenant_id', $tenantId)
+                ->with([
+                    'products' => function ($query) {
+                        $query->where('is_available', true)
+                            // Filter out products that are out of stock
+                            ->where(function ($q) {
+                                $q->where('track_stock', false)
+                                    ->orWhereNull('track_stock')
+                                    ->orWhere('stock_quantity', '>', 0);
+                            })
+                            ->select('id', 'tenant_id', 'category_id', 'name', 'description', 'price', 'promotional_price', 'image_url', 'track_stock', 'stock_quantity', 'is_available', 'is_featured', 'is_promotional', 'is_new', 'is_exclusive', 'loyalty_earns_points', 'loyalty_redeemable', 'loyalty_points_cost', 'sort_order')
+                            ->orderBy('sort_order')
+                            ->with([
+                                'complementGroups' => function ($q) {
+                                    $q->where('is_active', true)
+                                        ->orderBy('sort_order')
+                                        ->with([
+                                            'options' => function ($q2) {
+                                                $q2->where('is_available', true)
+                                                    ->orderBy('sort_order')
+                                                    ->select('id', 'group_id', 'name', 'price', 'is_available', 'max_quantity', 'sort_order');
+                                            }
+                                        ]);
+                                }
+                            ]);
+                    }
+                ])
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->get();
 
-        // TODO: Get loyalty rewards category if exists (requires category_type column in categories table)
-        // This feature is planned for a future phase
-        $loyaltyRewardsCategory = null;
-
-        // Get active loyalty promotion for banner (FASE 4)
-        $activePromotion = \App\Models\LoyaltyPromotion::where('tenant_id', $tenantId)
-            ->where('is_active', true)
-            ->where('start_date', '<=', now())
-            ->where('end_date', '>=', now())
-            ->first();
-
-        // ✅ Sanitizar categorias e produtos
-        $sanitizedCategories = $categories->map(function ($category) {
-            return [
-                'id' => $category->id,
-                'name' => $category->name,
-                'sort_order' => $category->sort_order,
-                'products' => $category->products->map(function ($product) {
-                    return [
-                        'id' => $product->id,
-                        'name' => $product->name,
-                        'description' => $product->description,
-                        'price' => $product->price,
-                        'promotional_price' => $product->promotional_price,
-                        'image_url' => $product->image_url,
-                        'is_available' => $product->is_available,
-                        'is_featured' => $product->is_featured,
-                        'is_promotional' => $product->is_promotional,
-                        'is_new' => $product->is_new,
-                        'is_exclusive' => $product->is_exclusive,
-                        'loyalty_earns_points' => $product->loyalty_earns_points,
-                        'loyalty_redeemable' => $product->loyalty_redeemable,
-                        'loyalty_points_cost' => $product->loyalty_points_cost,
-                        'complementGroups' => $product->complementGroups,
-                        // ❌ NÃO expor: tenant_id, category_id, track_stock, stock_quantity
-                    ];
-                }),
-            ];
+            // ✅ Sanitizar categorias e produtos
+            return $categories->map(function ($category) {
+                return [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'sort_order' => $category->sort_order,
+                    'products' => $category->products->map(function ($product) {
+                        return [
+                            'id' => $product->id,
+                            'name' => $product->name,
+                            'description' => $product->description,
+                            'price' => $product->price,
+                            'promotional_price' => $product->promotional_price,
+                            'image_url' => $product->image_url,
+                            'is_available' => $product->is_available,
+                            'is_featured' => $product->is_featured,
+                            'is_promotional' => $product->is_promotional,
+                            'is_new' => $product->is_new,
+                            'is_exclusive' => $product->is_exclusive,
+                            'loyalty_earns_points' => $product->loyalty_earns_points,
+                            'loyalty_redeemable' => $product->loyalty_redeemable,
+                            'loyalty_points_cost' => $product->loyalty_points_cost,
+                            'track_stock' => $product->track_stock,
+                            'stock_quantity' => $product->stock_quantity,
+                            'complement_groups' => $product->complementGroups,
+                            // ❌ NÃO expor: tenant_id, category_id
+                        ];
+                    }),
+                ];
+            });
         });
 
         // ✅ Sanitizar customer
@@ -122,6 +131,13 @@ class TenantMenuController extends Controller
             'currency_per_point' => $settings->currency_per_point ?? 0.10,
             // ❌ NÃO expor: printer_paper_width, auto_print_on_confirm, etc.
         ];
+
+        // Get active loyalty promotion for banner (FASE 4)
+        $activePromotion = \App\Models\LoyaltyPromotion::where('tenant_id', $tenantId)
+            ->where('is_active', true)
+            ->where('start_date', '<=', now())
+            ->where('end_date', '>=', now())
+            ->first();
 
         return Inertia::render('Tenant/Menu/Index', [
             'slug' => $slug,

@@ -1,1 +1,0 @@
-import{j as s,t as m}from"./app-Co-RcoKZ.js";function o({value:t,className:e="",children:r,...a}){return s.jsx("label",{...a,className:m("block text-sm font-medium text-gray-700 dark:text-gray-300",e),children:t||r})}export{o as I};

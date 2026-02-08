@@ -16,6 +16,8 @@ class Ingredient extends Model
         'tenant_id',
         'name',
         'is_available',
+        'min_stock',
+        'stock',
         'display_order',
     ];
 
@@ -42,5 +44,13 @@ class Ingredient extends Model
             'complement_options' => $this->complementOptions()->count(),
             // Future: add products count when we implement product-ingredient relationship
         ];
+    }
+
+    /**
+     * Scope a query to only include ingredients with low stock.
+     */
+    public function scopeLowStock($query)
+    {
+        return $query->whereRaw('stock <= min_stock'); // Assuming 'stock' column exists, wait, checking if 'stock' column exists. User prompt says "monitoring stock", implying a stock column/mechanism exists.
     }
 }

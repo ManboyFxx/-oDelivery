@@ -14,16 +14,20 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Global middleware - applied to all routes
         // $middleware->append(\App\Http\Middleware\GlobalRateLimiter::class);
-
+    
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
+        $middleware->validateCsrfTokens(except: [
+            'webhooks/*',
+        ]);
+
         // Register middleware aliases
         $middleware->alias([
             'subscription' => \App\Http\Middleware\CheckSubscription::class,
-            'plan.limit' => \App\Http\Middleware\EnforcePlanLimits::class,
+            'plan.limit' => \App\Http\Middleware\CheckPlanLimit::class,
             'feature' => \App\Http\Middleware\CheckFeature::class,
             'tenant.required' => \App\Http\Middleware\EnsureTenantExists::class,
             'tenant.scope' => \App\Http\Middleware\TenantScopeMiddleware::class,

@@ -1,7 +1,10 @@
 import { Head, Link } from '@inertiajs/react';
 import { Check, ChevronDown, ChevronUp, X, Star } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import clsx from 'clsx';
+import BillingToggle from '@/Components/BillingToggle';
+import GuaranteeSeals from '@/Components/GuaranteeSeals';
+import PricingComparison from '@/Components/PricingComparison';
 
 interface Feature {
     text: string;
@@ -20,7 +23,190 @@ interface Props {
     plans: Plan[];
 }
 
+interface ComparisonFeature {
+    name: string;
+    free?: string | boolean;
+    pro?: string | boolean;
+    custom?: string | boolean;
+    description?: string;
+}
+
 export default function Plans({ plans }: Props) {
+    const [isYearly, setIsYearly] = useState(false);
+    const [displayPlans, setDisplayPlans] = useState<Plan[]>(plans);
+
+    // Track page view
+    useEffect(() => {
+        // Google Analytics page view
+        if (window.gtag) {
+            window.gtag('config', 'GA_MEASUREMENT_ID', {
+                'page_path': '/planos',
+                'page_title': 'Planos e Preços'
+            });
+        }
+
+        // Facebook Pixel page view
+        if (window.fbq) {
+            window.fbq('track', 'PageView');
+        }
+    }, []);
+
+    // Handle billing toggle
+    const handleBillingToggle = (yearly: boolean) => {
+        setIsYearly(yearly);
+
+        // Update displayed prices
+        const updatedPlans = plans.map(plan => {
+            if (yearly && plan.price > 0) {
+                // Find yearly price from server data if available
+                // For now, calculate as monthly * 12
+                return {
+                    ...plan,
+                    price: plan.price * 12,
+                    interval: 'ano'
+                };
+            }
+            return plan;
+        });
+
+        setDisplayPlans(updatedPlans);
+    };
+
+    // Track CTA clicks
+    const trackCtaClick = (planId: string, ctaText: string) => {
+        if (window.gtag) {
+            window.gtag('event', 'pricing_cta_click', {
+                'plan': planId,
+                'cta_text': ctaText,
+                'billing_period': isYearly ? 'yearly' : 'monthly'
+            });
+        }
+
+        if (window.fbq) {
+            window.fbq('track', 'Click', {
+                'content_name': `CTA - ${planId}`,
+                'value': plans.find(p => p.id === planId)?.price || 0,
+                'currency': 'BRL'
+            });
+        }
+    };
+
+    // Comparison data for detailed pricing table
+    const comparisonData: ComparisonFeature[] = [
+        {
+            name: 'Pedidos por Mês',
+            free: '900 pedidos',
+            pro: 'Ilimitados',
+            custom: 'Ilimitados',
+            description: 'Quantidade de pedidos que você pode receber mensalmente.'
+        },
+        {
+            name: 'Produtos no Cardápio',
+            free: 'Até 50',
+            pro: 'Ilimitados',
+            custom: 'Ilimitados',
+            description: 'Cadastre quantos produtos quiser sem limitações.'
+        },
+        {
+            name: 'Usuários da Equipe',
+            free: '2 (1 Admin + 1 Funcionário)',
+            pro: '13 (3 Admins + 10 Funcionários)',
+            custom: 'Ilimitados',
+            description: 'Convide membros da equipe com diferentes níveis de acesso.'
+        },
+        {
+            name: 'Gestão de Motoboys',
+            free: false,
+            pro: 'Até 10 motoboys',
+            custom: 'Ilimitados',
+            description: 'Rastreie entregadores em tempo real, atribua pedidos e monitore performance.'
+        },
+        {
+            name: 'Cardápio Digital',
+            free: true,
+            pro: true,
+            custom: true,
+            description: 'Gerencie seu cardápio online com categorias, preços e imagens.'
+        },
+        {
+            name: 'Sistema de Mesas',
+            free: true,
+            pro: true,
+            custom: true,
+            description: 'Controle de mesas para restaurantes e bares.'
+        },
+        {
+            name: 'Impressão Automática',
+            free: true,
+            pro: true,
+            custom: true,
+            description: 'Imprima pedidos automaticamente em impressora térmica.'
+        },
+        {
+            name: 'Relatórios',
+            free: 'Básicos',
+            pro: 'Avançados',
+            custom: 'Enterprise',
+            description: 'Relatórios financeiros, de vendas e performance.'
+        },
+        {
+            name: 'Automação WhatsApp (ÓoBot)',
+            free: false,
+            pro: 'Ilimitado',
+            custom: 'Ilimitado',
+            description: 'Automação de mensagens, confirmação de pedidos e notificações.'
+        },
+        {
+            name: 'Integração WhatsApp',
+            free: false,
+            pro: true,
+            custom: true,
+            description: 'Receba pedidos direto pelo WhatsApp com bot automatizado.'
+        },
+        {
+            name: 'Programa de Fidelidade',
+            free: false,
+            pro: true,
+            custom: true,
+            description: 'Crie sistema de pontos, cupons e promoções para fidelizar clientes.'
+        },
+        {
+            name: 'Editor de Planta Baixa',
+            free: false,
+            pro: true,
+            custom: true,
+            description: 'Crie layout visual das mesas do seu estabelecimento.'
+        },
+        {
+            name: 'Cupons de Desconto',
+            free: false,
+            pro: true,
+            custom: true,
+            description: 'Crie cupons promocionais e de desconto.'
+        },
+        {
+            name: 'Controle de Estoque',
+            free: false,
+            pro: 'Avançado',
+            custom: 'Enterprise',
+            description: 'Controle de quantidade, alertas de baixa quantidade e relatórios.'
+        },
+        {
+            name: 'API & Integrações',
+            free: false,
+            pro: true,
+            custom: true,
+            description: 'Integre com seus sistemas existentes via API REST.'
+        },
+        {
+            name: 'Suporte',
+            free: 'Community + FAQ',
+            pro: 'Prioritário',
+            custom: 'VIP 24/7',
+            description: 'Acesso a suporte, documentação e comunidade de usuários.'
+        },
+    ];
+
     return (
         <div className="min-h-screen bg-white font-sans text-gray-900 selection:bg-[#ff3d03] selection:text-white">
             <Head title="Planos e Preços - ÓoDelivery" />
@@ -63,10 +249,33 @@ export default function Plans({ plans }: Props) {
                     </p>
                 </div>
 
+                {/* Trial Banner */}
+                <div className="max-w-4xl mx-auto px-6 mb-8">
+                    <div className="bg-gradient-to-r from-[#ff3d03] to-[#e63700] rounded-2xl p-6 text-center shadow-xl">
+                        <div className="flex items-center justify-center gap-3 mb-2">
+                            <Star className="h-6 w-6 text-yellow-300 fill-yellow-300" />
+                            <h3 className="text-2xl font-black text-white">Teste Grátis por 14 Dias!</h3>
+                            <Star className="h-6 w-6 text-yellow-300 fill-yellow-300" />
+                        </div>
+                        <p className="text-white/90 font-medium text-lg">
+                            Comece com <span className="font-bold text-yellow-300">acesso completo ao Plano PRO</span> sem compromisso.
+                        </p>
+                        <p className="text-white/80 text-sm mt-2">
+                            Após 14 dias, escolha continuar no PRO (R$ 109,90/mês) ou use o plano Gratuito para sempre.
+                        </p>
+                    </div>
+                </div>
+
+                {/* Billing Toggle */}
+                <BillingToggle
+                    onToggle={handleBillingToggle}
+                    discount={plans.find(p => p.id === 'pro')?.id ? 20 : 0}
+                />
+
                 {/* Pricing Cards */}
                 <div className="max-w-7xl mx-auto px-6 lg:px-8 mb-32">
                     <div className="grid md:grid-cols-3 gap-8 items-start">
-                        {plans.map((plan) => {
+                        {displayPlans.map((plan) => {
                             const isPro = plan.price > 0 && plan.price < 100; // Heuristic for Pro plan (middle tier)
                             const isFree = plan.price === 0;
                             const isCustom = plan.price >= 100 && plan.interval !== 'mês'; // Custom logic usually price is high or placeholder.
@@ -125,27 +334,44 @@ export default function Plans({ plans }: Props) {
                                     </ul>
 
                                     {plan.id === 'custom' ? (
-                                        <a href="https://wa.me/5511999999999" target="_blank" className="block w-full py-4 rounded-xl border-2 border-gray-100 text-gray-900 font-bold text-center hover:border-[#ff3d03] hover:text-[#ff3d03] transition-all">
+                                        <a
+                                            href="https://wa.me/5511999999999"
+                                            target="_blank"
+                                            className="block w-full py-4 rounded-xl border-2 border-gray-100 text-gray-900 font-bold text-center hover:border-[#ff3d03] hover:text-[#ff3d03] transition-all"
+                                            onClick={() => trackCtaClick('custom', 'Falar com Consultor')}
+                                        >
                                             Falar com Consultor
                                         </a>
                                     ) : (
-                                        <Link
-                                            href={route('register')}
-                                            className={clsx(
-                                                "block w-full py-4 rounded-xl font-bold text-center transition-all",
-                                                isProById
-                                                    ? "bg-[#ff3d03] text-white hover:bg-[#e63700] shadow-lg shadow-[#ff3d03]/30 hover:shadow-[#ff3d03]/50"
-                                                    : "border-2 border-gray-100 text-gray-900 hover:border-[#ff3d03] hover:text-[#ff3d03]"
-                                            )}
-                                        >
-                                            {plan.price === 0 ? 'Começar Grátis' : 'Assinar Agora'}
-                                        </Link>
+                                        <>
+                                            <Link
+                                                href={route('register', { plan: plan.id })}
+                                                className={clsx(
+                                                    "block w-full py-4 rounded-xl font-bold text-center transition-all",
+                                                    isProById
+                                                        ? "bg-[#ff3d03] text-white hover:bg-[#e63700] shadow-lg shadow-[#ff3d03]/30 hover:shadow-[#ff3d03]/50"
+                                                        : "border-2 border-gray-100 text-gray-900 hover:border-[#ff3d03] hover:text-[#ff3d03]"
+                                                )}
+                                                onClick={() => trackCtaClick(plan.id, plan.price === 0 ? 'Começar Grátis' : 'Assinar Agora')}
+                                            >
+                                                {plan.price === 0 ? 'Começar Grátis' : 'Assinar Agora'}
+                                            </Link>
+
+                                            {/* Guarantee Seals */}
+                                            <GuaranteeSeals />
+                                        </>
                                     )}
                                 </div>
                             );
                         })}
                     </div>
                 </div>
+
+                {/* Pricing Comparison Table */}
+                <PricingComparison
+                    plans={displayPlans}
+                    comparisonData={comparisonData}
+                />
 
                 {/* FAQ Style */}
                 <div className="max-w-3xl mx-auto px-6">

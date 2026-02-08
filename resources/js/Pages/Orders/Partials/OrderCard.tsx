@@ -60,9 +60,10 @@ interface Props {
     order: Order;
     motoboys: any[];
     onAction: (action: OrderAction, order: Order) => void;
+    onQuickView?: (order: Order) => void;
 }
 
-export default function OrderCard({ order, motoboys, onAction }: Props) {
+export default function OrderCard({ order, motoboys, onAction, onQuickView }: Props) {
     const [elapsedTime, setElapsedTime] = useState('');
     const [selectedMotoboy, setSelectedMotoboy] = useState(order.motoboy?.id || '');
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(order.payments?.[0]?.method || 'cash');
@@ -205,7 +206,25 @@ export default function OrderCard({ order, motoboys, onAction }: Props) {
             <div className="mb-3 flex items-start justify-between pl-2">
                 <div className="flex flex-col gap-0.5">
                     <div className="flex items-center gap-2">
-                        <span className="text-lg font-black text-gray-900 dark:text-white tracking-tight">#{order.order_number}</span>
+                        <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight">
+                            #{order.order_number}
+                        </h3>
+                        {/* Quick View Button */}
+                        {onQuickView && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onQuickView(order);
+                                }}
+                                className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors group/eye"
+                                title="Visualização Rápida"
+                            >
+                                <svg className="w-4 h-4 text-gray-400 group-hover/eye:text-[#ff3d03]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            </button>
+                        )}
                         {getModeBadge(order.mode) && (
                             <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${getModeBadge(order.mode)?.color}`}>
                                 {(() => {
@@ -222,20 +241,20 @@ export default function OrderCard({ order, motoboys, onAction }: Props) {
                             </span>
                         )}
                     </div>
-                </div>
 
-                <div className="flex items-center gap-1.5">
-                    <div className={clsx(
-                        "flex items-center gap-1 px-2 py-1 rounded-lg border text-xs font-bold",
-                        order.time_status === 'late' ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-600" :
-                            order.time_status === 'warning' ? "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-600" :
-                                "bg-gray-50 dark:bg-white/5 border-gray-100 dark:border-white/5 text-gray-600 dark:text-gray-400"
-                    )}>
-                        {(() => {
-                            const Icon = getTimeStatusIcon();
-                            return <Icon className={clsx("w-3 h-3", getTimeStatusColor())} />;
-                        })()}
-                        <span className="tabular-nums tracking-wide">{elapsedTime}</span>
+                    <div className="flex items-center gap-1.5">
+                        <div className={clsx(
+                            "flex items-center gap-1 px-2 py-1 rounded-lg border text-xs font-bold",
+                            order.time_status === 'late' ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-600" :
+                                order.time_status === 'warning' ? "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-600" :
+                                    "bg-gray-50 dark:bg-white/5 border-gray-100 dark:border-white/5 text-gray-600 dark:text-gray-400"
+                        )}>
+                            {(() => {
+                                const Icon = getTimeStatusIcon();
+                                return <Icon className={clsx("w-3 h-3", getTimeStatusColor())} />;
+                            })()}
+                            <span className="tabular-nums tracking-wide">{elapsedTime}</span>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -13,11 +13,30 @@ class FinancialController extends Controller
 {
     public function index(Request $request)
     {
-        $tenantId = Auth::user()->tenant_id;
-        $startDate = Carbon::now()->startOfMonth();
-        $endDate = Carbon::now()->endOfMonth();
+        $user = Auth::user();
+        $tenantId = $user->tenant_id;
+        $tenant = $user->tenant;
 
-        // 1. Total Revenue (Completed & Delivered orders this month)
+        // Plan Logic: Check if user is restricted
+        $isRestricted = $tenant->plan === 'free' && !$tenant->onTrial();
+
+        // Parse dates or default to current month
+        if ($isRestricted) {
+            // Free plan is locked to last 7 days vs previous 7 days
+            $endDate = Carbon::now()->endOfDay();
+            $startDate = Carbon::now()->subDays(6)->startOfDay();
+        } else {
+            // Pro/Custom/Trial can choose dates
+            $startDate = $request->input('start_date')
+                ? Carbon::parse($request->input('start_date'))->startOfDay()
+                : Carbon::now()->startOfMonth();
+
+            $endDate = $request->input('end_date')
+                ? Carbon::parse($request->input('end_date'))->endOfDay()
+                : Carbon::now()->endOfMonth();
+        }
+
+        // 1. Total Revenue (Completed & Delivered orders in period)
         $totalRevenue = Order::where('tenant_id', $tenantId)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->whereIn('status', ['completed', 'delivered'])
@@ -32,37 +51,39 @@ class FinancialController extends Controller
         // 3. Average Ticket
         $averageTicket = $ordersCount > 0 ? $totalRevenue / $ordersCount : 0;
 
-        // 4. Growth logic
-        $lastMonthStart = Carbon::now()->subMonth()->startOfMonth();
-        $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
-        $lastMonthRevenue = Order::where('tenant_id', $tenantId)
-            ->whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])
+        // 4. Growth logic (Compare with previous period of same duration)
+        $daysDiff = $startDate->diffInDays($endDate) + 1;
+        $previousStartDate = $startDate->copy()->subDays($daysDiff);
+        $previousEndDate = $startDate->copy()->subDays(1)->endOfDay();
+
+        $previousRevenue = Order::where('tenant_id', $tenantId)
+            ->whereBetween('created_at', [$previousStartDate, $previousEndDate])
             ->whereIn('status', ['completed', 'delivered'])
             ->sum('total');
 
         $growth = 0;
-        if ($lastMonthRevenue > 0) {
-            $growth = (($totalRevenue - $lastMonthRevenue) / $lastMonthRevenue) * 100;
+        if ($previousRevenue > 0) {
+            $growth = (($totalRevenue - $previousRevenue) / $previousRevenue) * 100;
         } else if ($totalRevenue > 0) {
             $growth = 100;
         }
 
-        // 5. Chart Data (Last 30 Days)
-        // Group by date to show trend
+        // 5. Chart Data (Dynamic Range)
         $chartData = [];
-        $queryDate = Carbon::now()->subDays(29); // Start 30 days ago
 
-        // Pre-fetch data for efficiency
+        // Pre-fetch data
         $dailyRevenues = Order::where('tenant_id', $tenantId)
-            ->where('created_at', '>=', $queryDate->startOfDay())
+            ->whereBetween('created_at', [$startDate, $endDate])
             ->whereIn('status', ['completed', 'delivered'])
             ->selectRaw('DATE(created_at) as date, SUM(total) as total')
             ->groupBy('date')
             ->get()
             ->keyBy('date');
 
-        for ($i = 0; $i < 30; $i++) {
-            $date = Carbon::now()->subDays(29 - $i);
+        // Generate period dates
+        $period = \Carbon\CarbonPeriod::create($startDate, $endDate);
+
+        foreach ($period as $date) {
             $dateString = $date->format('Y-m-d');
             $revenue = isset($dailyRevenues[$dateString]) ? $dailyRevenues[$dateString]->total : 0;
 
@@ -72,11 +93,12 @@ class FinancialController extends Controller
             ];
         }
 
-        // 6. Recent Transactions
+        // 6. Recent Transactions (filtered by date)
         $transactions = Order::where('tenant_id', $tenantId)
+            ->whereBetween('created_at', [$startDate, $endDate])
             ->with(['payments'])
             ->latest()
-            ->take(8)
+            ->take(20) // Increased limit since it's now a filtered list
             ->get()
             ->map(function ($order) {
                 // Determine payment method from relation or fallback
@@ -100,7 +122,7 @@ class FinancialController extends Controller
                 };
 
                 return [
-                    'id' => substr($order->id, -6), // Short ID
+                    'id' => substr($order->id, -6),
                     'customer' => $order->customer_name ?? 'Cliente Balcão',
                     'amount' => (float) $order->total,
                     'status' => $status,
@@ -108,6 +130,60 @@ class FinancialController extends Controller
                     'date' => $order->created_at->format('H:i - d/m')
                 ];
             });
+
+
+        // 7. Advanced Reports Data (PRO only)
+        // If plan is 'free', we don't calculate these to save performance
+        $topProducts = [];
+        $paymentMethods = [];
+
+        if ($tenant->plan === 'pro' || $tenant->plan === 'custom' || $tenant->onTrial()) {
+            // Top Products
+            $topProducts = DB::table('order_items')
+                ->join('orders', 'order_items.order_id', '=', 'orders.id')
+                ->join('products', 'order_items.product_id', '=', 'products.id')
+                ->where('orders.tenant_id', $tenantId)
+                ->whereBetween('orders.created_at', [$startDate, $endDate])
+                ->whereIn('orders.status', ['completed', 'delivered'])
+                ->select(
+                    'products.name',
+                    DB::raw('SUM(order_items.quantity) as quantity'),
+                    DB::raw('SUM(order_items.subtotal) as total')
+                )
+                ->groupBy('products.id', 'products.name')
+                ->orderByDesc('quantity')
+                ->limit(5)
+                ->get();
+
+            // Payment Methods stats
+            $paymentMethods = DB::table('payments')
+                ->join('orders', 'payments.order_id', '=', 'orders.id')
+                ->where('orders.tenant_id', $tenantId)
+                ->whereBetween('orders.created_at', [$startDate, $endDate])
+                ->whereIn('orders.status', ['completed', 'delivered'])
+                ->select(
+                    'payments.method',
+                    DB::raw('SUM(payments.amount) as total'),
+                    DB::raw('COUNT(*) as count')
+                )
+                ->groupBy('payments.method')
+                ->get()
+                ->map(function ($item) {
+                    $label = match ($item->method) {
+                        'credit_card' => 'Crédito',
+                        'debit_card' => 'Débito',
+                        'pix' => 'PIX',
+                        'cash' => 'Dinheiro',
+                        default => ucfirst($item->method),
+                    };
+                    return [
+                        'name' => $label,
+                        'method' => $item->method,
+                        'total' => (float) $item->total,
+                        'count' => $item->count
+                    ];
+                });
+        }
 
         return Inertia::render('Financial/Index', [
             'metrics' => [
@@ -117,7 +193,15 @@ class FinancialController extends Controller
                 'growth' => round($growth, 1)
             ],
             'chart_data' => $chartData,
-            'transactions' => $transactions
+            'transactions' => $transactions,
+            'top_products' => $topProducts,
+            'payment_methods_stats' => $paymentMethods,
+            'current_plan' => $tenant->plan, // Pass explicit plan
+            'is_trial' => $tenant->isTrialActive(),
+            'filters' => [
+                'start_date' => $startDate->format('Y-m-d'),
+                'end_date' => $endDate->format('Y-m-d'),
+            ]
         ]);
     }
 }

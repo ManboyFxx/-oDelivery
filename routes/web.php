@@ -21,6 +21,7 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\WhatsAppInstanceController;
 use App\Http\Controllers\Tenant\CustomerRedemptionController;
+use App\Http\Controllers\SuperAdminController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -35,15 +36,63 @@ Route::get('/', function () {
 });
 
 Route::get('/planos', function () {
-    $plans = \App\Models\PlanLimit::where('is_active', true)->orderBy('sort_order')->get()->map(function ($plan) {
-        return [
-            'id' => $plan->plan,
-            'name' => $plan->display_name,
-            'price' => $plan->price_monthly > 0 ? $plan->price_monthly : 0,
+    $plans = [
+        [
+            'id' => 'free',
+            'name' => 'Gratuito',
+            'price' => 0,
             'interval' => 'mês',
-            'features' => $plan->formatted_features,
-        ];
-    });
+            'features' => [
+                ['text' => 'Até 900 pedidos/mês', 'included' => true],
+                ['text' => 'Até 50 produtos no cardápio', 'included' => true],
+                ['text' => '2 usuários (1 admin + 1 funcionário)', 'included' => true],
+                ['text' => 'Cardápio Digital Completo', 'included' => true],
+                ['text' => 'Painel de Gestão', 'included' => true],
+                ['text' => 'Sistema de Mesas', 'included' => true],
+                ['text' => 'Sistema de Impressão', 'included' => true],
+                ['text' => 'Relatórios Básicos', 'included' => true],
+                ['text' => 'Gestão de Motoboys', 'included' => false],
+                ['text' => 'WhatsApp Bot', 'included' => false],
+                ['text' => 'Pedidos Ilimitados', 'included' => false],
+            ],
+        ],
+        [
+            'id' => 'pro',
+            'name' => 'Pro',
+            'price' => 109.90,
+            'interval' => 'mês',
+            'features' => [
+                ['text' => 'Pedidos Ilimitados', 'included' => true],
+                ['text' => 'Produtos Ilimitados', 'included' => true],
+                ['text' => '13 usuários (3 admins + 10 funcionários)', 'included' => true],
+                ['text' => '10 motoboys', 'included' => true],
+                ['text' => 'Gestão de Motoboys Completa', 'included' => true],
+                ['text' => 'WhatsApp Bot Ilimitado', 'included' => true],
+                ['text' => 'Integração WhatsApp', 'included' => true],
+                ['text' => 'Sistema de Impressão', 'included' => true],
+                ['text' => 'Editor de Planta Baixa', 'included' => true],
+                ['text' => 'Cupons de Desconto', 'included' => true],
+                ['text' => 'Relatórios Avançados', 'included' => true],
+                ['text' => 'Suporte Prioritário', 'included' => true],
+            ],
+        ],
+        [
+            'id' => 'custom',
+            'name' => 'Personalizado',
+            'price' => null, // Em breve
+            'interval' => 'mês',
+            'features' => [
+                ['text' => 'Tudo do PRO', 'included' => true],
+                ['text' => 'Usuários Ilimitados', 'included' => true],
+                ['text' => 'Motoboys Ilimitados', 'included' => true],
+                ['text' => 'Múltiplas Lojas', 'included' => true],
+                ['text' => 'API Dedicada', 'included' => true],
+                ['text' => 'Suporte VIP 24/7', 'included' => true],
+                ['text' => 'Treinamento Personalizado', 'included' => true],
+                ['text' => 'Customizações sob Demanda', 'included' => true],
+            ],
+        ],
+    ];
 
     return Inertia::render('Welcome/Plans', [
         'plans' => $plans
@@ -65,7 +114,7 @@ Route::get('/termos', function () {
 // Customer Auth Routes (Public - Phone Only) - ✅ COM RATE LIMITING
 Route::post('/check-slug', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'checkSlug'])->name('check-slug');
 
-Route::middleware('throttle:5,1')->group(function () {
+Route::middleware('throttle:20,1')->group(function () {
     Route::post('/customer/check-phone', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'checkPhone']);
     Route::post('/customer/complete-registration', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'completeRegistration']);
 });
@@ -74,6 +123,12 @@ Route::middleware('throttle:5,1')->group(function () {
 Route::middleware(['throttle:10,1', 'tenant.scope'])->group(function () {
     Route::post('/customer/logout', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'logout']);
     Route::get('/customer/me', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'me']);
+
+    // Customer Auth (Phone-based)
+    Route::post('/customer/check-phone', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'checkPhone']);
+    Route::post('/customer/verify-otp', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'verifyOTP']);
+    Route::post('/customer/register', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'register']);
+    Route::post('/customer/logout', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'logout']);
 
     // Customer Address Routes
     Route::get('/customer/addresses', [\App\Http\Controllers\Tenant\CustomerAddressController::class, 'index']);
@@ -86,6 +141,13 @@ Route::middleware(['throttle:10,1', 'tenant.scope'])->group(function () {
     Route::post('/customer/checkout', [\App\Http\Controllers\Tenant\CustomerOrderController::class, 'store'])->middleware('plan.limit:orders');
     Route::post('/customer/redeem-product', [CustomerRedemptionController::class, 'redeemProduct']);
     Route::post('/customer/validate-coupon', [\App\Http\Controllers\CouponValidationController::class, 'validate']);
+});
+
+// Public API Routes (no auth required) - ✅ COM RATE LIMITING
+Route::middleware(['throttle:30,1'])->group(function () {
+    Route::post('/api/validate-delivery-zone', [\App\Http\Controllers\Tenant\DeliveryZoneController::class, 'validate']);
+    Route::post('/api/validate-coupon', [\App\Http\Controllers\Tenant\CouponController::class, 'validate']);
+    Route::get('/api/orders/{id}/track', [\App\Http\Controllers\Tenant\OrderTrackingController::class, 'track']);
 });
 
 // Internal API for Polling (needs auth but generous rate limit - 60 requests per minute)
@@ -106,6 +168,12 @@ Route::middleware(['auth', \App\Http\Middleware\SuperAdminMiddleware::class])->p
     Route::post('/tenants/{tenant}/restore', [\App\Http\Controllers\Admin\AdminTenantController::class, 'restore'])->name('tenants.restore');
     Route::get('/tenants/{tenant}/metrics', [\App\Http\Controllers\Admin\AdminTenantController::class, 'metrics'])->name('tenants.metrics');
     Route::put('/tenants/{tenant}/plan', [\App\Http\Controllers\Admin\AdminTenantController::class, 'updatePlan'])->name('tenants.update-plan');
+
+    // Trial Management
+    Route::post('/tenants/{tenant}/extend-trial', [SuperAdminController::class, 'extendTrial'])->name('tenants.extend-trial');
+    Route::post('/tenants/{tenant}/reset-trial', [SuperAdminController::class, 'resetTrial'])->name('tenants.reset-trial');
+    Route::post('/tenants/{tenant}/force-upgrade', [SuperAdminController::class, 'forceUpgrade'])->name('tenants.force-upgrade');
+
 
     // Global User Management
     Route::get('/users', [\App\Http\Controllers\Admin\AdminUserController::class, 'index'])->name('users.index');
@@ -132,10 +200,21 @@ Route::middleware(['auth', \App\Http\Middleware\SuperAdminMiddleware::class])->p
 
     // Templates
     Route::resource('/whatsapp/templates', \App\Http\Controllers\Admin\WhatsAppTemplateController::class)->only(['index', 'update'])->names('whatsapp.templates');
+
+    // Plan Coupons
+    Route::resource('/plan-coupons', \App\Http\Controllers\Admin\PlanCouponController::class);
+    Route::post('/plan-coupons/{coupon}/toggle', [\App\Http\Controllers\Admin\PlanCouponController::class, 'toggle'])->name('plan-coupons.toggle');
 });
 
-Route::get('/{slug}/menu', [TenantMenuController::class, 'show'])->name('tenant.menu');
-Route::get('/{slug}/menu/demo', [TenantMenuController::class, 'demo'])->name('tenant.menu.demo');
+// Public Menu Routes
+Route::get('/{slug}/menu', [\App\Http\Controllers\TenantMenuController::class, 'show'])->name('tenant.menu');
+Route::get('/{slug}/orders/{orderId}', function ($slug, $orderId) {
+    return Inertia::render('Tenant/Menu/OrderTracking', [
+        'slug' => $slug,
+        'orderId' => $orderId,
+    ]);
+})->name('tenant.order.track');
+Route::get('/{slug}/demo', [\App\Http\Controllers\TenantMenuController::class, 'demo'])->name('tenant.menu.demo');
 
 Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])
     ->middleware(['auth', 'verified', 'subscription', 'role:admin,super_admin'])
@@ -151,7 +230,9 @@ Route::middleware(['auth', 'tenant.required', 'role:admin'])->group(function () 
 Route::middleware('auth')->prefix('subscription')->name('subscription.')->group(function () {
     Route::get('/expired', [\App\Http\Controllers\SubscriptionController::class, 'expired'])->name('expired');
     Route::get('/upgrade', [\App\Http\Controllers\SubscriptionController::class, 'upgrade'])->name('upgrade');
+    Route::post('/validate-coupon', [\App\Http\Controllers\SubscriptionController::class, 'validateCoupon'])->name('validate-coupon');
     Route::get('/checkout/{plan}', [\App\Http\Controllers\SubscriptionController::class, 'checkout'])->name('checkout');
+    Route::post('/checkout/process', [\App\Http\Controllers\SubscriptionController::class, 'processPayment'])->name('process-payment');
     Route::get('/status', [\App\Http\Controllers\SubscriptionController::class, 'status'])->name('status');
 });
 
@@ -192,20 +273,35 @@ Route::middleware(['auth', 'subscription', 'role:admin,employee'])->group(functi
     // Products (Operação do Cardápio)
     Route::post('/products/{product}/toggle', [ProductController::class, 'toggle'])->name('products.toggle');
     Route::post('/products/{product}/toggle-featured', [ProductController::class, 'toggleFeatured'])->name('products.toggle-featured');
+    Route::post('/products/reorder', [ProductController::class, 'reorder'])->name('products.reorder');
+    Route::post('/products/{product}/duplicate', [ProductController::class, 'duplicate'])->name('products.duplicate');
+    Route::post('/products/bulk-update', [ProductController::class, 'bulkUpdate'])->name('products.bulk-update');
+    Route::delete('/products/bulk-delete', [ProductController::class, 'bulkDelete'])->name('products.bulk-delete');
+    Route::post('/products/bulk-change-category', [ProductController::class, 'bulkChangeCategory'])->name('products.bulk-change-category');
     Route::post('/products/{product}/toggle-badge', [ProductController::class, 'toggleBadge'])->name('products.toggle-badge');
+    Route::patch('/products/{product}/quick-update', [ProductController::class, 'quickUpdate'])->name('products.quick-update');
 
+    // Categories
+    Route::resource('categories', \App\Http\Controllers\CategoryController::class);
+    Route::post('/categories/reorder', [\App\Http\Controllers\CategoryController::class, 'reorder'])->name('categories.reorder');
+    Route::post('/categories/bulk-update', [\App\Http\Controllers\CategoryController::class, 'bulkUpdate'])->name('categories.bulk-update');
+    Route::post('/categories/{category}/duplicate', [\App\Http\Controllers\CategoryController::class, 'duplicate'])->name('categories.duplicate');
     // Stock Management
+    Route::get('/stock/alerts', [\App\Http\Controllers\StockController::class, 'alerts'])->name('stock.alerts');
     Route::resource('estoque', \App\Http\Controllers\StockController::class)->names('stock');
 
-    // Tables (Salão)
-    Route::resource('tables', TableController::class);
-    Route::post('/tables/{table}/toggle', [TableController::class, 'toggleStatus'])->name('tables.toggle');
+    // Tables
+    Route::resource('tables', \App\Http\Controllers\TableController::class);
+    Route::post('/tables/{from}/transfer/{to}', [TableController::class, 'transfer'])->name('tables.transfer');
+    Route::post('/tables/{table}/close-account', [TableController::class, 'closeAccount'])->name('tables.close-account');
+    Route::post('/tables/update-positions', [TableController::class, 'updatePositions'])->name('tables.update-positions');
+    Route::post('/tables/{table}/toggle', [TableController::class, 'toggle'])->name('tables.toggle'); // Add toggle back if needed by legacy or manual button
     Route::post('/tables/{table}/open', [TableController::class, 'open'])->name('tables.open');
     Route::post('/tables/{table}/add-items', [TableController::class, 'addItems'])->name('tables.addItems');
     Route::post('/tables/{table}/close', [TableController::class, 'close'])->name('tables.close');
-    Route::get('/tables/{table}', [TableController::class, 'show'])->name('tables.show');
 
-    // Menu Organization (Cardápio)
+
+    // Menu Organization (Cardapio)
     Route::get('/cardapio', [MenuController::class, 'index'])->name('menu.index');
     Route::post('/cardapio/reorder', [MenuController::class, 'reorder'])->name('menu.reorder');
     Route::post('/cardapio/categories/{category}/toggle', [MenuController::class, 'toggleVisibility'])->name('menu.toggle');
@@ -264,6 +360,8 @@ Route::middleware(['auth', 'subscription', 'role:admin'])->group(function () {
     Route::post('/settings/upload-banner', [SettingsController::class, 'uploadBanner'])->name('settings.upload-banner');
     Route::delete('/settings/remove-banner', [SettingsController::class, 'removeBanner'])->name('settings.remove-banner');
     Route::post('/settings/tokens/create', [SettingsController::class, 'createToken'])->name('api.tokens.create');
+    Route::post('/settings/printer/test', [SettingsController::class, 'testPrint'])->name('settings.printer.test');
+    Route::get('/settings/printer/logs', [SettingsController::class, 'getPrinterLogs'])->name('settings.printer.logs');
 
     // Delivery Zones & Payment Methods - Admin only
     Route::resource('delivery-zones', \App\Http\Controllers\DeliveryZoneController::class);
@@ -376,9 +474,21 @@ Route::middleware(['auth', 'is_motoboy', 'subscription', 'feature:motoboy_manage
     Route::delete('/notifications/{id}', [\App\Http\Controllers\Api\Motoboy\NotificationController::class, 'destroy'])->name('notifications.destroy');
 });
 
+// Public API Routes (No Auth Required)
+Route::prefix('/api')->name('api.')->group(function () {
+    // Plans endpoints
+    Route::get('/plans', [\App\Http\Controllers\Api\PlanController::class, 'index'])->name('plans.index');
+    Route::get('/plans/comparison', [\App\Http\Controllers\Api\PlanController::class, 'comparison'])->name('plans.comparison');
+    Route::get('/plans/{planId}', [\App\Http\Controllers\Api\PlanController::class, 'show'])->name('plans.show');
+});
+
 // Public Webhooks (Outside Auth) - Protected with signature verification
 Route::post('/webhooks/whatsapp', [\App\Http\Controllers\WhatsAppWebhookController::class, 'handle'])
     ->middleware(\App\Http\Middleware\VerifyWhatsAppWebhookSignature::class)
     ->name('webhooks.whatsapp');
+
+// Stripe Webhooks (Outside Auth)
+Route::post('/webhooks/stripe', [\App\Http\Controllers\StripeWebhookController::class, 'handleWebhook'])
+    ->name('webhooks.stripe');
 
 require __DIR__ . '/auth.php';

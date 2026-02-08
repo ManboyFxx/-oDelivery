@@ -42,4 +42,18 @@ class StockController extends Controller
 
         return back()->with('success', 'Estoque atualizado com sucesso!');
     }
+
+    public function alerts()
+    {
+        $lowStockIngredients = \App\Models\Ingredient::query()
+            ->whereNotNull('min_stock')
+            ->where('min_stock', '>', 0)
+            ->whereRaw('COALESCE(stock, 0) <= min_stock')
+            ->orderBy('name')
+            ->get();
+
+        return Inertia::render('Stock/Alerts', [
+            'lowStockIngredients' => $lowStockIngredients,
+        ]);
+    }
 }

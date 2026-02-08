@@ -163,6 +163,7 @@ class RegisteredUserController extends Controller
             'whatsapp' => 'required|string|max:20',
             'email' => 'required|string|lowercase|email|max:255|unique:' . User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'plan' => 'nullable|in:free,pro,custom',
         ], [
             'slug.regex' => 'O link deve conter apenas letras minúsculas, números e hífens.',
             'slug.unique' => 'Este link já está em uso.',
@@ -170,22 +171,40 @@ class RegisteredUserController extends Controller
             'whatsapp.required' => 'O WhatsApp é obrigatório.',
         ]);
 
+        // Determine plan configuration
+        $selectedPlan = $request->input('plan', 'free'); // Default to free (trial)
+
+        // Plan configurations
+        $planConfig = match ($selectedPlan) {
+            'pro' => [
+                'plan' => 'pro',
+                'subscription_status' => 'pending', // Will be activated after payment
+                'trial_ends_at' => null,
+            ],
+            'custom' => [
+                'plan' => 'pro', // Start with PRO features
+                'subscription_status' => 'pending',
+                'trial_ends_at' => null,
+            ],
+            default => [ // 'free' or any other value defaults to trial
+                'plan' => 'pro',
+                'subscription_status' => 'trial',
+                'trial_ends_at' => now()->addDays(14),
+            ],
+        };
+
         // Usar transação para garantir consistência
-        $user = DB::transaction(function () use ($request) {
-            // 1. Criar o Tenant
-            $tenant = Tenant::create([
+        $user = DB::transaction(function () use ($request, $planConfig) {
+            // 1. Criar o Tenant com configuração baseada no plano selecionado
+            $tenant = Tenant::create(array_merge([
                 'name' => $request->store_name,
                 'slug' => $request->slug,
                 'email' => $request->email,
                 'phone' => $request->whatsapp,
                 'whatsapp' => $request->whatsapp,
-                'plan' => 'free',
                 'is_active' => true,
                 'is_open' => false,
-                'max_users' => 3, // Free plan limit
-                'max_products' => 50, // Free plan limit
-            ]);
-
+            ], $planConfig));
             // 2. Criar o User associado ao Tenant
             $user = User::create([
                 'tenant_id' => $tenant->id,
@@ -217,6 +236,19 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect(route('dashboard', absolute: false));
+        // Redirect based on selected plan
+        if ($selectedPlan === 'pro') {
+            return redirect()->route('subscription.checkout', 'pro')
+                ->with('success', 'Conta criada! Complete o pagamento para ativar o Plano PRO.');
+        }
+
+        if ($selectedPlan === 'custom') {
+            return redirect()->route('subscription.index')
+                ->with('success', 'Conta criada! Entre em contato para configurar seu plano personalizado.');
+        }
+
+        // Trial or Free - redirect to dashboard
+        return redirect(route('dashboard', absolute: false))
+            ->with('success', 'Bem-vindo! Você tem 14 dias de acesso completo ao Plano PRO.');
     }
 }

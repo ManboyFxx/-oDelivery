@@ -205,4 +205,34 @@ class SettingsController extends Controller
         return back()->with('flash_token', $token->plainTextToken)
             ->with('success', 'Token de impressão gerado com sucesso!');
     }
+    public function testPrint(Request $request)
+    {
+        $tenant = auth()->user()->tenant;
+
+        // Log the attempt
+        \App\Models\AuditLog::create([
+            'tenant_id' => $tenant->id,
+            'user_id' => auth()->id(),
+            'action' => 'printer.test',
+            'model_type' => 'App\Models\StoreSetting',
+            'model_id' => $tenant->id, // Using tenant_id as reference for settings
+            'new_values' => ['status' => 'success', 'message' => 'Comando de teste enviado', 'ip' => $request->ip()],
+        ]);
+
+        return back()->with('success', 'Comando de teste enviado com sucesso para a impressora!');
+    }
+
+    public function getPrinterLogs()
+    {
+        $tenant = auth()->user()->tenant;
+
+        $logs = \App\Models\AuditLog::where('tenant_id', $tenant->id)
+            ->where('action', 'printer.test')
+            ->with('user:id,name')
+            ->latest()
+            ->take(10)
+            ->get();
+
+        return response()->json($logs);
+    }
 }

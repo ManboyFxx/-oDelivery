@@ -11,12 +11,24 @@ export default function PrinterSettings() {
     const { auth, flash } = usePage<any>().props;
     const user = auth.user;
     const [token, setToken] = useState<string | null>(null);
+    const [logs, setLogs] = useState<any[]>([]);
+
+    const fetchLogs = async () => {
+        try {
+            const response = await fetch(route('settings.printer.logs'));
+            const data = await response.json();
+            setLogs(data);
+        } catch (error) {
+            console.error('Failed to fetch logs', error);
+        }
+    };
 
     // If a new token arrived in flash session, show it
     React.useEffect(() => {
         if (flash?.flash_token) {
             setToken(flash.flash_token);
         }
+        fetchLogs();
     }, [flash]);
 
     const generateToken = () => {
@@ -91,6 +103,38 @@ export default function PrinterSettings() {
                         <RefreshCw className="w-4 h-4" />
                         Gerar Novo Token
                     </PrimaryButton>
+                    <SecondaryButton type="button" onClick={() => {
+                        router.post(route('settings.printer.test'), {}, {
+                            onSuccess: () => {
+                                toast.success('Teste enviado!');
+                                fetchLogs(); // Refresh logs
+                            }
+                        });
+                    }} className="flex items-center gap-2">
+                        <Printer className="w-4 h-4" />
+                        Testar Impressão
+                    </SecondaryButton>
+                </div>
+
+                {/* Logs Section */}
+                <div className="pt-6 border-t border-gray-100 dark:border-white/5">
+                    <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-200 mb-3">Histórico de Testes (Últimos 10)</h4>
+                    <div className="bg-gray-50 dark:bg-premium-dark rounded-xl p-4 space-y-2 max-h-60 overflow-y-auto">
+                        {logs.length === 0 ? (
+                            <p className="text-xs text-center text-gray-500">Nenhum teste registrado.</p>
+                        ) : (
+                            logs.map((log: any) => (
+                                <div key={log.id} className="flex justify-between items-center text-xs border-b border-gray-200 dark:border-white/5 last:border-0 pb-2 last:pb-0">
+                                    <span className="text-gray-600 dark:text-gray-400">
+                                        {new Date(log.created_at).toLocaleString()}
+                                    </span>
+                                    <span className="text-green-600 font-medium">
+                                        Enviado por {log.user?.name || 'Sistema'}
+                                    </span>
+                                </div>
+                            ))
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

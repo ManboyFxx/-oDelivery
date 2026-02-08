@@ -65,7 +65,9 @@ class PlanLimit extends Model
      */
     public static function findByPlan(string $plan): ?self
     {
-        return static::where('plan', $plan)->first();
+        return \Illuminate\Support\Facades\Cache::remember("plan_limit_{$plan}", 3600, function () use ($plan) {
+            return static::where('plan', $plan)->first();
+        });
     }
 
     /**

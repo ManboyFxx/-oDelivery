@@ -17,7 +17,9 @@ import {
     Menu,
     X,
     Bike,
-    FileText
+    FileText,
+    Star,
+    Quote
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
@@ -365,6 +367,72 @@ export default function Welcome({ auth }: PageProps) {
                             {/* Decorative circles */}
                             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-white/30 rounded-full blur-3xl" />
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Social Proof / Testimonials */}
+            <section className="py-24 px-6 bg-white">
+                <div className="max-w-7xl mx-auto">
+                    <div className="text-center mb-16">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100/50 border border-orange-200 text-[#ff3d03] font-bold text-xs uppercase tracking-wider mb-6">
+                            <Star className="w-4 h-4 fill-current" />
+                            Quem usa, recomenda
+                        </div>
+                        <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-6 tracking-tight">
+                            Junte-se a quem já fatura mais
+                        </h2>
+                        <p className="text-xl text-gray-600 font-medium max-w-2xl mx-auto">
+                            Milhares de estabelecimentos transformaram seu delivery com nossa tecnologia.
+                        </p>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-8">
+                        {[
+                            {
+                                name: "Carlos Mendes",
+                                role: "Dono da Burger Kingo",
+                                content: "Desde que começamos a usar o ÓoDelivery, eliminamos os erros nos pedidos de WhatsApp e aumentamos nosso faturamento em 30%. O sistema é muito intuitivo!",
+                                stars: 5
+                            },
+                            {
+                                name: "Fernanda Oliveira",
+                                role: "Pizzaria Bella Napoli",
+                                content: "A integração com a impressora térmica foi um divisor de águas para nossa cozinha. As comandas saem automaticamente e a agilidade no preparo melhorou muito.",
+                                stars: 5
+                            },
+                            {
+                                name: "Ricardo Silva",
+                                role: "Sushi House",
+                                content: "O melhor custo-benefício do mercado. Ter um cardápio digital próprio sem pagar taxas abusivas fez toda a diferença na nossa margem de lucro.",
+                                stars: 5
+                            }
+                        ].map((testimonial, i) => (
+                            <div key={i} className="bg-gray-50 p-8 rounded-3xl border border-gray-100 relative hover:border-orange-200 transition-colors group">
+                                <Quote className="absolute top-8 right-8 w-10 h-10 text-orange-100 fill-orange-100 group-hover:text-orange-200 group-hover:fill-orange-200 transition-colors" />
+                                <div className="flex gap-1 mb-6">
+                                    {[...Array(testimonial.stars)].map((_, i) => (
+                                        <Star key={i} className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                                    ))}
+                                </div>
+                                <p className="text-gray-600 font-medium mb-8 leading-relaxed relative z-10">
+                                    "{testimonial.content}"
+                                </p>
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-full bg-white border-2 border-orange-100 overflow-hidden shadow-sm">
+                                        <img
+                                            src={`https://ui-avatars.com/api/?name=${testimonial.name}&background=ff3d03&color=fff`}
+                                            alt={testimonial.name}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                    <div>
+                                        <div className="font-bold text-gray-900">{testimonial.name}</div>
+                                        <div className="text-sm text-gray-500 font-medium">{testimonial.role}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </section>

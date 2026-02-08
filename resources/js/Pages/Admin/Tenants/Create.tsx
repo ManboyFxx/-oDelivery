@@ -5,7 +5,7 @@ import TextInput from '@/Components/TextInput';
 import InputLabel from '@/Components/InputLabel';
 import InputError from '@/Components/InputError';
 import { FormEventHandler, useEffect } from 'react';
-import { Save, ArrowLeft, Store, User, Lock } from 'lucide-react';
+import { Save, ArrowLeft, Store, User, Lock, Clock } from 'lucide-react';
 
 export default function CreateTenant() {
     const { data, setData, post, processing, errors } = useForm({
@@ -16,6 +16,10 @@ export default function CreateTenant() {
         owner_email: '',
         password: '',
         plan: 'free',
+        // Trial fields
+        enable_trial: true,
+        trial_ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        subscription_status: 'trialing'
     });
 
     // Auto-generate slug from name
@@ -120,6 +124,66 @@ export default function CreateTenant() {
                                 </select>
                                 <InputError className="mt-2" message={errors.plan} />
                             </div>
+                        </div>
+                    </div>
+
+                    <hr className="border-gray-100 dark:border-white/5" />
+
+                    {/* Trial Period Section */}
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <Clock className="w-5 h-5 text-gray-400" />
+                            Período de Teste (Trial)
+                        </h3>
+
+                        <div className="bg-gray-50 dark:bg-white/5 rounded-2xl p-4 border border-gray-100 dark:border-white/5">
+                            <div className="flex items-center gap-3 mb-4">
+                                <input
+                                    type="checkbox"
+                                    id="enable_trial"
+                                    checked={data.enable_trial}
+                                    onChange={(e) => {
+                                        const isChecked = e.target.checked;
+                                        setData(prev => ({
+                                            ...prev,
+                                            enable_trial: isChecked,
+                                            subscription_status: isChecked ? 'trialing' : 'active',
+                                            trial_ends_at: isChecked
+                                                ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+                                                : ''
+                                        }));
+                                    }}
+                                    className="rounded border-gray-300 text-[#ff3d03] shadow-sm focus:ring-[#ff3d03] w-5 h-5"
+                                />
+                                <div>
+                                    <label htmlFor="enable_trial" className="font-bold text-gray-900 dark:text-white">
+                                        Ativar Trial Gratuito (7 dias)
+                                    </label>
+                                    <p className="text-xs text-gray-500">O cliente terá acesso total durante este período.</p>
+                                </div>
+                            </div>
+
+                            {data.enable_trial && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fadeIn">
+                                    <div>
+                                        <InputLabel htmlFor="trial_ends_at" value="Trial Encerra em" />
+                                        <TextInput
+                                            id="trial_ends_at"
+                                            type="date"
+                                            className="mt-1 block w-full"
+                                            value={data.trial_ends_at}
+                                            onChange={(e) => setData('trial_ends_at', e.target.value)}
+                                            required={data.enable_trial}
+                                        />
+                                        <InputError className="mt-2" message={(errors as any).trial_ends_at} />
+                                    </div>
+                                    <div className="flex items-center pt-6">
+                                        <span className="text-xs font-bold text-orange-600 bg-orange-100 px-2 py-1 rounded-lg">
+                                            Status Inicial: Em Teste (Trialing)
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 

@@ -1,9 +1,9 @@
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useState } from 'react';
-import { User, Mail, Lock, ArrowRight, Sparkles, Building2, Smartphone, Link2, Phone, Loader2, X, CheckCircle2, Eye, EyeOff, Package, Check, ArrowLeft } from 'lucide-react';
+import { User, Mail, Lock, ArrowRight, Sparkles, Building2, Smartphone, Link2, Phone, Loader2, X, CheckCircle2, Eye, EyeOff, Package, Check, ArrowLeft, Star, Zap } from 'lucide-react';
 import axios from 'axios';
 
 // Debounce helper
@@ -43,6 +43,10 @@ interface SlugStatus {
 }
 
 export default function Register() {
+    const { props } = usePage();
+    const urlParams = new URLSearchParams(window.location.search);
+    const selectedPlan = urlParams.get('plan') || 'free'; // default to free (trial)
+
     const { data, setData, post, processing, errors, reset } = useForm({
         store_name: '',
         slug: '',
@@ -51,6 +55,7 @@ export default function Register() {
         email: '',
         password: '',
         password_confirmation: '',
+        plan: selectedPlan,
     });
 
     const [slugStatus, setSlugStatus] = useState<SlugStatus>({
@@ -176,6 +181,35 @@ export default function Register() {
                             {/* Main Title - KEPT BOLD/BLACK */}
                             <h1 className="text-3xl font-black text-gray-900 tracking-tight leading-tight">Comece grátis.</h1>
                             <p className="text-gray-600 font-medium text-lg">Crie sua loja digital completa em segundos.</p>
+
+                            {/* Selected Plan Badge */}
+                            {selectedPlan === 'free' && (
+                                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-4 text-center">
+                                    <div className="flex items-center justify-center gap-2 mb-1">
+                                        <Star className="h-5 w-5 text-green-600 fill-green-600" />
+                                        <h3 className="text-lg font-black text-green-900">14 Dias de PRO Grátis!</h3>
+                                    </div>
+                                    <p className="text-sm text-green-700 font-medium">Acesso completo sem compromisso</p>
+                                </div>
+                            )}
+                            {selectedPlan === 'pro' && (
+                                <div className="bg-gradient-to-r from-[#ff3d03]/10 to-orange-50 border-2 border-[#ff3d03] rounded-2xl p-4 text-center">
+                                    <div className="flex items-center justify-center gap-2 mb-1">
+                                        <Zap className="h-5 w-5 text-[#ff3d03] fill-[#ff3d03]" />
+                                        <h3 className="text-lg font-black text-gray-900">Plano PRO Selecionado</h3>
+                                    </div>
+                                    <p className="text-sm text-gray-700 font-medium">R$ 109,90/mês • Recursos ilimitados</p>
+                                </div>
+                            )}
+                            {selectedPlan === 'custom' && (
+                                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-2xl p-4 text-center">
+                                    <div className="flex items-center justify-center gap-2 mb-1">
+                                        <Sparkles className="h-5 w-5 text-purple-600 fill-purple-600" />
+                                        <h3 className="text-lg font-black text-purple-900">Plano Personalizado</h3>
+                                    </div>
+                                    <p className="text-sm text-purple-700 font-medium">Solução sob medida para seu negócio</p>
+                                </div>
+                            )}
                         </div>
 
                         <form onSubmit={submit} className="space-y-5 text-left">
@@ -385,7 +419,9 @@ export default function Register() {
                                     </>
                                 ) : (
                                     <>
-                                        Criar Minha Loja Grátis
+                                        {selectedPlan === 'free' && 'Começar Trial Grátis (14 dias)'}
+                                        {selectedPlan === 'pro' && 'Criar Conta e Ir para Pagamento'}
+                                        {selectedPlan === 'custom' && 'Criar Conta'}
                                         <ArrowRight className="w-5 h-5 ml-2" />
                                     </>
                                 )}

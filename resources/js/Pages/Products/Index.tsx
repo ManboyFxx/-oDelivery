@@ -12,9 +12,10 @@ interface Props {
     categories: any[];
     complement_groups: any[];
     ingredients: any[];
+    usage: any;
 }
 
-export default function ProductsIndex({ products, categories, complement_groups, ingredients }: Props) {
+export default function ProductsIndex({ products, categories, complement_groups, ingredients, usage }: Props) {
     // Auto-display flash toast messages
     useFlashToast();
 
@@ -82,6 +83,7 @@ export default function ProductsIndex({ products, categories, complement_groups,
                             products={products}
                             categories={categories}
                             complement_groups={complement_groups}
+                            usage={usage}
                         />
                     )}
                     {activeTab === 'categories' && (

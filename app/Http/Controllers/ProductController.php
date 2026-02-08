@@ -26,16 +26,35 @@ class ProductController extends Controller implements HasMiddleware
     {
         $tenant = auth()->user()->tenant;
 
-        $products = Product::query()
-            ->with(['category', 'complementGroups'])
+        $products = Product::with(['category', 'complementGroups'])
+            ->where('tenant_id', $tenant->id)
             ->orderBy('created_at', 'desc')
-            ->paginate(10);
+            ->paginate(50);
+
+        $categories = Category::where('tenant_id', $tenant->id)
+            ->orderBy('name')
+            ->get();
+
+        $complementGroups = \App\Models\ComplementGroup::where('tenant_id', $tenant->id)
+            ->with(['options.ingredient']) // Keep the original eager loading for complement groups
+            ->orderBy('name')
+            ->get();
+
+        // Get plan limits
+        $productsCount = $tenant->products()->count();
+        $productsLimit = $tenant->getLimit('max_products');
+        $canAddProduct = $tenant->canAdd('products');
 
         return Inertia::render('Products/Index', [
             'products' => $products,
-            'categories' => Category::where('tenant_id', $tenant->id)->orderBy('name')->get(),
-            'complement_groups' => \App\Models\ComplementGroup::where('tenant_id', $tenant->id)->with(['options.ingredient'])->orderBy('name')->get(),
-            'ingredients' => \App\Models\Ingredient::where('tenant_id', $tenant->id)->orderBy('name')->get(),
+            'categories' => $categories,
+            'complement_groups' => $complementGroups,
+            'ingredients' => \App\Models\Ingredient::where('tenant_id', $tenant->id)->orderBy('name')->get(), // Keep ingredients as it was not explicitly removed
+            'usage' => [
+                'products' => $productsCount,
+                'limit' => $productsLimit,
+                'canAdd' => $canAddProduct,
+            ],
         ]);
     }
 
@@ -187,5 +206,105 @@ class ProductController extends Controller implements HasMiddleware
         ]);
 
         return back()->with('success', 'Badge do produto atualizado!');
+    }
+
+    public function quickUpdate(Request $request, Product $product)
+    {
+        $validated = $request->validate([
+            'price' => 'sometimes|numeric|min:0',
+            'name' => 'sometimes|string|max:255',
+        ]);
+
+        $product->update($validated);
+
+        return back()->with('success', 'Produto atualizado!');
+    }
+
+    public function reorder(Request $request)
+    {
+        $request->validate([
+            'products' => 'required|array',
+            'products.*.id' => 'required|exists:products,id',
+            'products.*.sort_order' => 'required|integer',
+        ]);
+
+        foreach ($request->products as $item) {
+            Product::where('id', $item['id'])
+                ->where('tenant_id', auth()->user()->tenant_id)
+                ->update(['sort_order' => $item['sort_order']]);
+        }
+
+        return back();
+    }
+
+    public function bulkUpdate(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:products,id',
+            'action' => 'required|in:activate,deactivate,delete',
+        ]);
+
+        $query = Product::whereIn('id', $request->ids)
+            ->where('tenant_id', auth()->user()->tenant_id);
+
+        switch ($request->action) {
+            case 'activate':
+                $query->update(['is_available' => true]);
+                break;
+            case 'deactivate':
+                $query->update(['is_available' => false]);
+                break;
+            case 'delete':
+                $query->delete();
+                break;
+        }
+
+        return back()->with('success', 'Ação em massa realizada com sucesso!');
+    }
+
+    public function bulkChangeCategory(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:products,id',
+            'category_id' => 'required|exists:categories,id',
+        ]);
+
+        // Verify category belongs to tenant
+        $category = Category::where('id', $request->category_id)
+            ->where('tenant_id', auth()->user()->tenant_id)
+            ->firstOrFail();
+
+        Product::whereIn('id', $request->ids)
+            ->where('tenant_id', auth()->user()->tenant_id)
+            ->update(['category_id' => $category->id]);
+
+        return back()->with('success', 'Categoria atualizada com sucesso!');
+    }
+
+    public function duplicate(Product $product)
+    {
+        if ($product->tenant_id !== auth()->user()->tenant_id) {
+            abort(403);
+        }
+
+        // Check limits
+        $tenant = auth()->user()->tenant;
+        if (!$tenant->canAdd('products')) {
+            return back()->withErrors(['error' => 'Limite de produtos atingido.']);
+        }
+
+        $newProduct = $product->replicate();
+        $newProduct->name = $product->name . ' (Cópia)';
+        $newProduct->is_available = false; // Start as unavailable
+        $newProduct->save();
+
+        // Copy relations if needed (e.g. complements)
+        if ($product->complementGroups()->exists()) {
+            $newProduct->complementGroups()->sync($product->complementGroups->pluck('id'));
+        }
+
+        return back()->with('success', 'Produto duplicado com sucesso!');
     }
 }

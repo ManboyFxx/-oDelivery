@@ -21,6 +21,12 @@ class Table extends Model
         'status',
         'current_order_id',
         'occupied_at',
+        'position_x',
+        'position_y',
+        'width',
+        'height',
+        'shape',
+        'rotation',
     ];
 
     protected $casts = [
@@ -42,6 +48,13 @@ class Table extends Model
     public function isFree(): bool
     {
         return $this->status === 'free';
+    }
+
+    protected $appends = ['occupied_since'];
+
+    public function getOccupiedSinceAttribute()
+    {
+        return $this->currentOrder?->created_at;
     }
 
     public function occupy(string $orderId): void

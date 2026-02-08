@@ -12,19 +12,68 @@ class AdminTenantController extends Controller
     public function index(Request $request)
     {
         $tenants = Tenant::query()
+            ->withCount(['products', 'users', 'orders', 'motoboys'])
+            // Search Filter
             ->when($request->search, function ($query, $search) {
-                $query->where('name', 'like', "%{$search}%")
-                    ->orWhere('slug', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('slug', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                });
             })
-            ->with(['whatsAppInstances'])
-            ->latest()
+            // Status Filters
+            ->when($request->status, function ($q, $status) {
+                if ($status === 'active') {
+                    $q->where('is_active', true)->where('is_suspended', false);
+                } elseif ($status === 'suspended') {
+                    $q->where('is_suspended', true);
+                } elseif ($status === 'trial') {
+                    $q->where('plan', 'trial')->where('is_active', true);
+                } elseif ($status === 'inactive') {
+                    $q->where('is_active', false);
+                }
+            })
+            // Plan Filter
+            ->when($request->plan && $request->plan !== 'all', function ($q, $plan) {
+                $q->where('plan', $plan);
+            })
+            // Sorting
+            ->when($request->sort_by, function ($q, $sortBy) use ($request) {
+                $q->orderBy($sortBy, $request->sort_desc ? 'desc' : 'asc');
+            }, function ($q) {
+                $q->latest();
+            })
             ->paginate(10)
-            ->withQueryString();
+            ->withQueryString()
+            ->through(fn($tenant) => [
+                'id' => $tenant->id,
+                'name' => $tenant->name,
+                'slug' => $tenant->slug,
+                'email' => $tenant->email,
+                'plan' => $tenant->plan,
+                'subscription_status' => $tenant->subscription_status,
+                'trial_ends_at' => $tenant->trial_ends_at?->format('Y-m-d H:i:s'),
+                'trial_days_remaining' => $tenant->trialDaysRemaining(),
+                'is_trial_active' => $tenant->isTrialActive(),
+                'is_suspended' => $tenant->is_suspended,
+                'is_active' => $tenant->is_active,
+                'created_at' => $tenant->created_at->format('d/m/Y'),
+                'usage' => [
+                    'products' => $tenant->products_count,
+                    'users' => $tenant->users_count,
+                    'orders' => $tenant->orders_count,
+                ],
+                'limits' => [
+                    'products' => $tenant->getLimit('max_products'),
+                ],
+            ]);
+
+        $plans = \App\Models\PlanLimit::where('is_active', true)->get(['plan', 'display_name']);
 
         return Inertia::render('Admin/Tenants/Index', [
             'tenants' => $tenants,
-            'filters' => $request->only(['search']),
+            'filters' => $request->only(['search', 'status', 'plan', 'sort_by', 'sort_desc']),
+            'plans' => $plans,
         ]);
     }
 
@@ -43,6 +92,8 @@ class AdminTenantController extends Controller
             'owner_email' => 'required|email|max:255|unique:users,email',
             'password' => 'required|string|min:8',
             'plan' => 'required|string|in:free,starter,basic,pro,custom',
+            'subscription_status' => 'nullable|string|in:active,trialing',
+            'trial_ends_at' => 'nullable|date',
         ]);
 
         \Illuminate\Support\Facades\DB::transaction(function () use ($validated) {
@@ -53,7 +104,8 @@ class AdminTenantController extends Controller
                 'email' => $validated['email'],
                 'plan' => $validated['plan'],
                 'is_active' => true,
-                'subscription_status' => 'active',
+                'subscription_status' => $validated['subscription_status'] ?? 'active',
+                'trial_ends_at' => $validated['trial_ends_at'] ?? null,
                 'features' => [], // Default features can be set here
             ]);
 

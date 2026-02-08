@@ -9,6 +9,8 @@ import {
     AlertCircle
 } from 'lucide-react';
 import clsx from 'clsx';
+import { useState } from 'react';
+import DowngradeModal from '@/Components/DowngradeModal';
 
 interface Feature {
     text: string;
@@ -51,13 +53,21 @@ interface Props {
 }
 
 export default function SubscriptionIndex({ auth, tenant, plans, usage }: Props) {
-    const { post } = useForm();
+    const { post, processing } = useForm();
     const currentPlan = plans.find(p => p.current);
+    const [isDowngradeModalOpen, setIsDowngradeModalOpen] = useState(false);
 
-    const handleDowngrade = () => {
-        if (confirm('Tem certeza que deseja voltar para o plano grátis? Algumas funcionalidades serão limitadas.')) {
-            post(route('subscription.downgrade'));
-        }
+    const handleDowngradeClick = () => {
+        setIsDowngradeModalOpen(true);
+    };
+
+    const handleDowngradeConfirm = (reason: string) => {
+        // @ts-ignore - Inertia types might be slightly off for data property in options
+        post(route('subscription.downgrade'), {
+            data: { reason },
+            onSuccess: () => setIsDowngradeModalOpen(false),
+            onFinish: () => setIsDowngradeModalOpen(false),
+        });
     };
 
     return (
@@ -159,14 +169,12 @@ export default function SubscriptionIndex({ auth, tenant, plans, usage }: Props)
                                     </div>
                                 )}
 
-                                <div className="mb-6">
-                                    <h3 className={clsx("text-xl font-black mb-2 uppercase tracking-wide", isPro ? "text-white" : "text-gray-900")}>
-                                        {plan.name}
-                                    </h3>
-                                    <p className={clsx("text-sm font-medium mb-4 min-h-[40px]", isPro ? "text-gray-400" : "text-gray-500")}>
-                                        {plan.original_id === 'free' && "Para quem está começando com recursos essenciais"}
-                                        {plan.original_id === 'pro' && "Todos os recursos liberados para fazer seu negócio crescer"}
-                                        {plan.original_id === 'custom' && "A solução mais completa com tudo que você precisa"}
+                                <div className="mb-8">
+                                    <p className={clsx(
+                                        "text-sm font-bold uppercase tracking-wider mb-2",
+                                        isPro ? "text-gray-400" : "text-gray-500"
+                                    )}>
+                                        {plan.id === 'free' ? 'Gratuito' : plan.name}
                                     </p>
                                     <div className="flex items-baseline gap-1">
                                         {plan.price !== null && (
@@ -200,7 +208,7 @@ export default function SubscriptionIndex({ auth, tenant, plans, usage }: Props)
                                                 )}
                                             </div>
                                             <div className="flex flex-col">
-                                                {feature.text.split('\n').map((line, i) => (
+                                                {(feature.text || '').split('\n').map((line, i) => (
                                                     <span key={i} className={clsx(
                                                         "text-sm font-medium",
                                                         feature.included
@@ -228,17 +236,26 @@ export default function SubscriptionIndex({ auth, tenant, plans, usage }: Props)
                                             Plano Atual
                                         </button>
                                     ) : (
-                                        <Link
-                                            href={route('subscription.checkout', plan.original_id || plan.id)}
-                                            className={clsx(
-                                                "block w-full py-4 rounded-xl font-bold text-center transition-all",
-                                                isPro
-                                                    ? "bg-[#ff3d03] text-white hover:bg-[#e63700] shadow-lg shadow-[#ff3d03]/20"
-                                                    : "border border-gray-200 text-gray-900 hover:border-[#ff3d03] hover:text-[#ff3d03]"
-                                            )}
-                                        >
-                                            {plan.price === 0 ? 'Fazer Downgrade' : 'Assinar Agora'}
-                                        </Link>
+                                        plan.price === 0 ? (
+                                            <button
+                                                onClick={handleDowngradeClick}
+                                                className="block w-full py-4 rounded-xl font-bold text-center transition-all border border-gray-200 text-gray-900 hover:border-[#ff3d03] hover:text-[#ff3d03]"
+                                            >
+                                                Fazer Downgrade
+                                            </button>
+                                        ) : (
+                                            <Link
+                                                href={route('subscription.checkout', plan.original_id || plan.id)}
+                                                className={clsx(
+                                                    "block w-full py-4 rounded-xl font-bold text-center transition-all",
+                                                    isPro
+                                                        ? "bg-[#ff3d03] text-white hover:bg-[#e63700] shadow-lg shadow-[#ff3d03]/20"
+                                                        : "border border-gray-200 text-gray-900 hover:border-[#ff3d03] hover:text-[#ff3d03]"
+                                                )}
+                                            >
+                                                Assinar Agora
+                                            </Link>
+                                        )
                                     )}
                                 </div>
                             </div>
@@ -246,6 +263,14 @@ export default function SubscriptionIndex({ auth, tenant, plans, usage }: Props)
                     })}
                 </div>
             </div>
+
+            <DowngradeModal
+                show={isDowngradeModalOpen}
+                onClose={() => setIsDowngradeModalOpen(false)}
+                onConfirm={handleDowngradeConfirm}
+                currentPlanName={currentPlan?.name || 'Seu Plano'}
+                processing={processing}
+            />
         </AuthenticatedLayout>
     );
 }

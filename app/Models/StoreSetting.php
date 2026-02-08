@@ -108,7 +108,7 @@ class StoreSetting extends Model
     /**
      * Check if store is open now
      */
-    public function isOpenNow()
+    public function isOpenNow(?string $timezone = null)
     {
         // 1. Check Manual Override (highest priority)
         if ($this->status_override === 'open') {
@@ -130,7 +130,7 @@ class StoreSetting extends Model
         }
 
         try {
-            $timezone = $this->tenant->timezone ?? 'America/Sao_Paulo';
+            $timezone = $timezone ?? $this->tenant->timezone ?? 'America/Sao_Paulo';
             $now = now($timezone);
             $hours = $this->business_hours;
 
