@@ -57,10 +57,32 @@ export default function Authenticated({ user, header, children, tenant: propTena
     useEffect(() => {
         if (!tenant) return;
 
+        const tenantId = tenant.id;
+        let lastTimestamp = 0;
+
         const checkForUpdates = async () => {
             // Basic strict check to avoid running if tab is hidden/inactive? 
             // Ideally we want sound even if hidden, so we keep running.
             try {
+                // 1. First check public lightweight endpoint (File based, no DB)
+                const pollResponse = await fetch(`/api/poll/${tenantId}`);
+                if (!pollResponse.ok) return;
+
+                const { timestamp } = await pollResponse.json();
+
+                // If nothing changed since last check, stop here.
+                // We initialize lastTimestamp with the server value on first run to avoid fake alerts
+                if (lastTimestamp === 0) {
+                    lastTimestamp = timestamp;
+                    return;
+                }
+
+                if (timestamp <= lastTimestamp) {
+                    return;
+                }
+
+                // 2. Something changed! Now verify what changed with the secure DB endpoint
+                // We only hit the DB if the file timestamp changed
                 const response = await fetch(route('api.orders.status-check'));
 
                 if (!response.ok) return;
@@ -90,12 +112,15 @@ export default function Authenticated({ user, header, children, tenant: propTena
                     setHasUnread(true);
                 }
 
+                // Update timestamp
+                lastTimestamp = timestamp;
+
             } catch (err) {
                 console.error("Polling error", err);
             }
         };
 
-        // Run immediately
+        // Run immediately to set initial timestamp
         checkForUpdates();
 
         // Set interval

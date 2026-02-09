@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import './index.css';
 import { AppTab } from './types';
 import Sidebar from './components/Sidebar';
 import OrdersList from './components/OrdersList';
@@ -20,6 +21,11 @@ import { loadAuthSession } from './services/authService';
 
 const App: React.FC = () => {
   const [deviceId] = useState(() => getOrCreateDeviceId());
+  const [tenantProfile, setTenantProfile] = useState<any>(() => {
+    const savedSession = loadAuthSession();
+    return savedSession?.tenantProfile || null;
+  });
+
   const [settings, setSettings] = useState<PersistedSettings>(() => {
     // Tentar carregar sessão salva primeiro
     const savedSession = loadAuthSession();
@@ -56,6 +62,21 @@ const App: React.FC = () => {
 
   // Função de impressão
   const handlePrint = useCallback(async (htmlContent: string): Promise<void> => {
+    // Alerta visual
+    if (settings.printerSettings.visualAlert) {
+      setFlashScreen(true);
+      setTimeout(() => setFlashScreen(false), 1000);
+    }
+
+    // Alerta sonoro
+    if (settings.printerSettings.alertSound) {
+      const audio = new Audio(
+        'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwPUKXh8LZiHQU5kdTzzn0pBSV5x/DabkMJE1+z5/CoWRMJRp/g8r1sIQUsgc7y2Yk2CBtpvO/mnE4ND1Cn4PO1YhwGOJHV8tB8KAUledHw2XBECRNgtOXxp1kUCUaf4PK8ayEFLIHO8tmJNggcabzv5pxODA9Qp+HztWIcBjiR1fPQfSgFJXnR8NlwRAkTYLTl8adZFAlGn+DyvGwhBSuBzvLZiTYIHGm87+acTgwPUKfh87ViHAY4kdXz0H0oBSV60fDZb0QJFGCz5/KnWRQJRp/g8rxsIQUrgc7y2Yk2CBxpvO/jnE4ND1Cn4fO1YhwGOJHV89B9KAUletHw2W9ECRRgs+fyp1kUCUaf4PK8bCEFK4HO8tmJNggcabzv45xODA9Qp+HztWIcBjiR1fPQfSgFJXrR8NlvRAkUYLTl4qdZEwlGn+DyvGwhBSuBzvLZiTYIHGm87+OcTgwPUKfh87ViHAY4kdXz0H0oBSV60fDZb0QJFGC05+KnWRMJRp/g8rxsIQUrgc7y2Yk2CBxpu+/jnE4ND1Cn4fO1YhwGOJHV89B9KAUletHw2W9ECRRgtOXip1kTCUaf4PK8bCEFK4HO8tmJNggcabzv45xODA9Qp+HztWIcBjiR1fPQfSgFJXrR8NlvRAkUYLTl4qdZEwlGn+DyvGwhBSuBzvLZiTYIHGm87+OcTgwPUKfh87ViHAY4kdXz0H0oBSV60fDZb0QJFGC05eKnWRMJRp/g8rxsIQUrgc7y2Yk2CBxpvO/jnE4ND1Cn4fO1YhwGOJHV89B9KAUletHw2W9ECRRgtOXip1kTCUaf4PK8bCEFK4HO8tmJNggcabzv45xODA9Qp+HztWIcBjiR1fPQfSgFJXrR8NlvRAkUYLTl4qdZEwlGn+DyvGwhBSuBzvLZiTYIHGm87+OcTgwPUKfh87ViHAY4kdXz0H0oBSV60fDZb0QJFGC05eKnWRMJRp/g8rxsIQUrgc7y2Yk2CBxpvO/jnE4ND1Cn4fO1YhwGOJHV89B9KAUletHw2W9ECRRgtOXip1kTCUaf4PK8bCEFK4HO8tmJNggcabzv45xODA9Qp+HztWIcBjiR1fPQfSgFJXrR8NlvRAkUYLTl4qdZEwlGn+DyvGwhBSuBzvLZiTYIHGm87+OcTgwPUKfh87ViHAY4kdXz0H0oBSV60fDZb0QJFGC05eKnWRMJRp/g8rxsIQUrgc7y2Yk2CBxpvO/jnE4ND1Cn4fOw=='
+      );
+      audio.volume = 0.5;
+      audio.play().catch(console.error);
+    }
+
     // Check for Electron first
     if (window.electronAPI) {
       try {
@@ -82,21 +103,6 @@ const App: React.FC = () => {
     }
 
     return new Promise((resolve) => {
-      // Alerta visual
-      if (settings.printerSettings.visualAlert) {
-        setFlashScreen(true);
-        setTimeout(() => setFlashScreen(false), 1000);
-      }
-
-      // Alerta sonoro
-      if (settings.printerSettings.alertSound) {
-        const audio = new Audio(
-          'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwPUKXh8LZiHQU5kdTzzn0pBSV5x/DabkMJE1+z5/CoWRMJRp/g8r1sIQUsgc7y2Yk2CBtpvO/mnE4ND1Cn4PO1YhwGOJHV8tB8KAUledHw2XBECRNgtOXxp1kUCUaf4PK8ayEFLIHO8tmJNggcabzv5pxODA9Qp+HztWIcBjiR1fPQfSgFJXnR8NlwRAkTYLTl8adZFAlGn+DyvGwhBSuBzvLZiTYIHGm87+acTgwPUKfh87ViHAY4kdXz0H0oBSV60fDZb0QJFGCz5/KnWRQJRp/g8rxsIQUrgc7y2Yk2CBxpvO/jnE4ND1Cn4fO1YhwGOJHV89B9KAUletHw2W9ECRRgs+fyp1kUCUaf4PK8bCEFK4HO8tmJNggcabzv45xODA9Qp+HztWIcBjiR1fPQfSgFJXrR8NlvRAkUYLTl4qdZEwlGn+DyvGwhBSuBzvLZiTYIHGm87+OcTgwPUKfh87ViHAY4kdXz0H0oBSV60fDZb0QJFGC05+KnWRMJRp/g8rxsIQUrgc7y2Yk2CBxpu+/jnE4ND1Cn4fO1YhwGOJHV89B9KAUletHw2W9ECRRgtOXip1kTCUaf4PK8bCEFK4HO8tmJNggcabzv45xODA9Qp+HztWIcBjiR1fPQfSgFJXrR8NlvRAkUYLTl4qdZEwlGn+DyvGwhBSuBzvLZiTYIHGm87+OcTgwPUKfh87ViHAY4kdXz0H0oBSV60fDZb0QJFGC05eKnWRMJRp/g8rxsIQUrgc7y2Yk2CBxpvO/jnE4ND1Cn4fO1YhwGOJHV89B9KAUletHw2W9ECRRgtOXip1kTCUaf4PK8bCEFK4HO8tmJNggcabzv45xODA9Qp+HztWIcBjiR1fPQfSgFJXrR8NlvRAkUYLTl4qdZEwlGn+DyvGwhBSuBzvLZiTYIHGm87+OcTgwPUKfh87ViHAY4kdXz0H0oBSV60fDZb0QJFGC05eKnWRMJRp/g8rxsIQUrgc7y2Yk2CBxpvO/jnE4ND1Cn4fO1YhwGOJHV89B9KAUletHw2W9ECRRgtOXip1kTCUaf4PK8bCEFK4HO8tmJNggcabzv45xODA9Qp+HztWIcBjiR1fPQfSgFJXrR8NlvRAkUYLTl4qdZEwlGn+DyvGwhBSuBzvLZiTYIHGm87+OcTgwPUKfh87ViHAY4kdXz0H0oBSV60fDZb0QJFGC05eKnWRMJRp/g8rxsIQUrgc7y2Yk2CBxpvO/jnE4ND1Cn4fOw=='
-        );
-        audio.volume = 0.5;
-        audio.play().catch(console.error);
-      }
-
       // Print via iframe
       const iframe = document.createElement('iframe');
       iframe.style.display = 'none';
@@ -215,6 +221,11 @@ const App: React.FC = () => {
       <SetupView
         onComplete={(apiSettings: ApiSettings) => {
           setSettings((s) => ({ ...s, apiSettings }));
+          // Reload profile from session
+          const session = loadAuthSession();
+          if (session?.tenantProfile) {
+            setTenantProfile(session.tenantProfile);
+          }
         }}
       />
     );
@@ -225,7 +236,7 @@ const App: React.FC = () => {
       className={`flex h-screen overflow-hidden bg-[#05070a] text-white font-sans transition-all duration-300 ${flashScreen ? 'ring-[20px] ring-[#ff3d03]/50' : ''}`}
       style={{ fontSize: `${settings.printerSettings.uiScale}%` }}
     >
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} tenantProfile={tenantProfile} />
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative bg-[#05070a]">
         <Header

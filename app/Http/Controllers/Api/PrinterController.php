@@ -40,12 +40,17 @@ class PrinterController extends Controller
             }
 
             // Append tenant data for receipt header
-            $order->tenant_data = [
-                'name' => $request->tenant->name,
-                'logo_url' => $request->tenant->logo_url,
-                'phone' => $request->tenant->phone,
-                'address' => $request->tenant->address,
-            ];
+            try {
+                $order->tenant_data = [
+                    'name' => $request->tenant->name ?? 'OoDelivery',
+                    'logo_url' => $request->tenant->logo_url ?? null,
+                    'phone' => $request->tenant->phone ?? null,
+                    'address' => $request->tenant->address ?? null,
+                ];
+            } catch (\Exception $e) {
+                \Log::error('Error appending tenant data: ' . $e->getMessage());
+                $order->tenant_data = ['name' => 'OoDelivery'];
+            }
 
             return $order;
         });
