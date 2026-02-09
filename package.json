@@ -48,7 +48,7 @@
         "pusher-js": "^8.4.0-rc5",
         "react-chartjs-2": "^5.3.1",
         "react-day-picker": "^9.13.1",
-        "react-is": "^19.2.3",
+        "react-is": "^18.2.0",
         "react-window": "^2.2.6",
         "recharts": "^3.7.0",
         "sonner": "^2.0.7",
