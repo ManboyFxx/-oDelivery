@@ -22,8 +22,9 @@ class AuthPrinterToken
             return response()->json(['message' => 'Token não fornecido'], 401);
         }
 
-        // Busca o tenant pelo token da impressora
-        $tenant = Tenant::where('printer_token', $token)->first();
+        // Busca o tenant pelo token da impressora (comparando o hash)
+        $hashedToken = hash('sha256', $token);
+        $tenant = Tenant::where('printer_token', $hashedToken)->first();
 
         if (!$tenant) {
             return response()->json(['message' => 'Token inválido'], 401);
