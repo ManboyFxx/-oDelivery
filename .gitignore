@@ -32,6 +32,8 @@ node_modules/
 # Build & Logs (AIOS)
 dist/
 build/
+!/public/build
+
 logs/
 
 # IDE & OS (AIOS)
