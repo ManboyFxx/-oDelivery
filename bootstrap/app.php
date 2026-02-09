@@ -36,6 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'is_motoboy' => \App\Http\Middleware\IsMotoboyMiddleware::class,
             'check_subscription' => \App\Http\Middleware\CheckSubscription::class,
             'role' => \App\Http\Middleware\RoleBasedAccessMiddleware::class,
+            'printer' => \App\Http\Middleware\AuthPrinterToken::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

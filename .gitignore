@@ -43,5 +43,10 @@ logs/
 .claude/settings.local.json
 .aios/install-log.txt
 
+
 # Security Tools
 _dev_tools/
+
+# Electron Build
+óoprint/dist-electron/
+óoprint/dist/

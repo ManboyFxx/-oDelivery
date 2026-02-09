@@ -50,6 +50,8 @@ class Order extends Model
         'preparation_started_at',
         'estimated_ready_at',
         'preparation_time_minutes',
+        'printed',
+        'printed_at',
     ];
 
     protected $casts = [
@@ -70,6 +72,8 @@ class Order extends Model
         'preparation_started_at' => 'datetime',
         'estimated_ready_at' => 'datetime',
         'preparation_time_minutes' => 'integer',
+        'printed' => 'boolean',
+        'printed_at' => 'datetime',
     ];
 
     // Relationships

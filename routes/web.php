@@ -360,6 +360,7 @@ Route::middleware(['auth', 'subscription', 'role:admin'])->group(function () {
     Route::post('/settings/upload-banner', [SettingsController::class, 'uploadBanner'])->name('settings.upload-banner');
     Route::delete('/settings/remove-banner', [SettingsController::class, 'removeBanner'])->name('settings.remove-banner');
     Route::post('/settings/tokens/create', [SettingsController::class, 'createToken'])->name('api.tokens.create');
+    Route::post('/settings/printer/generate-token', [SettingsController::class, 'generatePrinterToken'])->name('settings.printer.generate-token');
     Route::post('/settings/printer/test', [SettingsController::class, 'testPrint'])->name('settings.printer.test');
     Route::get('/settings/printer/logs', [SettingsController::class, 'getPrinterLogs'])->name('settings.printer.logs');
 

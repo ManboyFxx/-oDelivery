@@ -137,6 +137,8 @@ export default function SettingsIndex({ auth, settings, success, paymentMethods 
 
         // Notifications
         notification_settings: JSON.stringify(notificationSettings), // Consistent with legacy pattern
+
+        // Printer - Handled by separate actions but we can track minimal state if needed
     });
 
     // Payment Method Form

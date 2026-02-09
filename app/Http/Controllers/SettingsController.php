@@ -48,7 +48,10 @@ class SettingsController extends Controller
             'paymentMethods' => $paymentMethods,
             'deliveryZones' => $deliveryZones,
             'motoboys' => $motoboys,
+            'motoboys' => $motoboys,
             'success' => session('success'),
+            'printer_token_exists' => !empty($tenant->printer_token),
+            'flash_printer_token' => session('flash_printer_token'),
         ]);
     }
 
@@ -220,6 +223,22 @@ class SettingsController extends Controller
         ]);
 
         return back()->with('success', 'Comando de teste enviado com sucesso para a impressora!');
+    }
+
+    public function generatePrinterToken(Request $request)
+    {
+        $tenant = auth()->user()->tenant;
+
+        // Generate a random token
+        $token = \Illuminate\Support\Str::random(60);
+
+        $tenant->update([
+            'printer_token' => hash('sha256', $token),
+        ]);
+
+        // Return the plain text token ONLY ONCE
+        return back()->with('flash_printer_token', $token)
+            ->with('success', 'Novo Token de Impressão gerado com sucesso!');
     }
 
     public function getPrinterLogs()

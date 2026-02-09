@@ -204,6 +204,7 @@ class RegisteredUserController extends Controller
                 'whatsapp' => $request->whatsapp,
                 'is_active' => true,
                 'is_open' => false,
+                'printer_token' => hash('sha256', Str::random(60)),
             ], $planConfig));
             // 2. Criar o User associado ao Tenant
             $user = User::create([

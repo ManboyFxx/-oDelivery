@@ -19,10 +19,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
         return $request->user();
     });
 
-    // Printer System Routes
-    Route::prefix('printer')->group(function () {
-        Route::get('/orders', [\App\Http\Controllers\Api\PrinterController::class, 'index']);
-        Route::post('/orders/{id}/printed', [\App\Http\Controllers\Api\PrinterController::class, 'markAsPrinted']);
-    });
+});
+
+// Printer System Routes (Token Authentication)
+Route::middleware(['printer'])->prefix('printer')->group(function () {
+    Route::get('/orders', [\App\Http\Controllers\Api\PrinterController::class, 'index']); // GET pending orders
+    Route::post('/orders/{id}/printed', [\App\Http\Controllers\Api\PrinterController::class, 'markAsPrinted']); // Mark as printed
 });
 
