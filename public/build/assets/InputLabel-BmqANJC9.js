@@ -1,1 +1,0 @@
-import{j as m}from"./vendor-react-BYm2vN5O.js";import{bQ as o}from"./vendor-others-BqROYnIz.js";function x({value:t,className:r="",children:e,...a}){return m.jsx("label",{...a,className:o("block text-sm font-medium text-gray-700 dark:text-gray-300",r),children:t||e})}export{x as I};
