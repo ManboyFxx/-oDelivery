@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Ingredient extends Model
 {
@@ -52,5 +53,40 @@ class Ingredient extends Model
     public function scopeLowStock($query)
     {
         return $query->whereRaw('stock <= min_stock'); // Assuming 'stock' column exists, wait, checking if 'stock' column exists. User prompt says "monitoring stock", implying a stock column/mechanism exists.
+    }
+    public function products()
+    {
+        return $this->belongsToMany(Product::class, 'product_ingredients')
+            ->withPivot('quantity')
+            ->withTimestamps();
+    }
+
+    public function stockMovements(): HasMany
+    {
+        return $this->hasMany(StockMovement::class);
+    }
+
+    public function recordStockMovement(float $quantity, string $type, ?string $description = null, ?string $orderId = null)
+    {
+        return $this->stockMovements()->create([
+            'tenant_id' => $this->tenant_id,
+            'user_id' => auth()->id(),
+            'order_id' => $orderId,
+            'type' => $type,
+            'quantity' => $quantity,
+            'description' => $description,
+        ]);
+    }
+
+    public function incrementStock(float $quantity, string $type = 'manual', ?string $description = null)
+    {
+        $this->increment('stock', $quantity);
+        return $this->recordStockMovement($quantity, $type, $description);
+    }
+
+    public function decrementStock(float $quantity, string $type = 'sale', ?string $description = null, ?string $orderId = null)
+    {
+        $this->decrement('stock', $quantity);
+        return $this->recordStockMovement($quantity * -1, $type, $description, $orderId);
     }
 }

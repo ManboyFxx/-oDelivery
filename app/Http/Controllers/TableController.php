@@ -19,7 +19,7 @@ class TableController extends Controller
         $tenant = auth()->user()->tenant;
 
         $tables = Table::where('tenant_id', $tenant->id)
-            ->with(['currentOrder.items.product'])
+            ->with(['currentOrder.items.complements'])
             ->orderBy('number')
             ->get();
 

@@ -246,4 +246,31 @@ class Order extends Model
 
         return 'on_time';
     }
+
+    /**
+     * Decrement stock for all ingredients linked to the products in this order.
+     */
+    public function decrementIngredientsStock(): void
+    {
+        $this->load(['items.product.ingredients']);
+
+        foreach ($this->items as $item) {
+            if (!$item->product || $item->product->ingredients->isEmpty()) {
+                continue;
+            }
+
+            foreach ($item->product->ingredients as $ingredient) {
+                // Calculate total consumption for this ingredient in this item
+                // item->quantity (number of products) * ingredient->pivot->quantity (amount per product)
+                $totalConsumption = $item->quantity * $ingredient->pivot->quantity;
+
+                $ingredient->decrementStock(
+                    $totalConsumption,
+                    'sale',
+                    "Consumo automático: Pedido #{$this->order_number} - Item: {$item->product_name}",
+                    $this->id
+                );
+            }
+        }
+    }
 }

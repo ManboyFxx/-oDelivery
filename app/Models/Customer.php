@@ -4,7 +4,7 @@ namespace App\Models;
 
 use App\Traits\HasUuid;
 use App\Traits\BelongsToTenant;
-use Illuminate\Database\Eloquent\Attributes\Attribute;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Crypt;
@@ -21,6 +21,7 @@ class Customer extends Model
         'name',
         'phone',
         'email',
+        'address',
         'loyalty_points',
         'loyalty_tier',
         'push_subscription',
@@ -35,6 +36,28 @@ class Customer extends Model
      * Encrypt phone number when setting, decrypt when getting
      */
     protected function phone(): Attribute
+    {
+        return Attribute::make(
+            get: fn($value) => $value ? $this->decryptValue($value) : null,
+            set: fn($value) => $value ? Crypt::encryptString($value) : null,
+        );
+    }
+
+    /**
+     * Encrypt email address
+     */
+    protected function email(): Attribute
+    {
+        return Attribute::make(
+            get: fn($value) => $value ? $this->decryptValue($value) : null,
+            set: fn($value) => $value ? Crypt::encryptString($value) : null,
+        );
+    }
+
+    /**
+     * Encrypt legacy address
+     */
+    protected function address(): Attribute
     {
         return Attribute::make(
             get: fn($value) => $value ? $this->decryptValue($value) : null,

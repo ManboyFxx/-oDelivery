@@ -91,10 +91,51 @@ class Product extends Model
         return $this->stock_quantity > 0;
     }
 
-    public function decrementStock(int $quantity = 1): void
+    public function decrementStock(int $quantity = 1, ?string $reason = null, ?string $orderId = null): void
     {
         if ($this->track_stock) {
             $this->decrement('stock_quantity', $quantity);
+
+            $this->recordStockMovement(
+                -$quantity,
+                'sale',
+                $reason ?? 'Venda',
+                $orderId
+            );
         }
+    }
+
+    public function incrementStock(int $quantity = 1, ?string $reason = null, ?string $orderId = null): void
+    {
+        if ($this->track_stock) {
+            $this->increment('stock_quantity', $quantity);
+
+            $this->recordStockMovement(
+                $quantity,
+                'purchase',
+                $reason ?? 'Entrada',
+                $orderId
+            );
+        }
+    }
+
+    public function recordStockMovement(int $quantity, string $type, ?string $reason = null, ?string $orderId = null): void
+    {
+        StockMovement::create([
+            'tenant_id' => $this->tenant_id,
+            'product_id' => $this->id,
+            'quantity' => abs($quantity),
+            'type' => $type,
+            'reason' => $reason,
+            'order_id' => $orderId,
+            'created_by' => auth()->id() ?? User::where('tenant_id', $this->tenant_id)->first()->id,
+        ]);
+    }
+
+    public function ingredients()
+    {
+        return $this->belongsToMany(Ingredient::class, 'product_ingredients')
+            ->withPivot('quantity')
+            ->withTimestamps();
     }
 }

@@ -38,7 +38,15 @@ class StockController extends Controller
             'track_stock' => 'boolean'
         ]);
 
+        $oldQuantity = $product->stock_quantity ?? 0;
         $product->update($validated);
+
+        // Record adjustment if quantity actually changed
+        if (isset($validated['stock_quantity']) && $validated['stock_quantity'] != $oldQuantity) {
+            $diff = $validated['stock_quantity'] - $oldQuantity;
+            $type = $diff > 0 ? 'purchase' : 'adjustment'; // Use adjustment for manual decrease, purchase for increase (or both adjustment)
+            $product->recordStockMovement($diff, $type, 'Ajuste Manual');
+        }
 
         return back()->with('success', 'Estoque atualizado com sucesso!');
     }
@@ -54,6 +62,28 @@ class StockController extends Controller
 
         return Inertia::render('Stock/Alerts', [
             'lowStockIngredients' => $lowStockIngredients,
+        ]);
+    }
+
+    public function movements(Request $request)
+    {
+        $movements = \App\Models\StockMovement::query()
+            ->with(['product', 'ingredient', 'user', 'order'])
+            ->when($request->product_id, function ($q) use ($request) {
+                $q->where('product_id', $request->product_id);
+            })
+            ->when($request->ingredient_id, function ($q) use ($request) {
+                $q->where('ingredient_id', $request->ingredient_id);
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate(20)
+            ->withQueryString();
+
+        return Inertia::render('Stock/Movements', [
+            'movements' => $movements,
+            'filters' => $request->only(['product_id', 'ingredient_id']),
+            'ingredients' => \App\Models\Ingredient::where('tenant_id', auth()->user()->tenant_id)->orderBy('name')->get(),
+            'products' => \App\Models\Product::where('tenant_id', auth()->user()->tenant_id)->orderBy('name')->get(),
         ]);
     }
 }

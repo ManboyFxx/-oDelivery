@@ -288,6 +288,7 @@ Route::middleware(['auth', 'subscription', 'role:admin,employee'])->group(functi
     Route::post('/categories/{category}/duplicate', [\App\Http\Controllers\CategoryController::class, 'duplicate'])->name('categories.duplicate');
     // Stock Management
     Route::get('/stock/alerts', [\App\Http\Controllers\StockController::class, 'alerts'])->name('stock.alerts');
+    Route::get('/stock/movements', [\App\Http\Controllers\StockController::class, 'movements'])->name('stock.movements');
     Route::resource('estoque', \App\Http\Controllers\StockController::class)->names('stock');
 
     // Tables

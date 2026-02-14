@@ -26,7 +26,7 @@ class OrderController extends Controller
 
         $orders = Order::query()
             ->where('tenant_id', $tenantId)
-            ->with(['customer', 'items.product', 'motoboy'])
+            ->with(['customer', 'items.complements', 'motoboy'])
             ->whereIn('status', ['new', 'preparing', 'ready', 'waiting_motoboy', 'motoboy_accepted', 'out_for_delivery'])
             ->orderBy('created_at', 'desc') // Newest first
             ->get()
@@ -247,7 +247,7 @@ class OrderController extends Controller
     {
         $this->authorizeOrder($order);
 
-        $order->load(['customer', 'items.product', 'motoboy']);
+        $order->load(['customer', 'items.complements', 'motoboy']);
         // Return a blade view for printing would be simpler for receipt style
         return view('orders.print', compact('order'));
     }

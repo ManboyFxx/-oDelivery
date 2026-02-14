@@ -63,22 +63,30 @@ class PdvController extends Controller
             'customer_id' => "nullable|exists:customers,id,tenant_id,{$tenantId}",
             'payment_method' => 'required|in:cash,credit_card,debit_card,pix',
             'order_mode' => 'required|in:delivery,pickup,table',
-            'total' => 'required|numeric'
+            'total' => 'required|numeric',
+            'table_id' => 'required_if:order_mode,table|nullable|exists:tables,id,tenant_id,' . $tenantId
         ]);
 
         try {
             DB::beginTransaction();
 
             // 1. Create Order
-            // Fix: Handle string order numbers (e.g., #0001)
+            // Fix: Handle string order numbers (e.g., #0001) - NO, DB is Integer. Store Integer.
             $maxOrder = Order::where('tenant_id', $tenantId)->max('order_number');
-            // Extract numeric part or default to 0
-            $nextNum = $maxOrder ? (int) preg_replace('/\D/', '', $maxOrder) + 1 : 1;
-            $orderNumber = '#' . str_pad($nextNum, 4, '0', STR_PAD_LEFT);
+            $nextNum = $maxOrder ? $maxOrder + 1 : 1;
+            $orderNumber = $nextNum;
 
             // Determine customer name
             $customerName = $validated['customer_name'] ?? 'Cliente Balcão';
             $customerId = $validated['customer_id'] ?? null;
+
+            // For Table orders, prioritize "Mesa X" if no customer name provided
+            if ($validated['order_mode'] === 'table' && !empty($validated['table_id']) && empty($validated['customer_name'])) {
+                $table = \App\Models\Table::find($validated['table_id']);
+                if ($table) {
+                    $customerName = "Mesa " . $table->number;
+                }
+            }
 
             if ($customerId) {
                 $customer = \App\Models\Customer::where('id', $customerId)
@@ -101,6 +109,9 @@ class PdvController extends Controller
                 $status = 'waiting_motoboy'; // Set status to waiting for pickup/delivery start
             }
 
+            // For Table orders, status might be 'preparing' or 'open' immediately? 'new' is fine for Kitchen
+            // If Table Mode, we might want to set status to something else? Standard 'new' is fine for now.
+
             $order = Order::create([
                 'tenant_id' => $tenantId,
                 'order_number' => $orderNumber,
@@ -115,6 +126,20 @@ class PdvController extends Controller
                 'motoboy_id' => $motoboyId,
             ]);
 
+            // Interact with Table
+            if ($validated['order_mode'] === 'table' && !empty($validated['table_id'])) {
+                $table = \App\Models\Table::where('id', $validated['table_id'])
+                    ->where('tenant_id', $tenantId)
+                    ->first();
+
+                if ($table) {
+                    if (!$table->isFree()) {
+                        throw new \Exception("A Mesa {$table->number} já está ocupada.");
+                    }
+                    $table->occupy($order->id);
+                }
+            }
+
             // 2. Create Order Items
             foreach ($validated['items'] as $item) {
                 $product = Product::find($item['id']);
@@ -128,9 +153,7 @@ class PdvController extends Controller
                 ]);
 
                 // Decrement stock if tracked
-                if ($product->track_stock) {
-                    $product->decrement('stock_quantity', $item['quantity']);
-                }
+                $product->decrementStock($item['quantity'], 'Venda PDV', $order->id);
             }
 
             // 3. Create Payment Record

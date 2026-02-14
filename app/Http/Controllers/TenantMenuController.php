@@ -63,25 +63,31 @@ class TenantMenuController extends Controller
                                     ->orWhere('stock_quantity', '>', 0);
                             })
                             ->select('id', 'tenant_id', 'category_id', 'name', 'description', 'price', 'promotional_price', 'image_url', 'track_stock', 'stock_quantity', 'is_available', 'is_featured', 'is_promotional', 'is_new', 'is_exclusive', 'loyalty_earns_points', 'loyalty_redeemable', 'loyalty_points_cost', 'sort_order')
-                            ->orderBy('sort_order')
-                            ->with([
-                                'complementGroups' => function ($q) {
-                                    $q->where('is_active', true)
-                                        ->orderBy('sort_order')
-                                        ->with([
-                                            'options' => function ($q2) {
-                                                $q2->where('is_available', true)
-                                                    ->orderBy('sort_order')
-                                                    ->select('id', 'group_id', 'name', 'price', 'is_available', 'max_quantity', 'sort_order');
-                                            }
-                                        ]);
-                                }
-                            ]);
+                            ->orderBy('sort_order');
                     }
                 ])
                 ->where('is_active', true)
                 ->orderBy('sort_order')
                 ->get();
+                
+            // Load complement groups for products separately to avoid query issues
+            foreach ($categories as $category) {
+                foreach ($category->products as $product) {
+                    $product->load([
+                        'complementGroups' => function ($query) {
+                            $query->where('is_active', true)
+                                  ->orderBy('sort_order')
+                                  ->with([
+                                      'options' => function ($q) {
+                                          $q->where('is_available', true)
+                                            ->orderBy('sort_order')
+                                            ->select('id', 'group_id', 'name', 'price', 'is_available', 'max_quantity', 'sort_order');
+                                      }
+                                  ]);
+                        }
+                    ]);
+                }
+            }
 
             // ✅ Sanitizar categorias e produtos
             return $categories->map(function ($category) {
@@ -107,7 +113,26 @@ class TenantMenuController extends Controller
                             'loyalty_points_cost' => $product->loyalty_points_cost,
                             'track_stock' => $product->track_stock,
                             'stock_quantity' => $product->stock_quantity,
-                            'complement_groups' => $product->complementGroups,
+                            'complement_groups' => $product->complementGroups->map(function ($group) {
+                                return [
+                                    'id' => $group->id,
+                                    'name' => $group->name,
+                                    'min_selections' => $group->min_selections,
+                                    'max_selections' => $group->max_selections,
+                                    'is_required' => $group->is_required,
+                                    'sort_order' => $group->sort_order,
+                                    'options' => $group->options->map(function ($option) {
+                                        return [
+                                            'id' => $option->id,
+                                            'name' => $option->name,
+                                            'price' => $option->price,
+                                            'max_quantity' => $option->max_quantity,
+                                            'is_available' => $option->is_available,
+                                            'sort_order' => $option->sort_order,
+                                        ];
+                                    }),
+                                ];
+                            }),
                             // ❌ NÃO expor: tenant_id, category_id
                         ];
                     }),

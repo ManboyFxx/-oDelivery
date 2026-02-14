@@ -34,8 +34,7 @@ class EmployeeController extends Controller implements HasMiddleware
             return abort(403, 'Acesso não permitido.');
         }
 
-        $employees = User::where('tenant_id', $tenant->id)
-            ->where('role', '!=', 'super_admin')
+        $employees = User::where('role', '!=', 'super_admin')
             ->orderBy('name')
             ->get()
             ->map(function ($user) use ($request) {
@@ -82,8 +81,15 @@ class EmployeeController extends Controller implements HasMiddleware
                 'required',
                 'in:admin,employee,motoboy',
                 function ($attribute, $value, $fail) use ($tenant) {
-                    if ($value === 'motoboy' && !$tenant->hasFeature('motoboy_management')) {
-                        $fail('Seu plano atual não permite cadastrar motoboys.');
+                    if ($value === 'motoboy') {
+                        if (!$tenant->hasFeature('motoboy_management')) {
+                            $fail('Seu plano atual não permite cadastrar motoboys.');
+                        }
+
+                        if (!$tenant->canAdd('motoboys')) {
+                            $limit = $tenant->getLimit('max_motoboys');
+                            $fail("Você atingiu o limite de {$limit} motoboys do seu plano.");
+                        }
                     }
                 },
             ],

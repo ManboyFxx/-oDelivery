@@ -3,14 +3,14 @@
 namespace App\Models;
 
 use App\Traits\HasUuid;
-use Illuminate\Database\Eloquent\Attributes\Attribute;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Crypt;
 
 class CustomerAddress extends Model
 {
-    use HasFactory, HasUuid;
+    use HasFactory, HasUuid, \App\Traits\BelongsToTenant;
 
     protected $keyType = 'string';
     public $incrementing = false;

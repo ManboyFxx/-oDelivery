@@ -54,13 +54,19 @@ class MenuController extends Controller
             Category::where('id', $item['id'])->update(['sort_order' => $item['sort_order']]);
         }
 
+        // Manual invalidation because update() doesn't trigger observers
+        \Illuminate\Support\Facades\Cache::forget("tenant_menu_" . auth()->user()->tenant_id);
+
         return back();
     }
 
     public function toggleVisibility(Request $request, Category $category)
     {
-        $category->is_active = !$category->is_active; // Using is_active based on model
-        $category->save();
+        $category->is_active = !$category->is_active;
+        $category->save(); // This SHOULD trigger the observer, but adding manual for certainty
+
+        \Illuminate\Support\Facades\Cache::forget("tenant_menu_{$category->tenant_id}");
+
         return back();
     }
 }

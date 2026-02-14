@@ -33,7 +33,8 @@ import {
     Box, // Added
     MessageSquare, // Added for WhatsApp
     Download, // Added for System
-    LifeBuoy // Added for Support
+    LifeBuoy, // Added for Support
+    Beaker // Added for Ingredients
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { ElementType } from 'react';

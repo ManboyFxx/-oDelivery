@@ -1,6 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm, Link, router } from '@inertiajs/react'; // Add router
 import { FormEventHandler, useState } from 'react'; // Add useState
+import RecipeTab from './Tabs/RecipeTab';
+import { Package, List, Beaker, Save, ChevronLeft } from 'lucide-react';
 
 interface Category {
     id: string;
@@ -25,7 +27,9 @@ interface Group {
     max_selections: number;
 }
 
-export default function Edit({ product, categories, complement_groups = [] }: { product: any, categories: Category[], complement_groups: Group[] }) {
+export default function Edit({ product, categories, complement_groups = [], ingredients = [] }: { product: any, categories: Category[], complement_groups: Group[], ingredients: any[] }) {
+    const [activeTab, setActiveTab] = useState<'general' | 'complements' | 'recipe'>('general');
+
     const { data, setData, post, processing, errors } = useForm({
         _method: 'PATCH', // Spoof PATCH for file upload support in Laravel
         name: product.name,
@@ -33,6 +37,11 @@ export default function Edit({ product, categories, complement_groups = [] }: { 
         description: product.description || '',
         category_id: product.category_id || '',
         complement_groups: product.complement_groups ? product.complement_groups.map((g: any) => g.id) : [] as string[],
+        ingredients: product.ingredients ? product.ingredients.map((i: any) => ({
+            id: i.id,
+            name: i.name,
+            quantity: i.pivot ? i.pivot.quantity : 1
+        })) : [] as any[],
         image: null as File | null,
         loyalty_redeemable: product.loyalty_redeemable || false,
         loyalty_points_cost: product.loyalty_points_cost || 0,
@@ -58,226 +67,221 @@ export default function Edit({ product, categories, complement_groups = [] }: { 
         <AuthenticatedLayout>
             <Head title={`Editar ${product.name}`} />
 
-            <div className="mx-auto max-w-2xl px-4 py-8">
-                <div className="mb-8">
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Editar Produto</h2>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        Atualize as informações do produto abaixo.
-                    </p>
+            <div className="mx-auto max-w-5xl px-4 py-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                    <div>
+                        <Link
+                            href={route('products.index')}
+                            className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-[#ff3d03] transition-colors mb-2 uppercase tracking-widest"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                            Voltar ao Catálogo
+                        </Link>
+                        <h2 className="text-4xl font-black text-gray-900 dark:text-white uppercase italic tracking-tighter">
+                            Editar Produto
+                        </h2>
+                    </div>
+
+                    <button
+                        onClick={submit}
+                        disabled={processing}
+                        className="flex items-center gap-2 bg-[#ff3d03] text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-[#ff3d03]/20 hover:bg-[#e63602] transition-all disabled:opacity-50"
+                    >
+                        {processing ? (
+                            <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                            <Save className="w-5 h-5" />
+                        )}
+                        Salvar Alterações
+                    </button>
                 </div>
 
-                <form onSubmit={submit} className="space-y-6" encType="multipart/form-data">
-                    {/* Image Upload */}
-                    <div>
-                        <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">Foto do Produto</label>
-                        <div className="mt-2 flex items-center gap-x-3">
-                            {imagePreview ? (
-                                <img src={imagePreview} alt="Preview" className="h-24 w-24 rounded-lg object-cover bg-gray-100" />
-                            ) : (
-                                <div className="h-24 w-24 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-400">
-                                    Sem foto
-                                </div>
-                            )}
-                            <label
-                                htmlFor="image-upload"
-                                className="rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-white dark:ring-gray-600 dark:hover:bg-gray-700 cursor-pointer"
-                            >
-                                Alterar
-                                <input
-                                    id="image-upload"
-                                    name="image"
-                                    type="file"
-                                    className="sr-only"
-                                    onChange={handleImageChange}
-                                    accept="image/*"
-                                />
-                            </label>
-                        </div>
-                        {errors.image && <p className="mt-2 text-sm text-red-600">{errors.image}</p>}
-                    </div>
+                {/* Tabs Navigation */}
+                <div className="flex bg-white dark:bg-white/2 p-2 rounded-3xl border border-gray-100 dark:border-white/5 mb-8 shadow-sm">
+                    <button
+                        onClick={() => setActiveTab('general')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-black uppercase tracking-widest transition-all ${activeTab === 'general' ? 'bg-[#ff3d03] text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5'}`}
+                    >
+                        <Package className="w-5 h-5" />
+                        Geral
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('complements')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-black uppercase tracking-widest transition-all ${activeTab === 'complements' ? 'bg-[#ff3d03] text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5'}`}
+                    >
+                        <List className="w-5 h-5" />
+                        Complementos
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('recipe')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-black uppercase tracking-widest transition-all ${activeTab === 'recipe' ? 'bg-[#ff3d03] text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5'}`}
+                    >
+                        <Beaker className="w-5 h-5" />
+                        Ficha Técnica
+                    </button>
+                </div>
 
-                    {/* Name */}
-                    <div>
-                        <label htmlFor="name" className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
-                            Nome do Produto
-                        </label>
-                        <div className="mt-2">
-                            <input
-                                id="name"
-                                type="text"
-                                value={data.name}
-                                onChange={(e) => setData('name', e.target.value)}
-                                className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700"
-                            />
-                            {errors.name && <p className="mt-2 text-sm text-red-600">{errors.name}</p>}
-                        </div>
-                    </div>
-
-                    {/* Price & Category Grid */}
-                    <div className="grid grid-cols-2 gap-6">
-                        <div>
-                            <label htmlFor="price" className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
-                                Preço (R$)
-                            </label>
-                            <div className="mt-2">
-                                <input
-                                    id="price"
-                                    type="number"
-                                    step="0.01"
-                                    value={data.price}
-                                    onChange={(e) => setData('price', e.target.value)}
-                                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700"
-                                />
-                                {errors.price && <p className="mt-2 text-sm text-red-600">{errors.price}</p>}
-                            </div>
-                        </div>
-
-                        <div>
-                            <label htmlFor="category" className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
-                                Categoria
-                            </label>
-                            <div className="mt-2">
-                                <select
-                                    id="category"
-                                    value={data.category_id}
-                                    onChange={(e) => setData('category_id', e.target.value)}
-                                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700"
-                                >
-                                    <option value="">Selecione...</option>
-                                    {categories.map((cat) => (
-                                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                    ))}
-                                </select>
-                                {errors.category_id && <p className="mt-2 text-sm text-red-600">{errors.category_id}</p>}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Description */}
-                    <div>
-                        <label htmlFor="description" className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
-                            Descrição
-                        </label>
-                        <div className="mt-2">
-                            <textarea
-                                id="description"
-                                rows={3}
-                                value={data.description}
-                                onChange={(e) => setData('description', e.target.value)}
-                                className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700"
-                            />
-                        </div>
-                        <p className="mt-3 text-sm leading-6 text-gray-600 dark:text-gray-400">Uma breve descrição do prato ou bebida.</p>
-                    </div>
-
-                    {/* Loyalty Redemption Section */}
-                    <div className="bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/10 rounded-2xl p-6 border-2 border-orange-200 dark:border-orange-800">
-                        <div className="flex items-center gap-2 mb-4">
-                            <span className="text-2xl">🎁</span>
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Programa de Fidelidade</h3>
-                        </div>
-
-                        {/* Toggle Redeemable */}
-                        <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-xl mb-4">
-                            <div>
-                                <label htmlFor="loyalty_redeemable" className="font-semibold text-gray-900 dark:text-white">
-                                    Permite resgate por pontos
-                                </label>
-                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                    Cliente pode trocar pontos por este produto
-                                </p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setData('loyalty_redeemable', !data.loyalty_redeemable)}
-                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-orange-600 focus:ring-offset-2 ${data.loyalty_redeemable ? 'bg-orange-600' : 'bg-gray-200 dark:bg-gray-700'
-                                    }`}
-                            >
-                                <span
-                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${data.loyalty_redeemable ? 'translate-x-5' : 'translate-x-0'
-                                        }`}
-                                />
-                            </button>
-                        </div>
-
-                        {/* Points Cost Input */}
-                        {data.loyalty_redeemable && (
-                            <div className="bg-white dark:bg-gray-800 rounded-xl p-4">
-                                <label htmlFor="loyalty_points_cost" className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
-                                    Pontos necessários para resgate
-                                </label>
-                                <div className="relative">
-                                    <input
-                                        id="loyalty_points_cost"
-                                        type="number"
-                                        min="1"
-                                        value={data.loyalty_points_cost}
-                                        onChange={(e) => setData('loyalty_points_cost', parseInt(e.target.value) || 0)}
-                                        className="block w-full rounded-lg border-0 py-2.5 pl-4 pr-12 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-orange-600 sm:text-sm dark:bg-gray-700 dark:text-white dark:ring-gray-600"
-                                        placeholder="Ex: 150"
-                                    />
-                                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                        <span className="text-gray-500 dark:text-gray-400 text-sm font-medium">pts</span>
-                                    </div>
-                                </div>
-                                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                                    💡 Dica: Produtos de R$ 30 geralmente custam 100-150 pontos
-                                </p>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Complement Groups */}
-                    <div>
-                        <span className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100 mb-2">
-                            Grupos de Complementos
-                        </span>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {complement_groups.map((group) => (
-                                <div key={group.id} className="relative flex items-start">
-                                    <div className="flex h-6 items-center">
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    {activeTab === 'general' && (
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <div className="lg:col-span-2 space-y-6">
+                                <div className="bg-white dark:bg-[#1a1b1e] p-8 rounded-[32px] border border-gray-100 dark:border-white/5 shadow-xl shadow-gray-200/50 dark:shadow-none space-y-6">
+                                    {/* Name */}
+                                    <div>
+                                        <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Nome do Produto</label>
                                         <input
-                                            id={`param-${group.id}`}
-                                            name={`complement_groups[]`}
-                                            type="checkbox"
-                                            value={group.id}
-                                            checked={data.complement_groups.includes(group.id)}
-                                            onChange={(e) => {
-                                                const checked = e.target.checked;
-                                                if (checked) {
-                                                    setData('complement_groups', [...data.complement_groups, group.id]);
-                                                } else {
-                                                    setData('complement_groups', data.complement_groups.filter((id: string) => id !== group.id));
-                                                }
-                                            }}
-                                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 dark:border-gray-700 dark:bg-gray-800"
+                                            type="text"
+                                            value={data.name}
+                                            onChange={(e) => setData('name', e.target.value)}
+                                            className="w-full px-5 py-4 rounded-2xl border-gray-200 dark:border-white/10 dark:bg-[#0f1012] dark:text-white focus:ring-2 focus:ring-[#ff3d03] transition-all font-bold"
+                                        />
+                                        {errors.name && <p className="mt-2 text-sm text-red-600 font-bold">{errors.name}</p>}
+                                    </div>
+
+                                    {/* Price & Category */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Preço (R$)</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                value={data.price}
+                                                onChange={(e) => setData('price', e.target.value)}
+                                                className="w-full px-5 py-4 rounded-2xl border-gray-200 dark:border-white/10 dark:bg-[#0f1012] dark:text-[#ff3d03] focus:ring-2 focus:ring-[#ff3d03] transition-all font-black"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Categoria</label>
+                                            <select
+                                                value={data.category_id}
+                                                onChange={(e) => setData('category_id', e.target.value)}
+                                                className="w-full px-5 py-4 rounded-2xl border-gray-200 dark:border-white/10 dark:bg-[#0f1012] dark:text-white focus:ring-2 focus:ring-[#ff3d03] transition-all font-bold"
+                                            >
+                                                <option value="">Selecione...</option>
+                                                {categories.map((cat) => (
+                                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    {/* Description */}
+                                    <div>
+                                        <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Descrição</label>
+                                        <textarea
+                                            rows={4}
+                                            value={data.description}
+                                            onChange={(e) => setData('description', e.target.value)}
+                                            className="w-full px-5 py-4 rounded-2xl border-gray-200 dark:border-white/10 dark:bg-[#0f1012] dark:text-white focus:ring-2 focus:ring-[#ff3d03] transition-all"
+                                            placeholder="Descreva os ingredientes, tamanho..."
                                         />
                                     </div>
-                                    <div className="ml-3 text-sm leading-6">
-                                        <label htmlFor={`param-${group.id}`} className="font-medium text-gray-900 dark:text-gray-100">
-                                            {group.name}
+                                </div>
+
+                                {/* Loyalty */}
+                                <div className="bg-gradient-to-br from-[#ff3d03]/5 to-orange-500/5 dark:from-[#ff3d03]/10 dark:to-orange-500/5 p-8 rounded-[32px] border border-[#ff3d03]/10 space-y-6">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-3 bg-white dark:bg-white/5 rounded-2xl shadow-sm">
+                                            <span className="text-2xl">🎁</span>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight italic">Cartão Fidelidade</h3>
+                                            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Configurações de resgate</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between p-4 bg-white/50 dark:bg-black/20 rounded-2xl">
+                                        <span className="font-bold text-gray-700 dark:text-gray-300">Permite resgate com pontos?</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setData('loyalty_redeemable', !data.loyalty_redeemable)}
+                                            className={`relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full border-4 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${data.loyalty_redeemable ? 'bg-[#ff3d03]' : 'bg-gray-200 dark:bg-gray-800'}`}
+                                        >
+                                            <span className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${data.loyalty_redeemable ? 'translate-x-6' : 'translate-x-0'}`} />
+                                        </button>
+                                    </div>
+
+                                    {data.loyalty_redeemable && (
+                                        <div className="animate-in zoom-in-95 duration-200">
+                                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 ml-1">Pontos para Resgate</label>
+                                            <div className="relative">
+                                                <input
+                                                    type="number"
+                                                    value={data.loyalty_points_cost}
+                                                    onChange={(e) => setData('loyalty_points_cost', parseInt(e.target.value) || 0)}
+                                                    className="w-full px-5 py-4 rounded-2xl border-gray-200 dark:border-white/10 dark:bg-white dark:text-gray-900 focus:ring-2 focus:ring-[#ff3d03] transition-all font-black text-lg"
+                                                />
+                                                <span className="absolute right-6 top-1/2 -translate-y-1/2 text-xs font-black text-gray-400 uppercase tracking-widest">Pontos</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                {/* Image Preview */}
+                                <div className="bg-white dark:bg-[#1a1b1e] p-6 rounded-[32px] border border-gray-100 dark:border-white/5 shadow-xl shadow-gray-200/50 dark:shadow-none">
+                                    <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-4 text-center">Imagem em Destaque</label>
+                                    <div className="relative group">
+                                        <div className="aspect-square rounded-2xl overflow-hidden bg-gray-50 dark:bg-white/5 border-2 border-dashed border-gray-200 dark:border-white/10 flex items-center justify-center transition-all group-hover:border-[#ff3d03]">
+                                            {imagePreview ? (
+                                                <img src={imagePreview} className="w-full h-full object-cover" alt="Preview" />
+                                            ) : (
+                                                <Package className="w-12 h-12 text-gray-200" />
+                                            )}
+                                        </div>
+                                        <label className="absolute inset-0 cursor-pointer flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl backdrop-blur-sm">
+                                            <span className="text-white font-black text-xs uppercase tracking-widest bg-[#ff3d03] px-4 py-2 rounded-xl">Alterar Foto</span>
+                                            <input type="file" className="hidden" onChange={handleImageChange} accept="image/*" />
                                         </label>
-                                        <p className="text-gray-500 dark:text-gray-400">{group.min_selections} a {group.max_selections} opções</p>
                                     </div>
                                 </div>
-                            ))}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
-                    {/* Actions */}
-                    <div className="flex items-center justify-end gap-x-6 border-t border-gray-900/10 pt-6 dark:border-gray-700">
-                        <Link href={route('products.index')} className="text-sm font-semibold leading-6 text-gray-900 dark:text-gray-100">
-                            Cancelar
-                        </Link>
-                        <button
-                            type="submit"
-                            disabled={processing}
-                            className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                        >
-                            Salvar Alterações
-                        </button>
-                    </div>
-                </form>
+                    {activeTab === 'complements' && (
+                        <div className="bg-white dark:bg-[#1a1b1e] p-8 rounded-[32px] border border-gray-100 dark:border-white/5 shadow-xl shadow-gray-200/50 dark:shadow-none">
+                            <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight italic mb-6">Vincular Grupos de Complementos</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {complement_groups.map((group) => (
+                                    <label key={group.id} className={`relative flex flex-col p-6 rounded-[24px] border-2 transition-all cursor-pointer ${data.complement_groups.includes(group.id) ? 'bg-[#ff3d03]/5 border-[#ff3d03]' : 'bg-gray-50 dark:bg-white/2 border-gray-100 dark:border-white/5 hover:border-gray-200'}`}>
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className={`p-3 rounded-xl ${data.complement_groups.includes(group.id) ? 'bg-[#ff3d03] text-white' : 'bg-white dark:bg-white/5 text-gray-400'}`}>
+                                                <List className="w-5 h-5" />
+                                            </div>
+                                            <input
+                                                type="checkbox"
+                                                className="rounded-lg border-gray-300 text-[#ff3d03] focus:ring-[#ff3d03] w-5 h-5"
+                                                checked={data.complement_groups.includes(group.id)}
+                                                onChange={(e) => {
+                                                    const checked = e.target.checked;
+                                                    if (checked) {
+                                                        setData('complement_groups', [...data.complement_groups, group.id]);
+                                                    } else {
+                                                        setData('complement_groups', data.complement_groups.filter((id: string) => id !== group.id));
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                        <span className="font-black text-gray-900 dark:text-white uppercase tracking-tight line-clamp-1">{group.name}</span>
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                                            {group.min_selections} a {group.max_selections} opções
+                                        </span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'recipe' && (
+                        <RecipeTab
+                            availableIngredients={ingredients}
+                            currentRecipe={data.ingredients}
+                            onChange={(recipe) => setData('ingredients', recipe)}
+                        />
+                    )}
+                </div>
             </div>
         </AuthenticatedLayout>
     );

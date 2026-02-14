@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Traits\HasUuid;
 use App\Traits\Auditable;
+use App\Traits\BelongsToTenant;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -13,7 +15,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, HasUuid, SoftDeletes, Auditable;
+    use HasApiTokens, HasFactory, Notifiable, HasUuid, SoftDeletes, Auditable, BelongsToTenant;
 
     protected $keyType = 'string';
     public $incrementing = false;
@@ -144,6 +146,30 @@ class User extends Authenticatable
         }
 
         $this->roles()->syncWithoutDetaching($role);
+    }
+
+    /**
+     * Encrypt phone number
+     */
+    protected function phone(): Attribute
+    {
+        return Attribute::make(
+            get: fn($value) => $value ? $this->decryptValue($value) : null,
+            set: fn($value) => \Illuminate\Support\Facades\Crypt::encryptString($value),
+        );
+    }
+
+    /**
+     * Safely decrypt values, handling decryption errors gracefully
+     */
+    private function decryptValue(string $value): ?string
+    {
+        try {
+            return \Illuminate\Support\Facades\Crypt::decryptString($value);
+        } catch (\Exception $e) {
+            // Return raw value if not encrypted (for migration transition)
+            return $value;
+        }
     }
 
     /**

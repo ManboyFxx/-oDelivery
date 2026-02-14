@@ -14,98 +14,26 @@ class SubscriptionController extends Controller
         $tenant = auth()->user()->tenant;
         $currentPlan = $tenant->plan;
 
-        // Define plans structure matching Frontend Interface
-        $plans = [
-            [
-                'id' => 'free',
-                'original_id' => 'free',
-                'name' => 'Gratuito',
-                'price' => 0, // Free plan
-                'interval' => 'month',
-                'features' => [
-                    ['text' => 'Até 900 pedidos/mês', 'included' => true],
-                    ['text' => 'Até 50 produtos no cardápio', 'included' => true],
-                    ['text' => '2 usuários (1 admin + 1 funcionário)', 'included' => true],
-                    ['text' => 'Cardápio Digital Completo', 'included' => true],
-                    ['text' => 'Painel de Gestão', 'included' => true],
-                    ['text' => 'Sistema de Mesas', 'included' => true],
-                    ['text' => 'Sistema de Impressão', 'included' => true],
-                    ['text' => 'Relatórios Básicos', 'included' => true],
-                    ['text' => 'Gestão de Motoboys', 'included' => false],
-                    ['text' => 'WhatsApp Bot', 'included' => false],
-                    ['text' => 'Pedidos Ilimitados', 'included' => false],
-                ],
+        $plans = \App\Models\PlanLimit::getActivePlans()->map(function ($plan) use ($tenant, $currentPlan) {
+            return [
+                'id' => $plan->plan,
+                'original_id' => $plan->plan,
+                'name' => $plan->display_name,
+                'price' => $plan->price_monthly,
+                'interval' => 'mês',
+                'features' => $plan->formatted_features,
                 'limits' => [
-                    'products' => 50,
-                    'users' => 2, // 1 admin + 1 employee
-                    'orders' => 900,
-                    'motoboys' => 0,
-                    'stock_items' => null,
-                    'coupons' => null,
+                    'products' => $plan->max_products,
+                    'users' => $plan->max_users,
+                    'orders' => $plan->max_orders_per_month,
+                    'motoboys' => $plan->max_motoboys,
+                    'stock_items' => $plan->max_stock_items,
+                    'coupons' => $plan->max_coupons,
                 ],
-                'current' => $currentPlan === 'free',
-                'subscription_status' => $currentPlan === 'free' ? ($tenant->subscription_status ?? 'active') : null,
-            ],
-            [
-                'id' => 'pro',
-                'original_id' => 'price_basic',
-                'name' => 'Pro',
-                'price' => 109.90,
-                'interval' => 'month',
-                'features' => [
-                    ['text' => 'Pedidos Ilimitados', 'included' => true],
-                    ['text' => 'Produtos Ilimitados', 'included' => true],
-                    ['text' => '13 usuários (3 admins + 10 funcionários)', 'included' => true],
-                    ['text' => '10 motoboys', 'included' => true],
-                    ['text' => 'Gestão de Motoboys Completa', 'included' => true],
-                    ['text' => 'WhatsApp Bot Ilimitado', 'included' => true],
-                    ['text' => 'Integração WhatsApp', 'included' => true],
-                    ['text' => 'Sistema de Impressão', 'included' => true],
-                    ['text' => 'Editor de Planta Baixa', 'included' => true],
-                    ['text' => 'Cupons de Desconto', 'included' => true],
-                    ['text' => 'Relatórios Avançados', 'included' => true],
-                    ['text' => 'Suporte Prioritário', 'included' => true],
-                    ['text' => 'Sem Marca d\'água', 'included' => true],
-                ],
-                'limits' => [
-                    'products' => null, // Unlimited
-                    'users' => 13, // 3 admins + 10 employees
-                    'orders' => null, // Unlimited
-                    'motoboys' => 10,
-                    'stock_items' => null,
-                    'coupons' => null,
-                ],
-                'current' => $currentPlan === 'pro',
-                'subscription_status' => $currentPlan === 'pro' ? ($tenant->subscription_status ?? 'active') : null,
-            ],
-            [
-                'id' => 'custom',
-                'original_id' => 'price_pro',
-                'name' => 'Personalizado',
-                'price' => null, // Custom pricing
-                'interval' => 'month',
-                'features' => [
-                    ['text' => 'Tudo do Pro', 'included' => true],
-                    ['text' => 'Domínio Personalizado', 'included' => true],
-                    ['text' => 'Gestão Multi-Lojas', 'included' => true],
-                    ['text' => 'Usuários Ilimitados', 'included' => true],
-                    ['text' => 'Motoboys Ilimitados', 'included' => true],
-                    ['text' => 'Gerente de Contas Dedicado', 'included' => true],
-                    ['text' => 'API de Integração', 'included' => true],
-                    ['text' => 'Treinamento Personalizado', 'included' => true],
-                ],
-                'limits' => [
-                    'products' => null,
-                    'users' => null,
-                    'orders' => null,
-                    'motoboys' => null,
-                    'stock_items' => null,
-                    'coupons' => null,
-                ],
-                'current' => $currentPlan === 'custom',
-                'subscription_status' => $currentPlan === 'custom' ? ($tenant->subscription_status ?? 'active') : null,
-            ]
-        ];
+                'current' => $currentPlan === $plan->plan,
+                'subscription_status' => $currentPlan === $plan->plan ? ($tenant->subscription_status ?? 'active') : null,
+            ];
+        });
 
         return Inertia::render('Subscription/Index', [
             'currentPlan' => $currentPlan,
@@ -189,10 +117,10 @@ class SubscriptionController extends Controller
 
         try {
             // 1. Ensure Customer exists
-            if (!$tenant->stripe_id) {
+            if (!$tenant->stripe_customer_id) {
                 try {
                     $customerId = $paymentService->createCustomer($tenant, $user->email, $tenant->name);
-                    $tenant->update(['stripe_id' => $customerId]);
+                    $tenant->update(['stripe_customer_id' => $customerId]);
                     $tenant->refresh();
                 } catch (\Exception $e) {
                     // Ignore if customer creation fails (might already exist on Stripe side but not in DB)
@@ -243,7 +171,7 @@ class SubscriptionController extends Controller
             // 2. Process Payment based on method
             if ($data['payment_method'] === 'credit_card') {
                 $result = $paymentService->createSubscription(
-                    $tenant->stripe_id,
+                    $tenant->stripe_customer_id,
                     $stripePlanId,
                     $data['payment_method_id'],
                     'monthly',

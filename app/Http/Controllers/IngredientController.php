@@ -31,12 +31,16 @@ class IngredientController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'is_available' => 'boolean',
+            'stock' => 'nullable|integer',
+            'min_stock' => 'nullable|integer',
         ]);
 
         $ingredient = Ingredient::create([
             'tenant_id' => $tenant->id,
             'name' => $validated['name'],
             'is_available' => $validated['is_available'] ?? true,
+            'stock' => $validated['stock'] ?? 0,
+            'min_stock' => $validated['min_stock'] ?? 0,
             'display_order' => Ingredient::where('tenant_id', $tenant->id)->max('display_order') + 1,
         ]);
 
@@ -53,9 +57,19 @@ class IngredientController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'is_available' => 'boolean',
+            'stock' => 'nullable|integer',
+            'min_stock' => 'nullable|integer',
         ]);
 
+        $oldStock = $ingredient->stock;
         $ingredient->update($validated);
+
+        // Record adjustment if quantity actually changed
+        if (isset($validated['stock']) && $validated['stock'] != $oldStock) {
+            $diff = $validated['stock'] - $oldStock;
+            $type = $diff > 0 ? 'manual' : 'adjustment';
+            $ingredient->recordStockMovement($diff, $type, 'Ajuste Manual');
+        }
 
         return redirect()->back()->with('success', 'Ingrediente atualizado com sucesso!');
     }

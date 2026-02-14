@@ -48,9 +48,6 @@ Este documento lista sugestões de melhoria para o Painel Administrativo do Clie
 - [ ] **Mapa de Entrega:** Se possível, integrar mapa para desenhar ou visualizar as zonas de entrega e raios (Google Maps/Mapbox).
 - [ ] **Teste de Impressão:** Botão de "Imprimir Teste" com feedback real da conexão com a impressora térmica.
 
-### Onboarding
-- [ ] **Setup Wizard:** Criar um passo-a-passo guiado para a primeira configuração (Nome -> Logo -> Horário -> Entrega), essencial para novos clientes.
-
 ## 5. Financeiro e Relatórios
 
 ### Análise de Dados

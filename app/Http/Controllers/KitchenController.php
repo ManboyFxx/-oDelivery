@@ -12,7 +12,7 @@ class KitchenController extends Controller
     {
         // Fetch orders that are relevant to the kitchen: 'new' and 'preparing'
         // Ordered by oldest first (FIFO)
-        $orders = Order::with(['items', 'items.product'])
+        $orders = Order::with(['items', 'items.complements'])
             ->whereIn('status', ['new', 'preparing'])
             ->orderBy('created_at', 'asc')
             ->get();

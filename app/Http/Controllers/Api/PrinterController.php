@@ -22,7 +22,7 @@ class PrinterController extends Controller
             ->whereIn('status', ['confirmed', 'preparing', 'ready']) // Statuses relevant for kitchen/printing
             ->whereNull('printed_at')
             ->where('created_at', '>=', now()->subHours(24))
-            ->with(['items.product', 'items.complements', 'customer', 'address', 'payments'])
+            ->with(['items.complements', 'customer', 'address', 'payments'])
             ->orderBy('created_at', 'asc')
             ->get();
 

@@ -162,10 +162,6 @@ class CustomerOrderController extends Controller
                     'complements' => $processedComplements
                 ];
 
-                // Decrement stock
-                if ($product->track_stock) {
-                    $product->decrement('stock_quantity', $itemData['quantity']);
-                }
             }
 
             // 2. Fees
@@ -265,6 +261,10 @@ class CustomerOrderController extends Controller
                 foreach ($item['complements'] as $comp) {
                     $orderItem->complements()->create($comp);
                 }
+
+                // Decrement stock after order and item are created
+                $product = Product::find($item['product_id']);
+                $product->decrementStock($item['quantity'], 'Venda Online', $order->id);
             }
 
             // 5. Create Payment Record

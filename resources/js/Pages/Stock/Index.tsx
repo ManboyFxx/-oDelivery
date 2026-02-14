@@ -97,10 +97,13 @@ export default function StockIndex({ products, metrics }: Props) {
                     title="Controle de Estoque"
                     subtitle="Gerencie entradas, saídas e inventário."
                     action={
-                        <button className="flex items-center gap-2 rounded-2xl bg-white dark:bg-[#1a1b1e] border border-gray-200 dark:border-white/10 px-4 py-3 text-sm font-bold text-gray-700 dark:text-white shadow-sm hover:bg-gray-50 dark:hover:bg-white/5 transition-all">
+                        <Link
+                            href={route('stock.movements')}
+                            className="flex items-center gap-2 rounded-2xl bg-white dark:bg-[#1a1b1e] border border-gray-200 dark:border-white/10 px-4 py-3 text-sm font-bold text-gray-700 dark:text-white shadow-sm hover:bg-gray-50 dark:hover:bg-white/5 transition-all"
+                        >
                             <History className="h-5 w-5" />
                             Histórico
-                        </button>
+                        </Link>
                     }
                 />
 

@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
 import {
     Check,
     CreditCard,
@@ -62,9 +62,7 @@ export default function SubscriptionIndex({ auth, tenant, plans, usage }: Props)
     };
 
     const handleDowngradeConfirm = (reason: string) => {
-        // @ts-ignore - Inertia types might be slightly off for data property in options
-        post(route('subscription.downgrade'), {
-            data: { reason },
+        router.post(route('subscription.downgrade'), { reason }, {
             onSuccess: () => setIsDowngradeModalOpen(false),
             onFinish: () => setIsDowngradeModalOpen(false),
         });
@@ -147,15 +145,16 @@ export default function SubscriptionIndex({ auth, tenant, plans, usage }: Props)
                 {/* Plans Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
                     {plans.map((plan) => {
-                        const isPro = plan.original_id === 'pro' || plan.id === 'price_pro';
-                        const isBasic = plan.original_id === 'free' || plan.id === 'free';
+                        const isPro = plan.id === 'pro';
+                        const isCustom = plan.id === 'custom';
+                        const isFree = plan.id === 'free';
 
                         return (
                             <div
                                 key={plan.id}
                                 className={clsx(
                                     "relative p-8 rounded-[32px] border transition-all duration-300 flex flex-col",
-                                    isPro
+                                    isPro || isCustom
                                         ? "bg-gray-900 border-gray-900 text-white shadow-2xl"
                                         : plan.current
                                             ? "bg-white border-[#ff3d03] shadow-xl shadow-[#ff3d03]/10 scale-105 z-10"
@@ -172,18 +171,18 @@ export default function SubscriptionIndex({ auth, tenant, plans, usage }: Props)
                                 <div className="mb-8">
                                     <p className={clsx(
                                         "text-sm font-bold uppercase tracking-wider mb-2",
-                                        isPro ? "text-gray-400" : "text-gray-500"
+                                        isPro || isCustom ? "text-gray-400" : "text-gray-500"
                                     )}>
-                                        {plan.id === 'free' ? 'Gratuito' : plan.name}
+                                        {plan.name}
                                     </p>
                                     <div className="flex items-baseline gap-1">
                                         {plan.price !== null && (
                                             <>
-                                                {plan.price > 0 && <span className={clsx("text-sm font-bold", isPro ? "text-gray-400" : "text-gray-500")}>R$</span>}
-                                                <span className={clsx("text-4xl font-black", isPro ? "text-white" : "text-gray-900")}>
+                                                {plan.price > 0 && <span className={clsx("text-sm font-bold", isPro || isCustom ? "text-gray-400" : "text-gray-500")}>R$</span>}
+                                                <span className={clsx("text-4xl font-black", isPro || isCustom ? "text-white" : "text-gray-900")}>
                                                     {plan.price === 0 ? 'Grátis' : plan.price.toString().replace('.', ',')}
                                                 </span>
-                                                {plan.price > 0 && <span className={clsx("text-sm font-medium", isPro ? "text-gray-400" : "text-gray-500")}>/{plan.interval}</span>}
+                                                {plan.price > 0 && <span className={clsx("text-sm font-medium", isPro || isCustom ? "text-gray-400" : "text-gray-500")}>/{plan.interval}</span>}
                                             </>
                                         )}
                                         {plan.price === null && (
@@ -212,7 +211,7 @@ export default function SubscriptionIndex({ auth, tenant, plans, usage }: Props)
                                                     <span key={i} className={clsx(
                                                         "text-sm font-medium",
                                                         feature.included
-                                                            ? (isPro ? "text-gray-300" : "text-gray-600")
+                                                            ? (isPro || isCustom ? "text-gray-300" : "text-gray-600")
                                                             : "text-gray-400 line-through"
                                                     )}>
                                                         {line}
@@ -229,14 +228,14 @@ export default function SubscriptionIndex({ auth, tenant, plans, usage }: Props)
                                             disabled
                                             className={clsx(
                                                 "w-full py-4 rounded-xl border font-bold text-sm cursor-not-allowed flex items-center justify-center gap-2",
-                                                isPro ? "border-gray-700 bg-gray-800 text-gray-400" : "border-gray-200 bg-gray-50 text-gray-400"
+                                                isPro || isCustom ? "border-gray-700 bg-gray-800 text-gray-400" : "border-gray-200 bg-gray-50 text-gray-400"
                                             )}
                                         >
                                             <Check className="h-4 w-4" />
                                             Plano Atual
                                         </button>
                                     ) : (
-                                        plan.price === 0 ? (
+                                        isFree ? (
                                             <button
                                                 onClick={handleDowngradeClick}
                                                 className="block w-full py-4 rounded-xl font-bold text-center transition-all border border-gray-200 text-gray-900 hover:border-[#ff3d03] hover:text-[#ff3d03]"
@@ -245,10 +244,10 @@ export default function SubscriptionIndex({ auth, tenant, plans, usage }: Props)
                                             </button>
                                         ) : (
                                             <Link
-                                                href={route('subscription.checkout', plan.original_id || plan.id)}
+                                                href={route('subscription.checkout', plan.id)}
                                                 className={clsx(
                                                     "block w-full py-4 rounded-xl font-bold text-center transition-all",
-                                                    isPro
+                                                    isPro || isCustom
                                                         ? "bg-[#ff3d03] text-white hover:bg-[#e63700] shadow-lg shadow-[#ff3d03]/20"
                                                         : "border border-gray-200 text-gray-900 hover:border-[#ff3d03] hover:text-[#ff3d03]"
                                                 )}
@@ -271,7 +270,7 @@ export default function SubscriptionIndex({ auth, tenant, plans, usage }: Props)
                 currentPlanName={currentPlan?.name || 'Seu Plano'}
                 processing={processing}
             />
-        </AuthenticatedLayout>
+        </AuthenticatedLayout >
     );
 }
 

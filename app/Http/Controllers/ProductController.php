@@ -70,20 +70,27 @@ class ProductController extends Controller implements HasMiddleware
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0',
-            'description' => 'nullable|string',
-            'category_id' => 'nullable|exists:categories,id',
-            'image' => 'nullable|image|max:2048',
-            'complement_groups' => 'nullable|array',
-            'complement_groups.*' => 'string|exists:complement_groups,id',
-            'is_available' => 'boolean',
-            'track_stock' => 'boolean',
-            'stock_quantity' => 'nullable|integer',
-            'loyalty_redeemable' => 'boolean',
-            'loyalty_points_cost' => 'nullable|integer|min:1',
-        ]);
+        \Illuminate\Support\Facades\Log::info('Product Create Request:', $request->all());
+
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'price' => 'required|numeric|min:0',
+                'description' => 'nullable|string',
+                'category_id' => 'nullable|exists:categories,id',
+                'image' => 'nullable|image|max:2048',
+                'complement_groups' => 'nullable|array',
+                'complement_groups.*' => 'string|exists:complement_groups,id',
+                'is_available' => 'boolean',
+                'track_stock' => 'boolean',
+                'stock_quantity' => 'nullable|integer',
+                'loyalty_redeemable' => 'boolean',
+                'loyalty_points_cost' => 'nullable|integer|min:0',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Illuminate\Support\Facades\Log::error('Product Create Validation Error:', $e->errors());
+            throw $e;
+        }
 
         if ($request->hasFile('image')) {
             $path = $request->file('image')->store('products', 'public');
@@ -119,28 +126,39 @@ class ProductController extends Controller implements HasMiddleware
         $tenant = auth()->user()->tenant;
 
         return Inertia::render('Products/Edit', [
-            'product' => $product->load(['category', 'complementGroups']),
+            'product' => $product->load(['category', 'complementGroups', 'ingredients']),
             'categories' => Category::where('tenant_id', $tenant->id)->orderBy('name')->get(),
             'complement_groups' => \App\Models\ComplementGroup::where('tenant_id', $tenant->id)->with('options')->orderBy('name')->get(),
+            'ingredients' => \App\Models\Ingredient::where('tenant_id', $tenant->id)->orderBy('name')->get(),
         ]);
     }
 
     public function update(Request $request, Product $product)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0',
-            'description' => 'nullable|string',
-            'category_id' => 'nullable|exists:categories,id',
-            'image' => 'nullable|image|max:2048',
-            'complement_groups' => 'nullable|array',
-            'complement_groups.*' => 'string|exists:complement_groups,id',
-            'is_available' => 'boolean',
-            'track_stock' => 'boolean',
-            'stock_quantity' => 'nullable|integer',
-            'loyalty_redeemable' => 'boolean',
-            'loyalty_points_cost' => 'nullable|integer|min:1',
-        ]);
+        \Illuminate\Support\Facades\Log::info('Product Update Request:', $request->all());
+
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'price' => 'required|numeric|min:0',
+                'description' => 'nullable|string',
+                'category_id' => 'nullable|exists:categories,id',
+                'image' => 'nullable|image|max:2048',
+                'complement_groups' => 'nullable|array',
+                'complement_groups.*' => 'string|exists:complement_groups,id',
+                'is_available' => 'boolean',
+                'track_stock' => 'boolean',
+                'stock_quantity' => 'nullable|integer',
+                'loyalty_redeemable' => 'boolean',
+                'loyalty_points_cost' => 'nullable|integer|min:0',
+                'ingredients' => 'nullable|array',
+                'ingredients.*.id' => 'required|exists:ingredients,id',
+                'ingredients.*.quantity' => 'required|numeric|min:0',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Illuminate\Support\Facades\Log::error('Product Update Validation Error:', $e->errors());
+            throw $e;
+        }
 
         if ($request->hasFile('image')) {
             $path = $request->file('image')->store('products', 'public');
@@ -160,6 +178,17 @@ class ProductController extends Controller implements HasMiddleware
             $product->complementGroups()->sync($validated['complement_groups']);
         }
 
+        if (isset($validated['ingredients'])) {
+            $recipeData = [];
+            foreach ($validated['ingredients'] as $item) {
+                $recipeData[$item['id']] = [
+                    'tenant_id' => auth()->user()->tenant_id,
+                    'quantity' => $item['quantity']
+                ];
+            }
+            $product->ingredients()->sync($recipeData);
+        }
+
         return redirect()->route('products.index')->with('success', 'Produto atualizado com sucesso!');
     }
 
@@ -175,6 +204,8 @@ class ProductController extends Controller implements HasMiddleware
             'is_available' => !$product->is_available
         ]);
 
+        \Illuminate\Support\Facades\Cache::forget("tenant_menu_{$product->tenant_id}");
+
         return back()->with('success', 'Disponibilidade do produto atualizada!');
     }
 
@@ -183,6 +214,8 @@ class ProductController extends Controller implements HasMiddleware
         $product->update([
             'is_featured' => !$product->is_featured
         ]);
+
+        \Illuminate\Support\Facades\Cache::forget("tenant_menu_{$product->tenant_id}");
 
         return back()->with('success', 'Destaque do produto atualizado!');
     }
@@ -204,6 +237,8 @@ class ProductController extends Controller implements HasMiddleware
         $product->update([
             $field => !$product->$field
         ]);
+
+        \Illuminate\Support\Facades\Cache::forget("tenant_menu_{$product->tenant_id}");
 
         return back()->with('success', 'Badge do produto atualizado!');
     }
@@ -234,6 +269,8 @@ class ProductController extends Controller implements HasMiddleware
                 ->update(['sort_order' => $item['sort_order']]);
         }
 
+        \Illuminate\Support\Facades\Cache::forget("tenant_menu_" . auth()->user()->tenant_id);
+
         return back();
     }
 
@@ -260,6 +297,8 @@ class ProductController extends Controller implements HasMiddleware
                 break;
         }
 
+        \Illuminate\Support\Facades\Cache::forget("tenant_menu_" . auth()->user()->tenant_id);
+
         return back()->with('success', 'Ação em massa realizada com sucesso!');
     }
 
@@ -279,6 +318,8 @@ class ProductController extends Controller implements HasMiddleware
         Product::whereIn('id', $request->ids)
             ->where('tenant_id', auth()->user()->tenant_id)
             ->update(['category_id' => $category->id]);
+
+        \Illuminate\Support\Facades\Cache::forget("tenant_menu_" . auth()->user()->tenant_id);
 
         return back()->with('success', 'Categoria atualizada com sucesso!');
     }

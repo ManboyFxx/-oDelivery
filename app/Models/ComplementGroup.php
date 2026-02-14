@@ -20,6 +20,7 @@ class ComplementGroup extends Model
         'min_selections',
         'max_selections',
         'is_required',
+        'is_active',
         'sort_order',
     ];
 
@@ -27,6 +28,7 @@ class ComplementGroup extends Model
         'min_selections' => 'integer',
         'max_selections' => 'integer',
         'is_required' => 'boolean',
+        'is_active' => 'boolean',
         'sort_order' => 'integer',
     ];
 

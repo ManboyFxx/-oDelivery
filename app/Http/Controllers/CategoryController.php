@@ -75,6 +75,8 @@ class CategoryController extends Controller
                 ->update(['sort_order' => $item['sort_order']]);
         }
 
+        \Illuminate\Support\Facades\Cache::forget("tenant_menu_" . auth()->user()->tenant_id);
+
         return back();
     }
 
@@ -97,6 +99,8 @@ class CategoryController extends Controller
                 $query->delete();
                 break;
         }
+
+        \Illuminate\Support\Facades\Cache::forget("tenant_menu_" . auth()->user()->tenant_id);
 
         return back()->with('success', 'Ação em massa realizada com sucesso!');
     }

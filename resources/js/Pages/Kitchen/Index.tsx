@@ -68,6 +68,45 @@ export default function KitchenIndex({ orders }: { orders: Order[] }) {
         setPreviousOrderCount(newOrderCount);
     }, [orders, soundEnabled]);
 
+    // Polling for updates (Safe implementation using public endpoint)
+    useEffect(() => {
+        const tenantId = (window as any).page?.props?.auth?.user?.tenant_id || (window as any).page?.props?.tenant?.id;
+        let lastTimestamp = 0;
+
+        const checkPublicPoll = async () => {
+            if (!tenantId) return;
+
+            try {
+                const response = await fetch(`/api/poll/${tenantId}`);
+                if (!response.ok) return;
+
+                const { timestamp } = await response.json();
+
+                if (lastTimestamp === 0) {
+                    lastTimestamp = timestamp;
+                    return;
+                }
+
+                if (timestamp > lastTimestamp) {
+                    console.log('[KitchenPolling] Change detected via Poll File. Reloading...');
+                    lastTimestamp = timestamp;
+
+                    router.reload({
+                        only: ['orders'],
+                        preserveScroll: true,
+                        preserveState: true,
+                    } as any);
+                }
+            } catch (error) {
+                // Silent fail
+            }
+        };
+
+        const interval = setInterval(checkPublicPoll, 15000);
+
+        return () => clearInterval(interval);
+    }, []);
+
     // Timer Logic
     useEffect(() => {
         const interval = setInterval(() => {

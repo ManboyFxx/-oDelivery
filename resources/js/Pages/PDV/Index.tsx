@@ -314,8 +314,8 @@ export default function PDV({ categories, allProducts, tables = [], customers = 
         setIsCheckoutModalOpen(true);
     };
 
-    const submitOrder = (e: React.FormEvent) => {
-        e.preventDefault();
+    const submitOrder = (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
 
         if (targetTable) {
             // Adding items to table

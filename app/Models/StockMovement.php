@@ -17,15 +17,16 @@ class StockMovement extends Model
     protected $fillable = [
         'tenant_id',
         'product_id',
+        'ingredient_id',
         'quantity',
         'type',
-        'reason',
+        'description',
         'order_id',
-        'created_by',
+        'user_id',
     ];
 
     protected $casts = [
-        'quantity' => 'integer',
+        'quantity' => 'float',
     ];
 
     public function product()
@@ -38,8 +39,13 @@ class StockMovement extends Model
         return $this->belongsTo(Order::class);
     }
 
-    public function creator()
+    public function ingredient()
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(Ingredient::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }

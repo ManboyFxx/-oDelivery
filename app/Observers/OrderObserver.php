@@ -43,6 +43,7 @@ class OrderObserver
         if ($order->isDirty('status')) {
             switch ($order->status) {
                 case 'preparing': // Confirmed
+                    $order->decrementIngredientsStock();
                     $this->ooBotService->sendOrderConfirmation($order);
                     break;
                 case 'ready':

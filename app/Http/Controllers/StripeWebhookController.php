@@ -81,7 +81,7 @@ class StripeWebhookController extends Controller
             $subscriptionId = $invoice->subscription;
             $customerId = $invoice->customer;
 
-            $tenant = Tenant::where('stripe_id', $customerId)->first();
+            $tenant = Tenant::where('stripe_customer_id', $customerId)->first();
 
             if (!$tenant) {
                 Log::error("Webhook: Tenant not found for customer {$customerId}");
@@ -154,13 +154,29 @@ class StripeWebhookController extends Controller
 
     protected function handlePaymentFailed($invoice)
     {
-        Log::info("Payment failed for invoice: " . $invoice->id);
-        // Logic to notify user or update retry count
+        $customerId = $invoice->customer;
+        $tenant = Tenant::where('stripe_customer_id', $customerId)->first();
+
+        if ($tenant) {
+            $tenant->update([
+                'subscription_status' => 'past_due',
+                'payment_failure_reason' => $invoice->last_payment_error->message ?? 'Payment failed',
+            ]);
+            Log::warning("Webhook: Payment failed for Tenant {$tenant->id}. Status set to past_due.");
+        }
     }
 
     protected function handleSubscriptionDeleted($subscription)
     {
-        // Cancel subscription
-        Log::info("Subscription deleted: " . $subscription->id);
+        $customerId = $subscription->customer;
+        $tenant = Tenant::where('stripe_customer_id', $customerId)->first();
+
+        if ($tenant) {
+            $tenant->update([
+                'subscription_status' => 'canceled',
+                'stripe_subscription_id' => null,
+            ]);
+            Log::info("Webhook: Subscription deleted for Tenant {$tenant->id}. Status set to canceled.");
+        }
     }
 }
