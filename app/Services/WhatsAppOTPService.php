@@ -8,6 +8,11 @@ use Illuminate\Support\Facades\Log;
 
 class WhatsAppOTPService
 {
+    public function __construct(
+        private \App\Services\EvolutionApiService $evolutionApi
+    ) {
+    }
+
     /**
      * Send OTP code via WhatsApp using Evolution API
      *
@@ -18,12 +23,18 @@ class WhatsAppOTPService
      */
     public function sendOTP(string $phone, string $code, string $tenantId): bool
     {
+        // 1. Tentar instância exclusiva do Tenant
         $instance = WhatsAppInstance::where('tenant_id', $tenantId)
             ->where('status', 'connected')
             ->first();
 
+        // 2. Fallback para instância compartilhada (Master) se não houver exclusiva
         if (!$instance) {
-            Log::error('WhatsApp instance not connected for OTP', [
+            $instance = WhatsAppInstance::getSharedInstance();
+        }
+
+        if (!$instance) {
+            Log::error('ÓoBot OTP - Nenhuma instância de WhatsApp disponível para envio.', [
                 'tenant_id' => $tenantId,
                 'phone' => $phone
             ]);
@@ -33,36 +44,32 @@ class WhatsAppOTPService
         $message = $this->formatOTPMessage($code);
 
         try {
-            $response = Http::withHeaders([
-                'apikey' => config('services.evolution.api_key'),
-            ])->post(
-                    config('services.evolution.base_url') . "/message/sendText/{$instance->instance_name}",
-                    [
-                        'number' => $this->formatPhoneNumber($phone),
-                        'text' => $message,
-                    ]
-                );
+            $result = $this->evolutionApi->sendTextMessage(
+                $instance->instance_name,
+                $phone,
+                $message
+            );
 
-            if ($response->successful()) {
-                Log::info('OTP sent successfully via WhatsApp', [
+            if ($result['success']) {
+                Log::info('ÓoBot OTP - Enviado com sucesso', [
                     'phone' => $phone,
-                    'tenant_id' => $tenantId
+                    'tenant_id' => $tenantId,
+                    'instance' => $instance->instance_name
                 ]);
                 return true;
             }
 
-            Log::error('Failed to send OTP via WhatsApp', [
+            Log::error('ÓoBot OTP - Falha no envio Evolution API', [
                 'phone' => $phone,
-                'status' => $response->status(),
-                'body' => $response->body()
+                'tenant_id' => $tenantId,
+                'error' => $result['error'] ?? 'Erro desconhecido'
             ]);
             return false;
 
         } catch (\Exception $e) {
-            Log::error('Exception while sending OTP via WhatsApp', [
+            Log::error('ÓoBot OTP - Exceção no serviço de OTP', [
                 'phone' => $phone,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
             ]);
             return false;
         }

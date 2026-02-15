@@ -9,6 +9,7 @@ import { useToast } from '@/Hooks/useToast';
 import { useAudio } from '@/Hooks/useAudio';
 import { useEffect, useRef } from 'react';
 import { router } from '@inertiajs/react';
+import ImpersonationBanner from '@/Components/ImpersonationBanner';
 
 import { PageProps } from '@/types';
 
@@ -140,6 +141,11 @@ export default function Authenticated({ user, header, children, tenant: propTena
 
             {/* Main Content */}
             <div className="flex flex-1 flex-col overflow-hidden lg:pl-72 transition-all duration-300">
+                {/* Impersonation Banner */}
+                {auth.is_impersonating && (
+                    <ImpersonationBanner />
+                )}
+
                 <TopBar user={user || authUser} onMenuClick={() => setIsMobileMenuOpen(true)} hasUnread={hasUnread} onRead={() => setHasUnread(false)} />
 
                 {/* Trial Banner Global */}

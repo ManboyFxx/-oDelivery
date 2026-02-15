@@ -36,66 +36,20 @@ Route::get('/', function () {
 });
 
 Route::get('/planos', function () {
-    $plans = [
-        [
-            'id' => 'free',
-            'name' => 'Gratuito',
-            'price' => 0,
+    $planController = new \App\Http\Controllers\Api\PlanController();
+    $plans = \App\Models\PlanLimit::getActivePlans()->map(function ($plan) {
+        return [
+            'id' => $plan->plan,
+            'name' => $plan->display_name,
+            'price' => $plan->price_monthly,
             'interval' => 'mês',
-            'features' => [
-                ['text' => 'Até 900 pedidos/mês', 'included' => true],
-                ['text' => 'Até 50 produtos no cardápio', 'included' => true],
-                ['text' => '2 usuários (1 admin + 1 funcionário)', 'included' => true],
-                ['text' => 'Cardápio Digital Completo', 'included' => true],
-                ['text' => 'Painel de Gestão', 'included' => true],
-                ['text' => 'Sistema de Mesas', 'included' => true],
-                ['text' => 'Sistema de Impressão', 'included' => true],
-                ['text' => 'Relatórios Básicos', 'included' => true],
-                ['text' => 'Gestão de Motoboys', 'included' => false],
-                ['text' => 'WhatsApp Bot', 'included' => false],
-                ['text' => 'Pedidos Ilimitados', 'included' => false],
-            ],
-        ],
-        [
-            'id' => 'pro',
-            'name' => 'Pro',
-            'price' => 109.90,
-            'interval' => 'mês',
-            'features' => [
-                ['text' => 'Pedidos Ilimitados', 'included' => true],
-                ['text' => 'Produtos Ilimitados', 'included' => true],
-                ['text' => '13 usuários (3 admins + 10 funcionários)', 'included' => true],
-                ['text' => '10 motoboys', 'included' => true],
-                ['text' => 'Gestão de Motoboys Completa', 'included' => true],
-                ['text' => 'WhatsApp Bot Ilimitado', 'included' => true],
-                ['text' => 'Integração WhatsApp', 'included' => true],
-                ['text' => 'Sistema de Impressão', 'included' => true],
-                ['text' => 'Editor de Planta Baixa', 'included' => true],
-                ['text' => 'Cupons de Desconto', 'included' => true],
-                ['text' => 'Relatórios Avançados', 'included' => true],
-                ['text' => 'Suporte Prioritário', 'included' => true],
-            ],
-        ],
-        [
-            'id' => 'custom',
-            'name' => 'Personalizado',
-            'price' => null, // Em breve
-            'interval' => 'mês',
-            'features' => [
-                ['text' => 'Tudo do PRO', 'included' => true],
-                ['text' => 'Usuários Ilimitados', 'included' => true],
-                ['text' => 'Motoboys Ilimitados', 'included' => true],
-                ['text' => 'Múltiplas Lojas', 'included' => true],
-                ['text' => 'API Dedicada', 'included' => true],
-                ['text' => 'Suporte VIP 24/7', 'included' => true],
-                ['text' => 'Treinamento Personalizado', 'included' => true],
-                ['text' => 'Customizações sob Demanda', 'included' => true],
-            ],
-        ],
-    ];
+            'features' => $plan->formatted_features,
+        ];
+    });
 
     return Inertia::render('Welcome/Plans', [
-        'plans' => $plans
+        'plans' => $plans,
+        'comparisonData' => $planController->comparison()->getData()->features
     ]);
 })->name('plans');
 
@@ -205,7 +159,17 @@ Route::middleware(['auth', \App\Http\Middleware\SuperAdminMiddleware::class])->p
     // Plan Coupons
     Route::resource('/plan-coupons', \App\Http\Controllers\Admin\PlanCouponController::class);
     Route::post('/plan-coupons/{coupon}/toggle', [\App\Http\Controllers\Admin\PlanCouponController::class, 'toggle'])->name('plan-coupons.toggle');
+
+    // Impersonation
+    Route::get('/tenants/{tenant}/impersonate', [\App\Http\Controllers\Admin\AdminImpersonateController::class, 'impersonate'])->name('tenants.impersonate');
+
+    // Financial
+    Route::get('/financial', [\App\Http\Controllers\Admin\AdminFinancialController::class, 'index'])->name('financial.index');
 });
+
+Route::post('/admin/impersonate/leave', [\App\Http\Controllers\Admin\AdminImpersonateController::class, 'leave'])
+    ->middleware('auth')
+    ->name('admin.impersonate.leave');
 
 // Public Menu Routes
 Route::get('/{slug}/menu', [\App\Http\Controllers\TenantMenuController::class, 'show'])->name('tenant.menu');

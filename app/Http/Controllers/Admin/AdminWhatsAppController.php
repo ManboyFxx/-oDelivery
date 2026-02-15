@@ -206,14 +206,18 @@ class AdminWhatsAppController extends Controller
         ]);
 
         $user = auth()->user();
-        if (!$user->tenant_id) {
-            // For super admins without tenant, maybe allow updating a default or valid tenant?
-            // For now, keep restricting or handle gracefully.
-            return back()->with('error', 'Configuração disponível apenas para usuários vinculados a uma loja.');
+        $tenantId = $user->tenant_id;
+
+        if (!$tenantId && $user->role !== 'super_admin') {
+            return back()->with('error', 'Configuração disponível apenas para lojistas ou administradores.');
         }
 
+        // Se for Super Admin sem tenant, podemos salvar como uma configuração "global" 
+        // ou simplesmente aplicar a todos os tenants. Para agora, vamos salvar no primeiro 
+        // ou criar um registro master se o model permitir null.
+
         $storeSetting = \App\Models\StoreSetting::firstOrCreate(
-            ['tenant_id' => $user->tenant_id]
+            ['tenant_id' => $tenantId] // Se for null, verifica se o banco aceita
         );
 
         $storeSetting->update([

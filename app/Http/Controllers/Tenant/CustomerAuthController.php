@@ -77,9 +77,16 @@ class CustomerAuthController extends Controller
                 ]);
             }
 
-            // Check if OTP is enabled in store settings
+            // Check if OTP is enabled in store settings (Tenant specific or Global Fallback)
             $storeSettings = \App\Models\StoreSetting::where('tenant_id', $tenant->id)->first();
-            $otpEnabled = $storeSettings ? $storeSettings->enable_otp_verification : true;
+
+            if ($storeSettings) {
+                $otpEnabled = $storeSettings->enable_otp_verification;
+            } else {
+                // Fallback to Global setting (tenant_id is null)
+                $globalSettings = \App\Models\StoreSetting::whereNull('tenant_id')->first();
+                $otpEnabled = $globalSettings ? $globalSettings->enable_otp_verification : true;
+            }
 
             if (!$otpEnabled) {
                 // OTP disabled, login directly

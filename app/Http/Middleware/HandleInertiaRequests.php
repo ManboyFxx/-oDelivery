@@ -41,6 +41,7 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $user,
+                'is_impersonating' => $request->session()->has('impersonated_by'),
             ],
             'tenant' => $tenant ? [
                 'id' => $tenant->id,

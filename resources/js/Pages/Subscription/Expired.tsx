@@ -41,7 +41,7 @@ export default function Expired({ tenant, plans, downgradeRisks }: Props) {
             if (downgradeRisks && !downgradeRisks.can_downgrade) {
                 setShowWarningModal(true);
             } else {
-                router.post(route('subscription.downgrade-to-free'));
+                router.post(route('subscription.downgrade'));
             }
         } else if (plan === 'pro' || plan === 'enterprise') {
             const message = encodeURIComponent(
@@ -54,7 +54,7 @@ export default function Expired({ tenant, plans, downgradeRisks }: Props) {
     };
 
     const confirmDowngrade = () => {
-        router.post(route('subscription.downgrade-to-free'), { force: true }, {
+        router.post(route('subscription.downgrade'), { force: true }, {
             onFinish: () => setShowWarningModal(false)
         });
     };

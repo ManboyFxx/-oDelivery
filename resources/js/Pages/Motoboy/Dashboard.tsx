@@ -1,4 +1,4 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, usePage, router } from '@inertiajs/react';
 import { useState } from 'react';
 import MotoboyLayout from '@/Layouts/MotoboyLayout';
 import StatusToggle from '@/Components/Motoboy/StatusToggle';
@@ -42,12 +42,15 @@ export default function Dashboard({
 
     const handleAcceptOrder = async (orderId: string) => {
         setLoadingOrders(orderId);
-        try {
-            // TODO: POST para aceitar pedido
-            console.log('Aceitar pedido:', orderId);
-        } finally {
-            setLoadingOrders(null);
-        }
+        router.post(route('motoboy.orders.accept', orderId), {}, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setLoadingOrders(null);
+            },
+            onError: () => {
+                setLoadingOrders(null);
+            }
+        });
     };
 
     const ratingStars = Array(Math.round(summary.average_rating))

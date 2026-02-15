@@ -3,7 +3,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     Search, Plus, MoreHorizontal, Filter, Download,
     Shield, Store, Calendar, CreditCard, AlertTriangle,
-    Clock, Zap, Users, Package, ShoppingCart, CheckCircle, XCircle
+    Clock, Zap, Users, Package, ShoppingCart, CheckCircle, XCircle, Eye
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Pagination from '@/Components/Pagination';
@@ -302,6 +302,14 @@ export default function AdminTenantsIndex({ tenants, filters, plans }: IndexProp
                                                         +7d
                                                     </button>
                                                 )}
+
+                                                <Link
+                                                    href={route('admin.tenants.impersonate', tenant.id)}
+                                                    className="p-2 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-500/10 text-gray-400 hover:text-[#ff3d03] transition-colors"
+                                                    title="Acessar Loja (Suporte)"
+                                                >
+                                                    <Eye className="h-4 w-4" />
+                                                </Link>
 
                                                 <Link
                                                     href={route('admin.tenants.edit', tenant.id)}

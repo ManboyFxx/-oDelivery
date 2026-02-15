@@ -435,8 +435,8 @@ class Tenant extends Model
             'subscription_ends_at' => null,
             'billing_cycle' => null,
             'next_billing_date' => null,
-            'max_users' => $freePlan?->max_users,
-            'max_products' => $freePlan?->max_products,
+            'max_users' => null, // Segue o padrão do PlanLimit
+            'max_products' => null, // Segue o padrão do PlanLimit
             'show_watermark' => true,
         ]);
 

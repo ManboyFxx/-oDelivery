@@ -55,28 +55,18 @@ class SubscriptionController extends Controller
 
     public function checkout(string $plan)
     {
-        // Mock Checkout: Directly upgrade for now to test flow
         $tenant = auth()->user()->tenant;
+        $planModel = \App\Models\PlanLimit::findByPlan($plan);
 
-        // Define price based on plan (should come from DB/Config)
-        $prices = [
-            'pro' => 79.90,
-            'business' => 149.90,
-            'basic' => 49.90
-        ];
-
-        $price = $prices[$plan] ?? 0;
+        if (!$planModel) {
+            return back()->with('error', 'Plano não encontrado.');
+        }
 
         return Inertia::render('Subscription/Checkout', [
             'plan' => $plan,
-            'price' => $price,
-            'planName' => ucfirst($plan),
-            'features' => [
-                'Produtos Ilimitados',
-                'Gestão de Motoboys',
-                'Suporte Prioritário',
-                'Cardápio Digital'
-            ]
+            'price' => $planModel->price_monthly,
+            'planName' => $planModel->display_name,
+            'features' => collect($planModel->formatted_features)->where('included', true)->pluck('text')->toArray()
         ]);
     }
 
@@ -130,15 +120,12 @@ class SubscriptionController extends Controller
 
             $planId = $data['plan'];
 
-            // Calculate amount based on plan
-            $baseAmount = match ($planId) {
-                'pro' => 79.90,
-                'custom' => 149.90,
-                'business' => 149.90, // Alias
-                default => 79.90 // Default to Pro if unsure, or throw error?
-            };
+            $planModel = \App\Models\PlanLimit::findByPlan($planId);
+            if (!$planModel) {
+                return back()->withErrors(['payment' => 'Plano inválido']);
+            }
 
-            $amount = $baseAmount;
+            $amount = $planModel->price_monthly;
             $coupon = null;
 
             // Apply Coupon

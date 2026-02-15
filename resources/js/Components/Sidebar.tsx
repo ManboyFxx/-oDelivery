@@ -31,10 +31,12 @@ import {
     Printer, // Added
     Key, // Added
     Box, // Added
-    MessageSquare, // Added for WhatsApp
-    Download, // Added for System
-    LifeBuoy, // Added for Support
-    Beaker // Added for Ingredients
+    MessageSquare,
+    Download,
+    LifeBuoy,
+    Beaker,
+    DollarSign,
+    TrendingUp
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { ElementType } from 'react';
@@ -177,6 +179,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
             items: [
                 { name: 'Dashboard', href: route('admin.dashboard'), route: 'admin.dashboard', icon: LayoutDashboard, current: isCurrent('/admin/dashboard') },
                 { name: 'Tenants', href: route('admin.tenants.index'), route: 'admin.tenants.index', icon: Store, current: isCurrent('/admin/tenants') },
+                { name: 'Finanças', href: route('admin.financial.index'), route: 'admin.financial.index', icon: DollarSign, current: isCurrent('/admin/financial') },
             ]
         },
         {

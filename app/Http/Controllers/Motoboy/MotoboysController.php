@@ -68,7 +68,14 @@ class MotoboysController extends Controller
      */
     public function orders()
     {
-        return Inertia::render('Motoboy/Orders/Index');
+        $user = auth()->user();
+        $pendingOrders = $this->orderService->getPendingOrders($user->id);
+        $recentDeliveries = $this->orderService->getRecentDeliveries($user->id, 20);
+
+        return Inertia::render('Motoboy/Orders/Index', [
+            'pendingOrders' => $pendingOrders,
+            'recentDeliveries' => $recentDeliveries,
+        ]);
     }
 
     /**
@@ -76,8 +83,10 @@ class MotoboysController extends Controller
      */
     public function showOrder($orderId)
     {
+        $order = $this->orderService->getOrderDetail($orderId);
+
         return Inertia::render('Motoboy/Orders/Show', [
-            'orderId' => $orderId,
+            'order' => $order,
         ]);
     }
 
@@ -110,5 +119,45 @@ class MotoboysController extends Controller
     public function notifications()
     {
         return Inertia::render('Motoboy/Notifications');
+    }
+
+    /**
+     * Aceitar um pedido
+     */
+    public function acceptOrder($orderId)
+    {
+        $user = auth()->user();
+        try {
+            $this->orderService->acceptOrder($orderId, $user->id);
+            return back()->with('success', 'Pedido aceito com sucesso!');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Erro ao aceitar pedido: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Iniciar entrega
+     */
+    public function startDelivery($orderId)
+    {
+        try {
+            $this->orderService->startDelivery($orderId);
+            return back()->with('success', 'Entrega iniciada!');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Erro ao iniciar entrega: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Confirmar entrega
+     */
+    public function deliverOrder($orderId)
+    {
+        try {
+            $this->orderService->deliverOrder($orderId);
+            return back()->with('success', 'Pedido entregue com sucesso!');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Erro ao confirmar entrega: ' . $e->getMessage()]);
+        }
     }
 }

@@ -31,7 +31,7 @@ interface ComparisonFeature {
     description?: string;
 }
 
-export default function Plans({ plans }: Props) {
+export default function Plans({ plans, comparisonData }: Props & { comparisonData: ComparisonFeature[] }) {
     const [isYearly, setIsYearly] = useState(false);
     const [displayPlans, setDisplayPlans] = useState<Plan[]>(plans);
 
@@ -90,122 +90,6 @@ export default function Plans({ plans }: Props) {
             });
         }
     };
-
-    // Comparison data for detailed pricing table
-    const comparisonData: ComparisonFeature[] = [
-        {
-            name: 'Pedidos por Mês',
-            free: '900 pedidos',
-            pro: 'Ilimitados',
-            custom: 'Ilimitados',
-            description: 'Quantidade de pedidos que você pode receber mensalmente.'
-        },
-        {
-            name: 'Produtos no Cardápio',
-            free: 'Até 50',
-            pro: 'Ilimitados',
-            custom: 'Ilimitados',
-            description: 'Cadastre quantos produtos quiser sem limitações.'
-        },
-        {
-            name: 'Usuários da Equipe',
-            free: '2 (1 Admin + 1 Funcionário)',
-            pro: '13 (3 Admins + 10 Funcionários)',
-            custom: 'Ilimitados',
-            description: 'Convide membros da equipe com diferentes níveis de acesso.'
-        },
-        {
-            name: 'Gestão de Motoboys',
-            free: false,
-            pro: 'Até 10 motoboys',
-            custom: 'Ilimitados',
-            description: 'Rastreie entregadores em tempo real, atribua pedidos e monitore performance.'
-        },
-        {
-            name: 'Cardápio Digital',
-            free: true,
-            pro: true,
-            custom: true,
-            description: 'Gerencie seu cardápio online com categorias, preços e imagens.'
-        },
-        {
-            name: 'Sistema de Mesas',
-            free: true,
-            pro: true,
-            custom: true,
-            description: 'Controle de mesas para restaurantes e bares.'
-        },
-        {
-            name: 'Impressão Automática',
-            free: true,
-            pro: true,
-            custom: true,
-            description: 'Imprima pedidos automaticamente em impressora térmica.'
-        },
-        {
-            name: 'Relatórios',
-            free: 'Básicos',
-            pro: 'Avançados',
-            custom: 'Enterprise',
-            description: 'Relatórios financeiros, de vendas e performance.'
-        },
-        {
-            name: 'Automação WhatsApp (ÓoBot)',
-            free: false,
-            pro: 'Ilimitado',
-            custom: 'Ilimitado',
-            description: 'Automação de mensagens, confirmação de pedidos e notificações.'
-        },
-        {
-            name: 'Integração WhatsApp',
-            free: false,
-            pro: true,
-            custom: true,
-            description: 'Receba pedidos direto pelo WhatsApp com bot automatizado.'
-        },
-        {
-            name: 'Programa de Fidelidade',
-            free: false,
-            pro: true,
-            custom: true,
-            description: 'Crie sistema de pontos, cupons e promoções para fidelizar clientes.'
-        },
-        {
-            name: 'Editor de Planta Baixa',
-            free: false,
-            pro: true,
-            custom: true,
-            description: 'Crie layout visual das mesas do seu estabelecimento.'
-        },
-        {
-            name: 'Cupons de Desconto',
-            free: false,
-            pro: true,
-            custom: true,
-            description: 'Crie cupons promocionais e de desconto.'
-        },
-        {
-            name: 'Controle de Estoque',
-            free: false,
-            pro: 'Avançado',
-            custom: 'Enterprise',
-            description: 'Controle de quantidade, alertas de baixa quantidade e relatórios.'
-        },
-        {
-            name: 'API & Integrações',
-            free: false,
-            pro: true,
-            custom: true,
-            description: 'Integre com seus sistemas existentes via API REST.'
-        },
-        {
-            name: 'Suporte',
-            free: 'Community + FAQ',
-            pro: 'Prioritário',
-            custom: 'VIP 24/7',
-            description: 'Acesso a suporte, documentação e comunidade de usuários.'
-        },
-    ];
 
     return (
         <div className="min-h-screen bg-white font-sans text-gray-900 selection:bg-[#ff3d03] selection:text-white">
