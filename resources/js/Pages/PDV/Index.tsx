@@ -308,7 +308,12 @@ export default function PDV({ categories, allProducts, tables = [], customers = 
 
         setData({
             ...data,
-            items: cart.map(i => ({ id: i.id, quantity: i.quantity })),
+            items: cart.map(i => ({
+                id: i.id,
+                quantity: i.quantity,
+                notes: i.notes,
+                complements: i.selectedComplements
+            })),
             total: cartTotal
         });
         setIsCheckoutModalOpen(true);
@@ -320,7 +325,12 @@ export default function PDV({ categories, allProducts, tables = [], customers = 
         if (targetTable) {
             // Adding items to table
             router.post(route('tables.addItems', targetTable.id), {
-                items: cart.map(i => ({ id: i.id, quantity: i.quantity })),
+                items: cart.map(i => ({
+                    id: i.id,
+                    quantity: i.quantity,
+                    notes: i.notes,
+                    complements: i.selectedComplements
+                })),
             }, {
                 onSuccess: () => {
                     setCart([]);

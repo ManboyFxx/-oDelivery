@@ -6,6 +6,7 @@ import axios from 'axios';
 import clsx from 'clsx';
 import { useToast } from '@/Hooks/useToast';
 import AddressForm from './Components/AddressForm';
+import { Switch } from '@headlessui/react';
 
 interface Address {
     id: string;
@@ -59,6 +60,10 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
     const [couponError, setCouponError] = useState('');
     const [validatingCoupon, setValidatingCoupon] = useState(false);
 
+    const [usePoints, setUsePoints] = useState(false);
+    const [pointsToUse, setPointsToUse] = useState(0);
+    const [pointsDiscount, setPointsDiscount] = useState(0);
+
     const { success: showSuccess } = useToast();
 
     useEffect(() => {
@@ -81,7 +86,7 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
         return appliedCoupon.discount_amount || 0;
     };
 
-    const discountAmount = calculateDiscount();
+    const discountAmount = calculateDiscount() + pointsDiscount;
     const subtotal = total;
     const finalTotal = Math.max(0, subtotal + deliveryFee - discountAmount);
 
@@ -131,6 +136,7 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                 payment_method: paymentMethod,
                 change_for: paymentMethod === 'cash' ? parseFloat(changeFor.replace(',', '.')) : null,
                 coupon_id: appliedCoupon?.id || null,
+                loyalty_points_used: usePoints ? pointsToUse : 0,
                 items: cart.map(item => ({
                     product_id: item.product.id,
                     quantity: item.quantity,
@@ -418,6 +424,54 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                                         )}
                                         {couponError && <p className="text-xs text-red-500 mt-2">{couponError}</p>}
                                     </div>
+
+                                    {/* Loyalty Points Cashback */}
+                                    {store?.loyalty_enabled && customer?.loyalty_points > 0 && (
+                                        <div className={clsx(
+                                            "p-4 rounded-xl border transition-all",
+                                            usePoints ? "bg-orange-50 border-orange-200" : "bg-gray-50 border-gray-100"
+                                        )}>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <h3 className="font-bold text-gray-900 flex items-center gap-2 text-sm">
+                                                    <Gift className="h-4 w-4 text-orange-500" />
+                                                    Abater com Pontos
+                                                </h3>
+                                                <Switch
+                                                    checked={usePoints}
+                                                    onChange={(checked: boolean) => {
+                                                        setUsePoints(checked);
+                                                        if (checked) {
+                                                            const value = customer.loyalty_points * (store.settings?.currency_per_point || 0.10);
+                                                            setPointsToUse(customer.loyalty_points);
+                                                            setPointsDiscount(value);
+                                                            showSuccess('Pontos Aplicados!', `Desconto de ${formatPrice(value)} adicionado.`);
+                                                        } else {
+                                                            setPointsToUse(0);
+                                                            setPointsDiscount(0);
+                                                        }
+                                                    }}
+                                                    className={clsx(
+                                                        "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none",
+                                                        usePoints ? "bg-[#ff3d03]" : "bg-gray-200"
+                                                    )}
+                                                >
+                                                    <span className={clsx(
+                                                        "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                                                        usePoints ? "translate-x-6" : "translate-x-1"
+                                                    )} />
+                                                </Switch>
+                                            </div>
+                                            <div className="flex justify-between items-end">
+                                                <div>
+                                                    <p className="text-xs text-gray-500">Saldo: <span className="font-bold">{customer.loyalty_points} pontos</span></p>
+                                                    <p className="text-[10px] text-gray-400">1 ponto = {formatPrice(store.settings?.currency_per_point || 0.10)}</p>
+                                                </div>
+                                                {usePoints && (
+                                                    <p className="text-sm font-bold text-orange-600">-{formatPrice(pointsDiscount)}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Methods */}
                                     <div>

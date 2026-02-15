@@ -51,10 +51,18 @@ class AdminWhatsAppController extends Controller
             // Don't send config api key for security if possible, or send masked
         }
 
+        $tenantId = auth()->user()->tenant_id;
+        $enableOtpVerification = true; // Default to true
+
+        if ($tenantId) {
+            $enableOtpVerification = \App\Models\StoreSetting::where('tenant_id', $tenantId)->value('enable_otp_verification') ?? true;
+        }
+
         return Inertia::render('Admin/WhatsApp/Index', [
             'instance' => $instance,
             'logs' => $logs,
             'currentConfig' => $config,
+            'enableOtpVerification' => $enableOtpVerification,
         ]);
     }
 
@@ -189,6 +197,30 @@ class AdminWhatsAppController extends Controller
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
+    }
+
+    public function updateSettings(Request $request)
+    {
+        $validated = $request->validate([
+            'enable_otp_verification' => 'required|boolean',
+        ]);
+
+        $user = auth()->user();
+        if (!$user->tenant_id) {
+            // For super admins without tenant, maybe allow updating a default or valid tenant?
+            // For now, keep restricting or handle gracefully.
+            return back()->with('error', 'Configuração disponível apenas para usuários vinculados a uma loja.');
+        }
+
+        $storeSetting = \App\Models\StoreSetting::firstOrCreate(
+            ['tenant_id' => $user->tenant_id]
+        );
+
+        $storeSetting->update([
+            'enable_otp_verification' => $validated['enable_otp_verification']
+        ]);
+
+        return back()->with('success', 'Configurações atualizadas com sucesso.');
     }
 
     public function disconnect()

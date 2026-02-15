@@ -59,6 +59,8 @@ class PdvController extends Controller
             'items' => 'required|array|min:1',
             'items.*.id' => "required|exists:products,id,tenant_id,{$tenantId}",
             'items.*.quantity' => 'required|integer|min:1',
+            'items.*.notes' => 'nullable|string',
+            'items.*.complements' => 'nullable|array',
             'customer_name' => 'nullable|string',
             'customer_id' => "nullable|exists:customers,id,tenant_id,{$tenantId}",
             'payment_method' => 'required|in:cash,credit_card,debit_card,pix',
@@ -143,14 +145,38 @@ class PdvController extends Controller
             // 2. Create Order Items
             foreach ($validated['items'] as $item) {
                 $product = Product::find($item['id']);
-                OrderItem::create([
+
+                // Calculate complements price
+                $complementsPrice = 0;
+                $complements = $item['complements'] ?? [];
+
+                foreach ($complements as $comp) {
+                    $complementsPrice += ($comp['price'] * $comp['quantity']);
+                }
+
+                $itemSubtotal = ($product->price + $complementsPrice) * $item['quantity'];
+
+                $orderItem = OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $product->id,
                     'product_name' => $product->name,
                     'quantity' => $item['quantity'],
                     'unit_price' => $product->price,
-                    'subtotal' => $product->price * $item['quantity'],
+                    'complements_price' => $complementsPrice,
+                    'subtotal' => $itemSubtotal,
+                    'notes' => $item['notes'] ?? null,
                 ]);
+
+                // Create Order Item Complements
+                foreach ($complements as $comp) {
+                    \App\Models\OrderItemComplement::create([
+                        'order_item_id' => $orderItem->id,
+                        'complement_option_id' => $comp['optionId'], // Assuming optionId is passed
+                        'name' => $comp['name'],
+                        'price' => $comp['price'],
+                        'quantity' => $comp['quantity'],
+                    ]);
+                }
 
                 // Decrement stock if tracked
                 $product->decrementStock($item['quantity'], 'Venda PDV', $order->id);

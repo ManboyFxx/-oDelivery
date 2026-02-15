@@ -14,6 +14,7 @@ class WhatsAppTemplate extends Model
     protected $table = 'whatsapp_templates';
 
     protected $fillable = [
+        'tenant_id',
         'key',
         'name',
         'message',
@@ -23,6 +24,11 @@ class WhatsAppTemplate extends Model
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
+    public function tenant()
+    {
+        return $this->belongsTo(Tenant::class);
+    }
 
     public function scopeActive(Builder $query): Builder
     {

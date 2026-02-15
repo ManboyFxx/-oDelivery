@@ -68,8 +68,8 @@ Este documento lista sugestões de melhoria para o Painel Administrativo do Clie
 ## 7. Integrações (WhatsApp)
 
 ### Personalização
-- [ ] **Editor de Mensagens:** Permitir que o cliente edite os textos das mensagens automáticas (atualmente parecem fixos). Ex: "Olá {nome}, seu pedido saiu!"
-- [ ] **Teste de Envio:** Botão "Enviar Mensagem de Teste" para o próprio número do administrador para validar a conexão.
+- [x] **Editor de Mensagens:** Permitir que o cliente edite os textos das mensagens automáticas (atualmente parecem fixos). Ex: "Olá {nome}, seu pedido saiu!"
+- [x] **Teste de Envio:** Botão "Enviar Mensagem de Teste" para o próprio número do administrador para validar a conexão.
 - [ ] **Status da Conexão:** Exibir status detalhado da sessão do WhatsApp (Bateria do celular, Qualidade da conexão) se a API permitir.
 
 ## 8. Gestão de Clientes (Customers)

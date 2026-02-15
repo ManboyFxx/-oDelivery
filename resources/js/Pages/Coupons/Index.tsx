@@ -1,7 +1,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import { Ticket, Plus, Pencil, Percent, DollarSign, Calendar, Users } from 'lucide-react';
 import clsx from 'clsx';
+import { useState } from 'react';
+import CouponModal from './Partials/CouponModal';
 
 interface Coupon {
     id: string;
@@ -16,6 +18,19 @@ interface Coupon {
 }
 
 export default function CouponIndex({ coupons }: { coupons: { data: Coupon[] } }) {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
+
+    const handleCreate = () => {
+        setSelectedCoupon(null);
+        setIsModalOpen(true);
+    };
+
+    const handleEdit = (coupon: Coupon) => {
+        setSelectedCoupon(coupon);
+        setIsModalOpen(true);
+    };
+
     return (
         <AuthenticatedLayout>
             <Head title="Cupons" />
@@ -32,12 +47,12 @@ export default function CouponIndex({ coupons }: { coupons: { data: Coupon[] } }
                             <p className="text-sm text-gray-600 dark:text-gray-400">Crie e gerencie promoções para atrair clientes</p>
                         </div>
                     </div>
-                    <Link
-                        href={route('coupons.create')}
-                        className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-orange-500/30 transition-all"
+                    <button
+                        onClick={handleCreate}
+                        className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-orange-500/30 transition-all active:scale-95"
                     >
                         <Plus className="h-5 w-5" /> Criar Cupom
-                    </Link>
+                    </button>
                 </div>
             </div>
 
@@ -51,7 +66,7 @@ export default function CouponIndex({ coupons }: { coupons: { data: Coupon[] } }
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {coupons.data.map((coupon) => {
                         const isExpired = coupon.valid_until && new Date(coupon.valid_until) < new Date();
-                        const isUsageLimited = coupon.max_uses && coupon.current_uses >= coupon.max_uses;
+                        const isUsageLimited = coupon.max_uses && coupon.current_uses! >= coupon.max_uses;
 
                         return (
                             <div
@@ -68,13 +83,13 @@ export default function CouponIndex({ coupons }: { coupons: { data: Coupon[] } }
                                     <div className="h-2 bg-gradient-to-r from-orange-400 to-orange-500"></div>
                                     <div className="absolute top-4 right-4 flex gap-2">
                                         {coupon.is_active && !isExpired && !isUsageLimited && (
-                                            <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">Ativo</span>
+                                            <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full text-shadow-sm">Ativo</span>
                                         )}
                                         {isExpired && (
-                                            <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">Expirado</span>
+                                            <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full text-shadow-sm">Expirado</span>
                                         )}
                                         {isUsageLimited && (
-                                            <span className="bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full">Limite atingido</span>
+                                            <span className="bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full text-shadow-sm">Limite atingido</span>
                                         )}
                                     </div>
                                 </div>
@@ -83,32 +98,32 @@ export default function CouponIndex({ coupons }: { coupons: { data: Coupon[] } }
                                     {/* Coupon Code */}
                                     <div className="mb-4">
                                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Código</p>
-                                        <p className="font-mono text-2xl font-black text-orange-600 dark:text-orange-400 tracking-widest">
+                                        <p className="font-mono text-2xl font-black text-orange-600 dark:text-orange-400 tracking-widest uppercase">
                                             {coupon.code}
                                         </p>
                                     </div>
 
                                     {/* Discount Value */}
-                                    <div className="bg-white dark:bg-gray-700 rounded-xl p-4 mb-4 border border-orange-100 dark:border-orange-900">
+                                    <div className="bg-white dark:bg-gray-700 rounded-xl p-4 mb-4 border border-orange-100 dark:border-orange-900/50 shadow-inner">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-baseline gap-2">
                                                 {coupon.discount_type === 'percent' ? (
                                                     <>
-                                                        <span className="text-4xl font-black text-orange-600">{coupon.discount_value}</span>
+                                                        <span className="text-4xl font-black text-orange-600 dark:text-orange-400">{coupon.discount_value}</span>
                                                         <span className="text-xl text-gray-600 dark:text-gray-400 font-bold">%</span>
                                                     </>
                                                 ) : (
                                                     <>
                                                         <span className="text-xl text-gray-600 dark:text-gray-400 font-bold">R$</span>
-                                                        <span className="text-4xl font-black text-orange-600">{coupon.discount_value.toFixed(2)}</span>
+                                                        <span className="text-4xl font-black text-orange-600 dark:text-orange-400">{coupon.discount_value.toFixed(2)}</span>
                                                     </>
                                                 )}
                                             </div>
-                                            <div className="h-12 w-12 bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900 dark:to-amber-900 rounded-lg flex items-center justify-center">
+                                            <div className="h-12 w-12 bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/50 dark:to-amber-900/50 rounded-lg flex items-center justify-center border border-orange-200 dark:border-orange-800">
                                                 {coupon.discount_type === 'percent' ? (
-                                                    <Percent className="h-6 w-6 text-orange-600" />
+                                                    <Percent className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                                                 ) : (
-                                                    <DollarSign className="h-6 w-6 text-orange-600" />
+                                                    <DollarSign className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                                                 )}
                                             </div>
                                         </div>
@@ -118,21 +133,21 @@ export default function CouponIndex({ coupons }: { coupons: { data: Coupon[] } }
                                     <div className="space-y-2 mb-4 text-sm">
                                         {coupon.min_order_value && (
                                             <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                                                <DollarSign className="h-4 w-4" />
-                                                <span>Mínimo: R$ {coupon.min_order_value.toFixed(2)}</span>
+                                                <DollarSign className="h-4 w-4 text-orange-500/50" />
+                                                <span>Mínimo: R$ {Number(coupon.min_order_value).toFixed(2)}</span>
                                             </div>
                                         )}
 
                                         {coupon.valid_until && (
                                             <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                                                <Calendar className="h-4 w-4" />
+                                                <Calendar className="h-4 w-4 text-orange-500/50" />
                                                 <span>Válido até: {new Date(coupon.valid_until).toLocaleDateString('pt-BR')}</span>
                                             </div>
                                         )}
 
                                         {coupon.max_uses && (
                                             <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                                                <Users className="h-4 w-4" />
+                                                <Users className="h-4 w-4 text-orange-500/50" />
                                                 <span>{coupon.current_uses || 0} / {coupon.max_uses} utilizações</span>
                                             </div>
                                         )}
@@ -141,9 +156,9 @@ export default function CouponIndex({ coupons }: { coupons: { data: Coupon[] } }
                                     {/* Progress Bar for Usage */}
                                     {coupon.max_uses && (
                                         <div className="mb-4">
-                                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
                                                 <div
-                                                    className="bg-gradient-to-r from-orange-400 to-orange-600 h-2 transition-all"
+                                                    className="bg-gradient-to-r from-orange-400 to-orange-600 h-1.5 transition-all shadow-sm"
                                                     style={{ width: `${Math.min(((coupon.current_uses || 0) / coupon.max_uses) * 100, 100)}%` }}
                                                 />
                                             </div>
@@ -151,18 +166,24 @@ export default function CouponIndex({ coupons }: { coupons: { data: Coupon[] } }
                                     )}
 
                                     {/* Edit Button */}
-                                    <Link
-                                        href={route('coupons.edit', coupon.id)}
-                                        className="w-full inline-flex items-center justify-center gap-2 bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-200 font-bold py-2 px-4 rounded-lg hover:bg-orange-200 dark:hover:bg-orange-800 transition-colors"
+                                    <button
+                                        onClick={() => handleEdit(coupon)}
+                                        className="w-full inline-flex items-center justify-center gap-2 bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-200 font-bold py-2.5 px-4 rounded-xl hover:bg-orange-200 dark:hover:bg-orange-800/60 transition-all active:scale-95 border border-orange-200/50 dark:border-orange-800/50"
                                     >
                                         <Pencil className="h-4 w-4" /> Editar
-                                    </Link>
+                                    </button>
                                 </div>
                             </div>
                         );
                     })}
                 </div>
             )}
+
+            <CouponModal
+                show={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                coupon={selectedCoupon}
+            />
         </AuthenticatedLayout>
     );
 }

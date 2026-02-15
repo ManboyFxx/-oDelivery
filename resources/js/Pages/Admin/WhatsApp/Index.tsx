@@ -28,9 +28,10 @@ interface Props {
         url: string;
         apikey: string;
     };
+    enableOtpVerification: boolean; // Nova prop
 }
 
-export default function AdminWhatsAppIndex({ instance, logs, currentConfig }: Props) {
+export default function AdminWhatsAppIndex({ instance, logs, currentConfig, enableOtpVerification }: Props) {
     const [qrCode, setQrCode] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [localStatus, setLocalStatus] = useState(instance?.status || 'disconnected');
@@ -38,6 +39,11 @@ export default function AdminWhatsAppIndex({ instance, logs, currentConfig }: Pr
     const [evolutionUrl, setEvolutionUrl] = useState(currentConfig.url);
     const [evolutionApiKey, setEvolutionApiKey] = useState(currentConfig.apikey);
     const [qrCodeLoading, setQrCodeLoading] = useState(false);
+    const [otpEnabled, setOtpEnabled] = useState(enableOtpVerification); // Novo state
+
+    // Hooks must be at the top level
+    const { props } = usePage();
+    const { flash, errors } = props as any;
 
     const handleConnect = () => {
         setLoading(true);
@@ -54,6 +60,18 @@ export default function AdminWhatsAppIndex({ instance, logs, currentConfig }: Pr
         if (confirm('Tem certeza? Isso irá desconectar o WhatsApp de todos os clientes do plano Basic/Pro.')) {
             router.post(route('admin.whatsapp.disconnect'));
         }
+    };
+
+    const handleToggleOtp = () => {
+        const newValue = !otpEnabled;
+        setOtpEnabled(newValue);
+
+        router.post(route('admin.whatsapp.update-settings'), {
+            enable_otp_verification: newValue
+        }, {
+            preserveScroll: true,
+            onError: () => setOtpEnabled(!newValue) // Revert on error
+        });
     };
 
     const loadQrCode = async () => {
@@ -139,27 +157,45 @@ export default function AdminWhatsAppIndex({ instance, logs, currentConfig }: Pr
                     </p>
                 </div>
 
-                {/* @ts-ignore */}
+                {/* Settings Card */}
+                <div className="bg-white dark:bg-[#1a1b1e] rounded-[32px] border border-gray-100 dark:border-white/5 shadow-sm p-8">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Configurações de Segurança</h3>
+
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h4 className="text-base font-bold text-gray-900 dark:text-white">Verificação de Cliente (OTP)</h4>
+                            <p className="text-sm text-gray-500 max-w-2xl">
+                                Quando ativado, novos clientes ou dispositivos desconhecidos precisarão confirmar um código enviado via WhatsApp para fazer login.
+                                Desative se estiver com problemas no envio de mensagens.
+                            </p>
+                        </div>
+
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={otpEnabled}
+                                onChange={handleToggleOtp}
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#ff3d03]"></div>
+                        </label>
+                    </div>
+                </div>
+
                 {/* Display Flash Messages */}
-                {/* @ts-ignore */}
-                {usePage().props.flash?.error && (
+                {flash?.error && (
                     <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm font-medium">
-                        {/* @ts-ignore */}
-                        {usePage().props.flash.error}
+                        {flash.error}
                     </div>
                 )}
-                {/* @ts-ignore */}
-                {usePage().props.errors?.error && (
+                {errors?.error && (
                     <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm font-medium">
-                        {/* @ts-ignore */}
-                        {usePage().props.errors.error}
+                        {errors.error}
                     </div>
                 )}
-                {/* @ts-ignore */}
-                {usePage().props.flash?.success && (
+                {flash?.success && (
                     <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-xl text-sm font-medium">
-                        {/* @ts-ignore */}
-                        {usePage().props.flash.success}
+                        {flash.success}
                     </div>
                 )}
 

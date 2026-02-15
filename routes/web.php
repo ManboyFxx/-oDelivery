@@ -197,6 +197,7 @@ Route::middleware(['auth', \App\Http\Middleware\SuperAdminMiddleware::class])->p
     Route::get('/whatsapp/qrcode', [\App\Http\Controllers\Admin\AdminWhatsAppController::class, 'getQrCode'])->name('whatsapp.qrcode');
     Route::get('/whatsapp/status', [\App\Http\Controllers\Admin\AdminWhatsAppController::class, 'checkStatus'])->name('whatsapp.status');
     Route::post('/whatsapp/disconnect', [\App\Http\Controllers\Admin\AdminWhatsAppController::class, 'disconnect'])->name('whatsapp.disconnect');
+    Route::post('/whatsapp/update-settings', [\App\Http\Controllers\Admin\AdminWhatsAppController::class, 'updateSettings'])->name('whatsapp.update-settings');
 
     // Templates
     Route::resource('/whatsapp/templates', \App\Http\Controllers\Admin\WhatsAppTemplateController::class)->only(['index', 'update'])->names('whatsapp.templates');
@@ -345,7 +346,7 @@ Route::middleware(['auth', 'subscription', 'role:admin'])->group(function () {
     Route::middleware(['plan.limit:coupons'])->group(function () {
         Route::post('coupons', [CouponController::class, 'store'])->name('coupons.store');
     });
-    Route::resource('coupons', CouponController::class)->except(['store']);
+    Route::resource('coupons', CouponController::class)->only(['index', 'update', 'destroy']);
     Route::get('/fidelidade', [LoyaltyController::class, 'index'])->name('loyalty.index');
     Route::post('/fidelidade/settings', [LoyaltyController::class, 'updateSettings'])->name('loyalty.settings');
     Route::post('/fidelidade/adjust', [LoyaltyController::class, 'adjustPoints'])->name('loyalty.adjust');
@@ -410,6 +411,8 @@ Route::middleware(['auth', 'subscription', 'role:admin'])->group(function () {
         Route::get('/', [\App\Http\Controllers\WhatsAppController::class, 'index'])->name('index');
         Route::post('/toggle', [\App\Http\Controllers\WhatsAppController::class, 'toggleAutoMessages'])->name('toggle');
         Route::get('/logs', [\App\Http\Controllers\WhatsAppController::class, 'getLogs'])->name('logs');
+        Route::post('/templates', [\App\Http\Controllers\WhatsAppController::class, 'updateTemplates'])->name('templates.update');
+        Route::post('/test-send', [\App\Http\Controllers\WhatsAppController::class, 'testSend'])->name('test-send');
 
         // WhatsApp Instances Management
         Route::get('/instances', [WhatsAppInstanceController::class, 'index'])->name('instances.index');

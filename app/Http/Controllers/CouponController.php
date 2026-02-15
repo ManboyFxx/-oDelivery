@@ -17,19 +17,17 @@ class CouponController extends Controller
         ]);
     }
 
-    public function create()
-    {
-        return Inertia::render('Coupons/Create');
-    }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'code' => 'required|string|unique:coupons,code|max:50',
-            'type' => 'required|in:fixed,percent',
-            'value' => 'required|numeric|min:0',
+            'discount_type' => 'required|in:fixed,percent',
+            'discount_value' => 'required|numeric|min:0',
             'min_order_value' => 'nullable|numeric|min:0',
             'valid_until' => 'nullable|date',
+            'max_uses' => 'nullable|integer|min:1',
+            'is_active' => 'boolean'
         ]);
 
         $tenant = auth()->user()->tenant;
@@ -42,29 +40,24 @@ class CouponController extends Controller
         $validated['tenant_id'] = $tenant->id;
         Coupon::create($validated);
 
-        return redirect()->route('coupons.index')->with('success', 'Cupom criado com sucesso!');
+        return redirect()->back()->with('success', 'Cupom criado com sucesso!');
     }
 
-    public function edit(Coupon $coupon)
-    {
-        return Inertia::render('Coupons/Edit', [
-            'coupon' => $coupon
-        ]);
-    }
 
     public function update(Request $request, Coupon $coupon)
     {
         $validated = $request->validate([
             'code' => 'required|string|max:50|unique:coupons,code,' . $coupon->id,
-            'type' => 'required|in:fixed,percent',
-            'value' => 'required|numeric|min:0',
+            'discount_type' => 'required|in:fixed,percent',
+            'discount_value' => 'required|numeric|min:0',
             'min_order_value' => 'nullable|numeric|min:0',
             'valid_until' => 'nullable|date',
+            'max_uses' => 'nullable|integer|min:1',
             'is_active' => 'boolean'
         ]);
 
         $coupon->update($validated);
 
-        return redirect()->route('coupons.index')->with('success', 'Cupom atualizado com sucesso!');
+        return redirect()->back()->with('success', 'Cupom atualizado com sucesso!');
     }
 }

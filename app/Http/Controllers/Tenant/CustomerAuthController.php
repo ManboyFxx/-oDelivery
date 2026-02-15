@@ -77,6 +77,31 @@ class CustomerAuthController extends Controller
                 ]);
             }
 
+            // Check if OTP is enabled in store settings
+            $storeSettings = \App\Models\StoreSetting::where('tenant_id', $tenant->id)->first();
+            $otpEnabled = $storeSettings ? $storeSettings->enable_otp_verification : true;
+
+            if (!$otpEnabled) {
+                // OTP disabled, login directly
+                $request->session()->regenerate();
+                session([
+                    'customer_id' => $customer->id,
+                    'customer_tenant_id' => $customer->tenant_id,
+                    'current_tenant_slug' => $tenantSlug
+                ]);
+
+                return response()->json([
+                    'exists' => true,
+                    'trusted_device' => true, // Treat as trusted since OTP is invalid
+                    'customer' => [
+                        'id' => $customer->id,
+                        'name' => $customer->name,
+                        'loyalty_points' => $customer->loyalty_points,
+                        'loyalty_tier' => $customer->loyalty_tier,
+                    ],
+                ]);
+            }
+
             // ❌ Dispositivo desconhecido: Enviar OTP
             $otpCode = $this->generateAndSendOTP($customer->phone, $tenant->id);
 
@@ -296,22 +321,31 @@ class CustomerAuthController extends Controller
      */
     private function generateAndSendOTP(string $phone, string $tenantId): string
     {
-        // Generate 6-digit code
-        $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        try {
+            // Generate 6-digit code
+            $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
-        // Store OTP in database
-        OtpCode::create([
-            'phone' => $phone,
-            'code' => $code,
-            'expires_at' => now()->addMinutes(5),
-            'ip_address' => request()->ip(),
-        ]);
+            // Store OTP in database
+            OtpCode::create([
+                'phone' => $phone,
+                'code' => $code,
+                'expires_at' => now()->addMinutes(5),
+                'ip_address' => request()->ip(),
+            ]);
 
-        // Send via WhatsApp
-        $whatsappService = app(WhatsAppOTPService::class);
-        $whatsappService->sendOTP($phone, $code, $tenantId);
+            // Send via WhatsApp
+            $whatsappService = app(WhatsAppOTPService::class);
+            $whatsappService->sendOTP($phone, $code, $tenantId);
 
-        return $code;
+            return $code;
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error generating/sending OTP', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw $e; // Re-throw to ensure we don't proceed with invalid state, but now we have logs.
+        }
     }
 
     /**

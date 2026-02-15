@@ -69,21 +69,21 @@ class TenantMenuController extends Controller
                 ->where('is_active', true)
                 ->orderBy('sort_order')
                 ->get();
-                
+
             // Load complement groups for products separately to avoid query issues
             foreach ($categories as $category) {
                 foreach ($category->products as $product) {
                     $product->load([
                         'complementGroups' => function ($query) {
                             $query->where('is_active', true)
-                                  ->orderBy('sort_order')
-                                  ->with([
-                                      'options' => function ($q) {
-                                          $q->where('is_available', true)
+                                ->orderBy('sort_order')
+                                ->with([
+                                    'options' => function ($q) {
+                                        $q->where('is_available', true)
                                             ->orderBy('sort_order')
                                             ->select('id', 'group_id', 'name', 'price', 'is_available', 'max_quantity', 'sort_order');
-                                      }
-                                  ]);
+                                    }
+                                ]);
                         }
                     ]);
                 }
@@ -164,11 +164,34 @@ class TenantMenuController extends Controller
             ->where('end_date', '>=', now())
             ->first();
 
+        // Get available public coupons
+        $availableCoupons = \App\Models\Coupon::where('tenant_id', $tenantId)
+            ->where('is_active', true)
+            ->where(function ($query) {
+                $query->whereNull('valid_until')
+                    ->orWhere('valid_until', '>=', now());
+            })
+            ->where(function ($query) {
+                $query->whereNull('max_uses')
+                    ->orWhereColumn('current_uses', '<', 'max_uses');
+            })
+            ->get()
+            ->map(function ($coupon) {
+                return [
+                    'id' => $coupon->id,
+                    'code' => $coupon->code,
+                    'discount_type' => $coupon->discount_type,
+                    'discount_value' => $coupon->discount_value,
+                    'min_order_value' => $coupon->min_order_value,
+                ];
+            });
+
         return Inertia::render('Tenant/Menu/Index', [
             'slug' => $slug,
             'categories' => $sanitizedCategories,
             'authCustomer' => $sanitizedCustomer,
             'activePromotion' => $activePromotion,
+            'availableCoupons' => $availableCoupons,
             'store' => [
                 'name' => $settings->store_name ?? 'ÓoDelivery Demo',
                 'logo_url' => $settings->logo_path ? "/storage/{$settings->logo_path}" : $settings->logo_url,

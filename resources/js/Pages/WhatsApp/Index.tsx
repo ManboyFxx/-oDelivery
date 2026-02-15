@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { usePage, router, Head } from '@inertiajs/react';
+import { usePage, router, Head, useForm } from '@inertiajs/react';
 import { Switch } from '@headlessui/react';
-import { MessageSquare, RefreshCw, CheckCircle, XCircle, Clock, Info, ShieldCheck } from 'lucide-react';
+import { MessageSquare, RefreshCw, CheckCircle, XCircle, Clock, Info, ShieldCheck, Send, Save, Phone } from 'lucide-react';
 import { PageProps } from '@/types';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
@@ -20,13 +20,53 @@ interface WhatsAppPageProps extends PageProps {
     autoMessagesEnabled: boolean;
     logs: Log[];
     plan: string;
+    templates: Array<{
+        key: string;
+        name: string;
+        message: string;
+        is_active: boolean;
+        is_custom: boolean;
+    }>;
 }
 
 export default function Index({ auth }: PageProps) {
-    const { autoMessagesEnabled, logs, plan } = usePage<WhatsAppPageProps>().props;
+    const { autoMessagesEnabled, logs, plan, templates } = usePage<WhatsAppPageProps>().props;
 
     const [enabled, setEnabled] = useState(autoMessagesEnabled);
     const [isToggling, setIsToggling] = useState(false);
+
+    // Test Message Form
+    const { data: testData, setData: setTestData, post: postTest, processing: processingTest, reset: resetTest, errors: testErrors } = useForm({
+        phone: '',
+        message: 'Teste de conexão ÓoDelivery 🚀',
+    });
+
+    const handleTestSend = (e: React.FormEvent) => {
+        e.preventDefault();
+        postTest(route('whatsapp.test-send'), {
+            onSuccess: () => resetTest(),
+            preserveScroll: true,
+        });
+    };
+
+    // Templates Form
+    const { data: templateData, setData: setTemplateData, post: postTemplates, processing: processingTemplates } = useForm({
+        templates: templates,
+    });
+
+    const handleTemplateChange = (index: number, field: string, value: any) => {
+        const newTemplates = [...templateData.templates];
+        // @ts-ignore
+        newTemplates[index][field] = value;
+        setTemplateData('templates', newTemplates);
+    };
+
+    const handleSaveTemplates = (e: React.FormEvent) => {
+        e.preventDefault();
+        postTemplates(route('whatsapp.templates.update'), {
+            preserveScroll: true,
+        });
+    };
 
     const handleToggle = async (newValue: boolean) => {
         setIsToggling(true);
@@ -194,10 +234,106 @@ export default function Index({ auth }: PageProps) {
                                 ))}
                             </div>
                         </div>
+
+                        {/* Test Send Card */}
+                        <div className="bg-white dark:bg-[#1a1b1e] rounded-3xl p-6 border border-gray-100 dark:border-white/5 shadow-sm">
+                            <h3 className="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                <Send className="w-4 h-4 text-[#ff3d03]" />
+                                Testar Envio
+                            </h3>
+                            <form onSubmit={handleTestSend} className="space-y-3">
+                                <div>
+                                    <label className="text-xs font-semibold text-gray-500 mb-1 block">Telefone (com DDD)</label>
+                                    <div className="relative">
+                                        <Phone className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
+                                        <input
+                                            type="text"
+                                            value={testData.phone}
+                                            onChange={e => setTestData('phone', e.target.value)}
+                                            placeholder="5511999999999"
+                                            className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:ring-[#ff3d03] focus:border-[#ff3d03]"
+                                        />
+                                    </div>
+                                    {testErrors.phone && <p className="text-xs text-red-500 mt-1">{testErrors.phone}</p>}
+                                </div>
+                                <div>
+                                    <label className="text-xs font-semibold text-gray-500 mb-1 block">Mensagem</label>
+                                    <textarea
+                                        value={testData.message}
+                                        onChange={e => setTestData('message', e.target.value)}
+                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:ring-[#ff3d03] focus:border-[#ff3d03] h-20 resize-none"
+                                    />
+                                    {testErrors.message && <p className="text-xs text-red-500 mt-1">{testErrors.message}</p>}
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={processingTest}
+                                    className="w-full py-2.5 bg-gray-900 dark:bg-white text-white dark:text-black rounded-xl text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                    {processingTest ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                                    Enviar Teste
+                                </button>
+                            </form>
+                        </div>
                     </div>
 
-                    {/* Right Column - Logs */}
-                    <div className="lg:col-span-2">
+                    {/* Right Column - Templates & Logs */}
+                    <div className="lg:col-span-2 space-y-6">
+                        {/* Template Editor */}
+                        <div className="bg-white dark:bg-[#1a1b1e] rounded-3xl border border-gray-100 dark:border-white/5 shadow-sm p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                                        Editor de Modelos
+                                    </h3>
+                                    <p className="text-xs text-gray-500 font-medium">
+                                        Personalize as mensagens automáticas enviadas aos clientes
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={handleSaveTemplates}
+                                    disabled={processingTemplates}
+                                    className="px-4 py-2 bg-[#ff3d03] text-white rounded-xl text-sm font-bold hover:bg-[#e63600] transition-colors shadow-lg shadow-orange-500/20 disabled:opacity-50 flex items-center gap-2"
+                                >
+                                    {processingTemplates ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                    Salvar Alterações
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {templateData.templates.map((template, index) => (
+                                    <div key={template.key} className="p-4 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/10">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                                                <span className="font-bold text-sm text-gray-900 dark:text-white">
+                                                    {getTemplateLabel(template.key)}
+                                                </span>
+                                            </div>
+                                            <Switch
+                                                checked={template.is_active}
+                                                onChange={(val) => handleTemplateChange(index, 'is_active', val)}
+                                                className={`${template.is_active ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700'
+                                                    } relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none cursor-pointer`}
+                                            >
+                                                <span className={`${template.is_active ? 'translate-x-4' : 'translate-x-1'} inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform`} />
+                                            </Switch>
+                                        </div>
+                                        <textarea
+                                            value={template.message}
+                                            onChange={(e) => handleTemplateChange(index, 'message', e.target.value)}
+                                            rows={5}
+                                            className="w-full px-3 py-2 bg-white dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-xl text-xs md:text-sm focus:ring-green-500 focus:border-green-500 resize-none leading-relaxed"
+                                        />
+                                        <p className="text-[10px] text-gray-400 mt-2">
+                                            Variáveis: {'{customer_name}, {order_number}, {order_total}, {store_name}'}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Logs */}
                         <div className="bg-white dark:bg-[#1a1b1e] rounded-3xl border border-gray-100 dark:border-white/5 shadow-sm overflow-hidden flex flex-col h-full">
                             <div className="p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between">
                                 <div>

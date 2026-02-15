@@ -19,7 +19,7 @@ class WhatsAppOTPService
     public function sendOTP(string $phone, string $code, string $tenantId): bool
     {
         $instance = WhatsAppInstance::where('tenant_id', $tenantId)
-            ->where('is_connected', true)
+            ->where('status', 'connected')
             ->first();
 
         if (!$instance) {

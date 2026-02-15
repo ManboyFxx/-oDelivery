@@ -100,6 +100,7 @@ class CustomerOrderController extends Controller
             'items.*.complements' => 'nullable|array',
             'items.*.complements.*.id' => 'required|exists:complement_options,id',
             'items.*.complements.*.quantity' => 'required|integer|min:1',
+            'loyalty_points_used' => 'nullable|integer|min:0',
         ]);
 
         // ✅ Forçar tenant_id e customer_id da SESSION/MIDDLEWARE
@@ -209,26 +210,42 @@ class CustomerOrderController extends Controller
 
             $total = max(0, $total - $discount);
 
-            // Calculate Loyalty Points (FASE 1 Implementation with FASE 4 tier bonus)
+            // 2. Calculate Loyalty Points (using consolidated LoyaltyService)
             $loyaltyPointsEarned = 0;
-            $activePromotion = null;
+            $loyaltyService = app(\App\Services\LoyaltyService::class);
+
+            // Handle POINT-BASED DISCOUNT (Cashback)
+            if ($validated['loyalty_points_used'] > 0) {
+                if ($customer->loyalty_points < $validated['loyalty_points_used']) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'loyalty_points_used' => 'Você não tem pontos suficientes.'
+                    ]);
+                }
+
+                $pointsDiscount = $loyaltyService->calculateDiscountForPoints($tenant->id, $validated['loyalty_points_used']);
+                $discount += $pointsDiscount;
+
+                // Deduct points immediately (within transaction)
+                $customer->redeemPoints($validated['loyalty_points_used'], null, 'Desconto em pedido online');
+            }
 
             if ($settings && $settings->loyalty_enabled && $orderTotal > 0) {
-                $pointsRate = $settings->points_per_currency ?? 1.0;
+                // The awardPointsForOrder method itself will be called AFTER the order is completed (delivered)
+                // However, we pre-calculate here to show the user or store it in the order initially.
+                // We'll use a simplified version for the 'initial' estimate, or just wait for the Observer.
+                // Actually, the original code pre-calculated it here. Let's keep it consistent but use better logic.
 
-                // Check for active promotion
-                $activePromotion = LoyaltyPromotion::where('tenant_id', $validated['tenant_id'])
+                $pointsRate = $settings->points_per_currency ?? 1.0;
+                $activePromotion = \App\Models\LoyaltyPromotion::where('tenant_id', $tenant->id)
                     ->where('is_active', true)
                     ->where('start_date', '<=', now())
                     ->where('end_date', '>=', now())
                     ->first();
 
-                $promotionMultiplier = $activePromotion ? $activePromotion->multiplier : 1.0;
-
-                // Apply tier bonus multiplier (FASE 4)
+                $promoMultiplier = $activePromotion ? $activePromotion->multiplier : 1.0;
                 $tierMultiplier = $customer->getTierBonusMultiplier();
 
-                $loyaltyPointsEarned = (int) ceil($orderTotal * $pointsRate * $promotionMultiplier * $tierMultiplier);
+                $loyaltyPointsEarned = (int) ceil(($orderTotal - $discount) * $pointsRate * $promoMultiplier * $tierMultiplier);
             }
 
             // 3. Create Order
@@ -247,6 +264,7 @@ class CustomerOrderController extends Controller
                 'discount' => $discount,
                 'total' => $total,
                 'loyalty_points_earned' => $loyaltyPointsEarned,
+                'loyalty_points_used' => $validated['loyalty_points_used'] ?? 0,
                 'payment_status' => 'pending',
                 'change_for' => $validated['payment_method'] === 'cash' ? ($validated['change_for'] ?? null) : null,
                 'customer_name' => $customer->name,
@@ -283,17 +301,10 @@ class CustomerOrderController extends Controller
                 $coupon->increment('current_uses');
             }
 
-            // 6. Award Loyalty Points (FASE 1 Implementation with FASE 4 tier updates)
-            if ($loyaltyPointsEarned > 0) {
-                $pointsDescription = $activePromotion
-                    ? "Pedido #{$order->order_number} (Promoção {$activePromotion->name})"
-                    : "Pedido #{$order->order_number}";
-
-                $customer->addPoints($loyaltyPointsEarned, $order->id, $pointsDescription);
-
-                // Update loyalty tier based on new points (FASE 4)
-                $customer->updateLoyaltyTier();
-            }
+            // 6. Points Awarded Notification (Points are officially awarded via OrderObserver on status change to 'delivered')
+            // No need to call addPoints here if they should only be awarded on delivery.
+            // If the user wants them awarded on creation, we'd do it here. 
+            // The OrderObserver already has logic to award them.
 
             // 7. Notify
             // Using OrderCreated event which should trigger WhatsApp notification if configured

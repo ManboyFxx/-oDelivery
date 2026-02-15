@@ -123,9 +123,16 @@ class OoBotService
                 return false;
             }
 
-            // Get active template
+            // Get active template (Tenant specific OR Global default)
             $template = WhatsAppTemplate::active()
                 ->where('key', $templateKey)
+                ->where(function ($query) use ($order) {
+                    $query->where('tenant_id', $order->tenant_id)
+                        ->orWhereNull('tenant_id');
+                })
+                ->orderBy('tenant_id', 'desc') // Tenant ID (UUID) will be non-null, so it comes first? actually UUID sorting is tricky.
+                // Better approach: Sort by whether tenant_id is null. Non-null first.
+                ->orderByRaw('CASE WHEN tenant_id IS NOT NULL THEN 1 ELSE 0 END DESC')
                 ->first();
 
             if (!$template) {

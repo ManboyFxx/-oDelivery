@@ -4,7 +4,6 @@ namespace App\Models;
 
 use App\Traits\HasUuid;
 use App\Traits\Auditable;
-use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -15,7 +14,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, HasUuid, SoftDeletes, Auditable, BelongsToTenant;
+    use HasApiTokens, HasFactory, Notifiable, HasUuid, SoftDeletes, Auditable;
 
     protected $keyType = 'string';
     public $incrementing = false;

@@ -66,6 +66,7 @@ class StoreSetting extends Model
         'is_delivery_paused',
         'paused_until',
         'default_motoboy_id',
+        'enable_otp_verification',
     ];
 
     protected $casts = [
@@ -93,6 +94,7 @@ class StoreSetting extends Model
         'is_delivery_paused' => 'boolean',
         'paused_until' => 'datetime',
         'default_motoboy_id' => 'string',
+        'enable_otp_verification' => 'boolean',
     ];
 
     protected $hidden = [
