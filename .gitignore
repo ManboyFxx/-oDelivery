@@ -24,7 +24,6 @@ Thumbs.db
 .env.local
 .env.*.local
 *.key
-*.pem
 
 # Dependencies (AIOS)
 node_modules/

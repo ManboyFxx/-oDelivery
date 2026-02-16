@@ -101,6 +101,12 @@
         "secure-http": false,
         "cafile": "cacert.pem"
     },
+    "repositories": {
+        "packagist": {
+            "type": "composer",
+            "url": "http://repo.packagist.org"
+        }
+    },
     "minimum-stability": "stable",
     "prefer-stable": true
 }
