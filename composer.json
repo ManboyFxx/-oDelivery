@@ -97,7 +97,9 @@
         "platform": {
             "php": "8.2"
         },
-        "disable-tls": true
+        "disable-tls": true,
+        "secure-http": false,
+        "cafile": "cacert.pem"
     },
     "minimum-stability": "stable",
     "prefer-stable": true
