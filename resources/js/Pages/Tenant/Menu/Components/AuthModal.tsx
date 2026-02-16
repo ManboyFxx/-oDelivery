@@ -19,8 +19,6 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ isOpen, onClose, onLogin, slug }: AuthModalProps) {
-    if (!isOpen) return null;
-
     const [authStep, setAuthStep] = useState<'phone' | 'name'>('phone');
     const [phone, setPhone] = useState('');
     const [name, setName] = useState('');

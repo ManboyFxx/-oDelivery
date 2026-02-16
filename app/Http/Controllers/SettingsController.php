@@ -48,9 +48,9 @@ class SettingsController extends Controller
             'paymentMethods' => $paymentMethods,
             'deliveryZones' => $deliveryZones,
             'motoboys' => $motoboys,
-            'motoboys' => $motoboys,
             'success' => session('success'),
             'printer_token_exists' => !empty($tenant->printer_token),
+            'printer_token_raw' => $tenant->printer_token_raw,
             'flash_printer_token' => session('flash_printer_token'),
         ]);
     }
@@ -234,6 +234,7 @@ class SettingsController extends Controller
 
         $tenant->update([
             'printer_token' => hash('sha256', $token),
+            'printer_token_raw' => $token,
         ]);
 
         // Return the plain text token ONLY ONCE

@@ -14,7 +14,7 @@ export default function PaymentMethodsChart({ data }: Props) {
     const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
     return (
-        <div className="h-64 w-full">
+        <div className="h-64 w-full relative">
             <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                     <Pie

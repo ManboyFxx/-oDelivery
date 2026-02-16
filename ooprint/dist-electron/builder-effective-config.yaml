@@ -1,0 +1,19 @@
+directories:
+  output: dist-electron
+  buildResources: build
+appId: com.oodelivery.print
+productName: OoPrint
+files:
+  - filter:
+      - dist/**/*
+      - electron/**/*
+win:
+  target: nsis
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: ÓoPrint
+  runAfterFinish: true
+electronVersion: 40.2.1

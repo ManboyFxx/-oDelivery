@@ -81,6 +81,13 @@
                 <span>{{ $item->quantity }}x {{ $item->product ? $item->product->name : $item->product_name }}</span>
                 <span>R$ {{ number_format($item->subtotal, 2, ',', '.') }}</span>
             </div>
+            @if($item->complements && $item->complements->count() > 0)
+                <div style="margin-left: 15px; font-size: 10px; margin-bottom: 5px;">
+                    @foreach($item->complements as $complement)
+                        + {{ $complement->quantity > 1 ? $complement->quantity . 'x ' : '' }}{{ $complement->name }}<br>
+                    @endforeach
+                </div>
+            @endif
         @endforeach
     </div>
 

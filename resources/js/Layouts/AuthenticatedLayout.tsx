@@ -131,7 +131,7 @@ export default function Authenticated({ user, header, children, tenant: propTena
     }, [tenant?.id]); // Only re-run if tenant ID changes, NOT on every render/prop change
 
     const showTrialModal = tenant?.is_trial_expiring_soon && (tenant?.trial_days_remaining ?? 0) > 0;
-    const isTrial = (tenant?.trial_days_remaining !== undefined && tenant?.trial_days_remaining !== null);
+    const isTrial = tenant?.is_trial_active || (tenant?.plan === 'free' && tenant?.trial_days_remaining <= 0);
 
     return (
         <div className="flex h-screen bg-gray-50 dark:bg-premium-dark transition-colors">

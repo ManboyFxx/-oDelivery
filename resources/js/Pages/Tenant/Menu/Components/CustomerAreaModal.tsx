@@ -14,8 +14,6 @@ interface CustomerAreaModalProps {
 }
 
 export default function CustomerAreaModal({ isOpen, onClose, customer, onLogout, store }: CustomerAreaModalProps) {
-    if (!isOpen) return null;
-
     const [activeTab, setActiveTab] = useState<'info' | 'addresses' | 'orders'>('info');
     const [addresses, setAddresses] = useState<Address[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);

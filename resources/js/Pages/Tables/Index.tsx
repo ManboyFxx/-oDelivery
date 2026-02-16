@@ -11,6 +11,7 @@ import TableGrid from '@/Components/TableGrid';
 import TableMapEditor from '@/Components/TableMapEditor';
 import ConfirmationModal from '@/Components/ConfirmationModal';
 import TableTransferModal from '@/Components/TableTransferModal';
+import InputError from '@/Components/InputError';
 
 interface Table {
     id: string;
@@ -244,7 +245,7 @@ export default function TablesIndex({ tables }: { tables: Table[] }) {
                                 })}
                             </div>
                         ) : (
-                            <TableMapEditor tables={tables} onSave={() => { }} readOnly={false} />
+                            <TableMapEditor tables={tables} />
                         )}
                     </div>
                 </div>
@@ -266,6 +267,7 @@ export default function TablesIndex({ tables }: { tables: Table[] }) {
                             onChange={(e) => setData('number', e.target.value)}
                             required
                         />
+                        <InputError message={errors.number} className="mt-2" />
                     </div>
 
                     <div className="mt-4">
@@ -278,6 +280,7 @@ export default function TablesIndex({ tables }: { tables: Table[] }) {
                             onChange={(e) => setData('capacity', e.target.value)}
                             required
                         />
+                        <InputError message={errors.capacity} className="mt-2" />
                     </div>
 
                     <div className="mt-6 flex justify-end gap-4">
@@ -301,7 +304,7 @@ export default function TablesIndex({ tables }: { tables: Table[] }) {
                 onClose={() => setConfirmModal({ show: false, id: null })}
                 onConfirm={confirmDelete}
                 title="Excluir Mesa"
-                content="Tem certeza que deseja excluir esta mesa? Esta ação não pode ser desfeita."
+                message="Tem certeza que deseja excluir esta mesa? Esta ação não pode ser desfeita."
             />
 
             <TableTransferModal

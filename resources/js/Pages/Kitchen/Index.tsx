@@ -22,7 +22,12 @@ interface Order {
         quantity: number;
         product?: {
             description?: string;
-        }
+        };
+        complements?: {
+            id: string;
+            name: string;
+            quantity: number;
+        }[];
     }[];
 }
 

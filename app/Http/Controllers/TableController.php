@@ -11,6 +11,7 @@ use App\Models\Payment;
 use App\Models\StoreSetting;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Validation\Rule;
 
 class TableController extends Controller
 {
@@ -30,8 +31,16 @@ class TableController extends Controller
 
     public function store(Request $request)
     {
+        $tenantId = auth()->user()->tenant->id;
+
         $validated = $request->validate([
-            'number' => 'required|integer',
+            'number' => [
+                'required',
+                'integer',
+                Rule::unique('tables')->where(function ($query) use ($tenantId) {
+                    return $query->where('tenant_id', $tenantId);
+                })
+            ],
             'capacity' => 'required|integer|min:1',
         ]);
 
@@ -45,8 +54,16 @@ class TableController extends Controller
 
     public function update(Request $request, Table $table)
     {
+        $tenantId = auth()->user()->tenant->id;
+
         $validated = $request->validate([
-            'number' => 'required|integer',
+            'number' => [
+                'required',
+                'integer',
+                Rule::unique('tables')->where(function ($query) use ($tenantId) {
+                    return $query->where('tenant_id', $tenantId);
+                })->ignore($table->id)
+            ],
             'capacity' => 'required|integer|min:1',
         ]);
 
@@ -199,9 +216,9 @@ class TableController extends Controller
         }
 
         // Create Order
-        $maxOrder = Order::max('order_number');
-        $nextNum = $maxOrder ? (int) preg_replace('/\D/', '', $maxOrder) + 1 : 1;
-        $orderNumber = '#' . str_pad($nextNum, 4, '0', STR_PAD_LEFT);
+        $tenantId = auth()->user()->tenant_id ?? 'default_tenant';
+        $maxOrder = Order::where('tenant_id', $tenantId)->max('order_number');
+        $orderNumber = $maxOrder ? (int) $maxOrder + 1 : 1;
 
         $tenantId = auth()->user()->tenant_id ?? 'default_tenant';
 

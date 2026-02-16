@@ -29,5 +29,6 @@ Route::middleware(['printer'])->prefix('printer')->group(function () {
     Route::get('/orders', [\App\Http\Controllers\Api\PrinterController::class, 'index']); // GET pending orders
     Route::get('/profile', [\App\Http\Controllers\Api\PrinterController::class, 'profile']); // GET tenant profile
     Route::post('/orders/{id}/printed', [\App\Http\Controllers\Api\PrinterController::class, 'markAsPrinted']); // Mark as printed
+    Route::post('/orders/{id}/status', [\App\Http\Controllers\Api\PrinterController::class, 'updateStatus']); // Update order status
 });
 

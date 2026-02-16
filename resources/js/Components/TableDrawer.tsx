@@ -16,6 +16,11 @@ interface Table {
             product: { name: string };
             quantity: number;
             total: number;
+            complements?: Array<{
+                id: string;
+                name: string;
+                quantity: number;
+            }>;
         }>;
     };
 }
@@ -76,7 +81,18 @@ export default function TableDrawer({ table, open, onClose, onCloseAccount }: Ta
                                         {table.current_order.items.map((item) => (
                                             <tr key={item.id}>
                                                 <td className="px-4 py-2 font-medium">{item.quantity}x</td>
-                                                <td className="px-4 py-2">{item.product.name}</td>
+                                                <td className="px-4 py-2">
+                                                    <div className="font-medium text-gray-900 dark:text-gray-100">{item.product.name}</div>
+                                                    {item.complements && item.complements.length > 0 && (
+                                                        <div className="mt-1 flex flex-wrap gap-1">
+                                                            {item.complements.map((c) => (
+                                                                <span key={c.id} className="text-[10px] font-bold text-orange-600 dark:text-orange-400 uppercase">
+                                                                    + {c.quantity > 1 ? `${c.quantity}x ` : ''}{c.name}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </td>
                                                 <td className="px-4 py-2 text-right">
                                                     {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.total)}
                                                 </td>
@@ -95,7 +111,10 @@ export default function TableDrawer({ table, open, onClose, onCloseAccount }: Ta
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
-                                <SecondaryButton className="w-full justify-center gap-2" onClick={() => { }}>
+                                <SecondaryButton
+                                    className="w-full justify-center gap-2"
+                                    onClick={() => window.open(route('orders.print', table.current_order!.id), '_blank')}
+                                >
                                     <Receipt className="h-4 w-4" /> Imprimir Parcial
                                 </SecondaryButton>
                                 <PrimaryButton

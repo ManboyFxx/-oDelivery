@@ -63,7 +63,7 @@ class PdvController extends Controller
             'items.*.complements' => 'nullable|array',
             'customer_name' => 'nullable|string',
             'customer_id' => "nullable|exists:customers,id,tenant_id,{$tenantId}",
-            'payment_method' => 'required|in:cash,credit_card,debit_card,pix',
+            'payment_method' => 'required_unless:order_mode,table|in:cash,credit_card,debit_card,pix',
             'order_mode' => 'required|in:delivery,pickup,table',
             'total' => 'required|numeric',
             'table_id' => 'required_if:order_mode,table|nullable|exists:tables,id,tenant_id,' . $tenantId
@@ -123,7 +123,7 @@ class PdvController extends Controller
                 'total' => $validated['total'],
                 'subtotal' => $validated['total'], // Simplified for now
                 'mode' => $validated['order_mode'],
-                'payment_status' => 'paid', // PDV usually assumes immediate payment or promise of payment
+                'payment_status' => $validated['order_mode'] === 'table' ? 'pending' : 'paid',
                 'created_at' => now(),
                 'motoboy_id' => $motoboyId,
             ]);
@@ -182,13 +182,15 @@ class PdvController extends Controller
                 $product->decrementStock($item['quantity'], 'Venda PDV', $order->id);
             }
 
-            // 3. Create Payment Record
-            Payment::create([
-                'order_id' => $order->id,
-                'method' => $validated['payment_method'],
-                'amount' => $validated['total'],
-                'paid_at' => now(),
-            ]);
+            // 3. Create Payment Record (Skip for Table Orders)
+            if ($validated['order_mode'] !== 'table') {
+                Payment::create([
+                    'order_id' => $order->id,
+                    'method' => $validated['payment_method'],
+                    'amount' => $validated['total'],
+                    'paid_at' => now(),
+                ]);
+            }
 
             // 4. Loyalty Points Integration
             if ($customerId) {

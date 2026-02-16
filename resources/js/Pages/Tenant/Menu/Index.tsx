@@ -248,28 +248,34 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
             />
 
             {/* Modals */}
-            <ProductModal
-                product={selectedProduct}
-                isOpen={isProductModalOpen}
-                onClose={() => setIsProductModalOpen(false)}
-                onAddToCart={handleAddToCartConfirm}
-                initialValues={initialProductValues}
-            />
+            {isProductModalOpen && (
+                <ProductModal
+                    product={selectedProduct}
+                    isOpen={isProductModalOpen}
+                    onClose={() => setIsProductModalOpen(false)}
+                    onAddToCart={handleAddToCartConfirm}
+                    initialValues={initialProductValues}
+                />
+            )}
 
-            <AuthModal
-                isOpen={isAuthModalOpen}
-                onClose={() => setIsAuthModalOpen(false)}
-                onLogin={handleLogin}
-                slug={slug}
-            />
+            {isAuthModalOpen && (
+                <AuthModal
+                    isOpen={isAuthModalOpen}
+                    onClose={() => setIsAuthModalOpen(false)}
+                    onLogin={handleLogin}
+                    slug={slug}
+                />
+            )}
 
-            <CustomerAreaModal
-                isOpen={isCustomerModalOpen}
-                onClose={() => setIsCustomerModalOpen(false)}
-                customer={customer!}
-                onLogout={handleLogout}
-                store={store}
-            />
+            {isCustomerModalOpen && (
+                <CustomerAreaModal
+                    isOpen={isCustomerModalOpen}
+                    onClose={() => setIsCustomerModalOpen(false)}
+                    customer={customer!}
+                    onLogout={handleLogout}
+                    store={store}
+                />
+            )}
 
             {isCheckoutModalOpen && (
                 <CheckoutModal

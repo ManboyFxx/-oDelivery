@@ -62,7 +62,7 @@ export default function Downloads({ auth, tenant }: { auth: any, tenant: any }) 
                                 </ul>
 
                                 <button
-                                    onClick={() => alert('Link de download será disponibilizado em breve.')}
+                                    onClick={() => window.location.href = '/downloads/installer.exe'}
                                     className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium flex items-center justify-center gap-2 transition-colors shadow-lg shadow-indigo-600/20"
                                 >
                                     <Download className="w-4 h-4" />

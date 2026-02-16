@@ -52,6 +52,10 @@ export interface Order {
     payments?: Array<{
         method: string;
     }>;
+    table?: {
+        id: string;
+        number: number;
+    } | null;
 }
 
 export type OrderAction = 'print' | 'edit' | 'payment' | 'mode' | 'cancel' | 'whatsapp';
@@ -209,6 +213,11 @@ export default function OrderCard({ order, motoboys, onAction, onQuickView }: Pr
                         <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight">
                             #{order.order_number}
                         </h3>
+                        {order.mode === 'table' && order.table && (
+                            <div className="flex items-center justify-center bg-purple-600 text-white w-10 h-10 rounded-xl shadow-lg shadow-purple-500/20 -mt-1 ml-1 group-hover:scale-110 transition-transform">
+                                <span className="text-xl font-black">{order.table.number}</span>
+                            </div>
+                        )}
                         {/* Quick View Button */}
                         {onQuickView && (
                             <button
@@ -302,10 +311,10 @@ export default function OrderCard({ order, motoboys, onAction, onQuickView }: Pr
                                 {item.product_name}
                             </span>
                             {item.complements && item.complements.length > 0 && (
-                                <div className="flex flex-wrap gap-1 mt-1">
+                                <div className="flex flex-wrap gap-x-2 gap-y-1 mt-1.5 pl-1.5 border-l-2 border-orange-200 dark:border-orange-500/20">
                                     {item.complements.map((c, i) => (
-                                        <span key={i} className="text-[10px] font-medium text-gray-500 dark:text-gray-400 leading-tight">
-                                            + {c.name}
+                                        <span key={i} className="text-[10px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-tighter">
+                                            + {c.quantity > 1 ? `${c.quantity}x ` : ''}{c.name}
                                         </span>
                                     ))}
                                 </div>

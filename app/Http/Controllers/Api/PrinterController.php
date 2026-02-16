@@ -19,10 +19,14 @@ class PrinterController extends Controller
         $tenantId = $request->tenant->id;
 
         $orders = Order::where('tenant_id', $tenantId)
-            ->whereIn('status', ['confirmed', 'preparing', 'ready']) // Statuses relevant for kitchen/printing
+            ->whereIn('status', ['new', 'confirmed', 'preparing', 'ready', 'out_for_delivery']) // Added 'new' and 'out_for_delivery'
+            ->where(function ($query) {
+                $query->where('mode', '!=', 'table')
+                    ->orWhere('status', 'confirmed');
+            })
             ->whereNull('printed_at')
             ->where('created_at', '>=', now()->subHours(24))
-            ->with(['items.complements', 'customer', 'address', 'payments'])
+            ->with(['items.complements', 'items.product', 'customer', 'address', 'payments', 'table'])
             ->orderBy('created_at', 'asc')
             ->get();
 
@@ -59,6 +63,38 @@ class PrinterController extends Controller
     }
 
     /**
+     * Get tenant profile for the printer app.
+     */
+    public function profile(Request $request)
+    {
+        try {
+            $tenant = $request->tenant;
+
+            // Direct query to avoid relationship issues
+            $settings = \App\Models\StoreSetting::where('tenant_id', $tenant->id)->first();
+
+            return response()->json([
+                'tenant' => [
+                    'id' => $tenant->id,
+                    'name' => $tenant->name,
+                    'plan' => $tenant->plan,
+                ],
+                'settings' => $settings ? [
+                    'printer_paper_width' => $settings->printer_paper_width,
+                    'auto_print_on_confirm' => $settings->auto_print_on_confirm,
+                    'print_copies' => $settings->print_copies,
+                ] : null,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Printer API Profile Error: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Erro ao buscar perfil',
+                'details' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Mark an order as printed.
      */
     public function markAsPrinted(Request $request, $id)
@@ -72,9 +108,30 @@ class PrinterController extends Controller
         $order->update([
             'printed' => true,
             'printed_at' => now(),
-            // 'status' => $order->status === 'new' ? 'confirmed' : $order->status // Optional auto-confirm
+            // Auto-confirm if still new/confirmed
+            'status' => in_array($order->status, ['new', 'confirmed']) ? 'preparing' : $order->status
         ]);
 
         return response()->json(['success' => true, 'order_number' => $order->order_number]);
+    }
+
+    /**
+     * Update order status from printer terminal.
+     */
+    public function updateStatus(Request $request, $id)
+    {
+        $tenantId = $request->tenant->id;
+
+        $order = Order::where('tenant_id', $tenantId)
+            ->where('id', $id)
+            ->firstOrFail();
+
+        $validated = $request->validate([
+            'status' => 'required|in:preparing,ready,out_for_delivery,delivered'
+        ]);
+
+        $order->update(['status' => $validated['status']]);
+
+        return response()->json(['success' => true, 'status' => $order->status]);
     }
 }

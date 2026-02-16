@@ -26,16 +26,13 @@ class OrderController extends Controller
 
         $orders = Order::query()
             ->where('tenant_id', $tenantId)
-            ->with(['customer', 'items.complements', 'motoboy'])
+            ->with(['customer', 'items.complements', 'motoboy', 'table'])
             ->whereIn('status', ['new', 'preparing', 'ready', 'waiting_motoboy', 'motoboy_accepted', 'out_for_delivery'])
             ->orderBy('created_at', 'desc') // Newest first
             ->get()
             ->map(function ($order) {
-                // Append computed attributes
-                $order->is_late = $order->is_late;
-                $order->elapsed_minutes = $order->elapsed_minutes;
-                $order->preparation_elapsed_minutes = $order->preparation_elapsed_minutes;
-                $order->time_status = $order->time_status;
+                // Ensure computed attributes are included in JSON
+                $order->append(['is_late', 'elapsed_minutes', 'preparation_elapsed_minutes', 'time_status']);
                 return $order;
             });
 

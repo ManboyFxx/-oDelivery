@@ -116,7 +116,10 @@ export default function PDV({ categories, allProducts, tables = [], customers = 
         payment_method: 'cash',
         order_mode: 'pickup', // Default
         total: 0,
+        table_id: '' as string | null,
     });
+
+    const [selectedTableId, setSelectedTableId] = useState<string>('');
 
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
@@ -322,8 +325,13 @@ export default function PDV({ categories, allProducts, tables = [], customers = 
     const submitOrder = (e?: React.FormEvent) => {
         if (e) e.preventDefault();
 
+        if (data.order_mode === 'table' && !selectedTableId) {
+            alert('Por favor, selecione uma mesa antes de continuar.');
+            return;
+        }
+
         if (targetTable) {
-            // Adding items to table
+            // Adding items to table (from Table View mode)
             router.post(route('tables.addItems', targetTable.id), {
                 items: cart.map(i => ({
                     id: i.id,
@@ -334,37 +342,71 @@ export default function PDV({ categories, allProducts, tables = [], customers = 
             }, {
                 onSuccess: () => {
                     setCart([]);
-                    setTargetTable(null); // Return to normal mode? Or stay? Let's return to tables view maybe
+                    setTargetTable(null);
                     setViewMode('tables');
                 }
             });
             return;
         }
 
-        post(route('pdv.store'), {
+        if (data.order_mode === 'table' && selectedTableId) {
+            const selectedTable = tables.find(t => t.id === selectedTableId);
+
+            // If table is occupied, add items to the existing order
+            if (selectedTable && selectedTable.status !== 'free') {
+                router.post(route('tables.addItems', selectedTable.id), {
+                    items: cart.map(i => ({
+                        id: i.id,
+                        quantity: i.quantity,
+                        notes: i.notes,
+                        complements: i.selectedComplements
+                    })),
+                }, {
+                    onSuccess: () => {
+                        setIsCheckoutModalOpen(false);
+                        setCart([]);
+                        reset();
+                        setSelectedCustomer(null);
+                        setSelectedTableId('');
+                    },
+                    onError: (errors) => {
+                        console.error('Add Items Error:', errors);
+                        alert('Erro ao adicionar itens: ' + JSON.stringify(errors));
+                    }
+                });
+                return; // Stop here, do not call pdv.store
+            }
+        }
+
+        // For new orders (Delivery, Pickup, or New Table Opening)
+        router.post(route('pdv.store'), {
+            items: cart.map(i => ({
+                id: i.id,
+                quantity: i.quantity,
+                notes: i.notes,
+                complements: i.selectedComplements
+            })),
+            customer_name: data.customer_name,
+            customer_id: selectedCustomer?.id || null,
+            payment_method: data.payment_method,
+            order_mode: data.order_mode,
+            total: cartTotal,
+            table_id: data.order_mode === 'table' ? selectedTableId : null,
+        }, {
             onSuccess: () => {
                 setIsCheckoutModalOpen(false);
                 setCart([]);
                 reset();
                 setSelectedCustomer(null);
+                setSelectedTableId('');
+            },
+            onError: (errors) => {
+                console.error('Store Order Error:', errors);
             }
         });
     };
 
-    const handleOpenTable = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!tableToOpen) return;
 
-        router.post(route('tables.open', tableToOpen.id), {
-            customer_id: selectedCustomer?.id,
-            customer_name: selectedCustomer?.name
-        }, {
-            onSuccess: () => {
-                setTableToOpen(null);
-                setSelectedCustomer(null);
-            }
-        });
-    };
 
     const handleCloseTable = () => {
         if (!tableDetails) return;
@@ -375,6 +417,25 @@ export default function PDV({ categories, allProducts, tables = [], customers = 
                 onSuccess: () => setTableDetails(null)
             });
         }
+    };
+
+    const handleOpenTable = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!tableToOpen) return;
+
+        router.post(route('pdv.store'), {
+            order_mode: 'table',
+            table_id: tableToOpen.id,
+            customer_id: selectedCustomer?.id || null,
+            customer_name: selectedCustomer?.name || '',
+            items: [],
+            payment_method: null
+        }, {
+            onSuccess: () => {
+                setTableToOpen(null);
+                setSelectedCustomer(null);
+            }
+        });
     };
 
     return (
@@ -844,19 +905,19 @@ export default function PDV({ categories, allProducts, tables = [], customers = 
 
             {/* Checkout Modal */}
             {isCheckoutModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-end sm:justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-white dark:bg-[#1a1b1e] h-full sm:h-auto sm:rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden flex flex-col animate-slide-up">
-                        <div className="px-8 py-6 border-b border-gray-100 dark:border-white/5 flex justify-between items-center bg-white dark:bg-[#1a1b1e]">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm animate-fade-in overflow-hidden">
+                    <div className="bg-white dark:bg-[#1a1b1e] h-auto max-h-[92vh] sm:rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden flex flex-col animate-slide-up">
+                        <div className="px-8 py-8 border-b border-gray-100 dark:border-white/5 flex justify-between items-center bg-white dark:bg-[#1a1b1e]">
                             <div>
                                 <h3 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Finalizar Pedido</h3>
                                 <p className="text-sm text-gray-500 font-medium">Confirme os detalhes do pagamento</p>
                             </div>
-                            <button onClick={() => setIsCheckoutModalOpen(false)} className="h-10 w-10 bg-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
-                                <X className="h-5 w-5" />
+                            <button onClick={() => setIsCheckoutModalOpen(false)} className="h-12 w-12 bg-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                                <X className="h-6 w-6" />
                             </button>
                         </div>
 
-                        <form onSubmit={submitOrder} className="p-8 space-y-8 overflow-y-auto custom-scrollbar flex-1">
+                        <form onSubmit={submitOrder} className="p-8 space-y-8 overflow-y-auto flex-1 custom-scrollbar max-h-[calc(100vh-180px)]">
                             {/* Order Mode */}
                             <div>
                                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Tipo de Pedido</label>
@@ -884,6 +945,67 @@ export default function PDV({ categories, allProducts, tables = [], customers = 
                                 </div>
                             </div>
 
+                            {/* Table Selection (Visible only in Table Mode) */}
+                            {data.order_mode === 'table' && (
+                                <div className="animate-fade-in mb-6">
+                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Selecione a Mesa</label>
+                                    <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-40 overflow-y-auto p-1 custom-scrollbar">
+                                        {tables.map(table => (
+                                            <button
+                                                key={table.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    setSelectedTableId(table.id);
+                                                    setData('table_id', table.id);
+                                                }}
+                                                className={clsx(
+                                                    "aspect-square rounded-xl flex flex-col items-center justify-center border-2 transition-all relative overflow-hidden",
+                                                    selectedTableId === table.id
+                                                        ? "border-[#ff3d03] bg-[#ff3d03]/10 text-[#ff3d03] ring-2 ring-[#ff3d03]/20"
+                                                        : table.status === 'free'
+                                                            ? "border-gray-100 dark:border-white/5 bg-white dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:border-gray-300"
+                                                            : "border-red-100 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10 text-red-500 hover:border-red-300"
+                                                )}
+                                            >
+                                                <span className="text-lg font-black">{table.number}</span>
+                                                <span className="text-[10px] uppercase font-bold">
+                                                    {table.status === 'free' ? 'Livre' : 'Ocupada'}
+                                                </span>
+                                                {selectedTableId === table.id && (
+                                                    <div className="absolute top-1 right-1 h-2 w-2 bg-[#ff3d03] rounded-full" />
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {/* Existing Items Notification */}
+                                    {selectedTableId && tables.find(t => t.id === selectedTableId)?.status !== 'free' && (
+                                        <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                                <span className="text-xs font-bold text-blue-800 dark:text-blue-300">
+                                                    Mesa Ocupada - Itens serão adicionados
+                                                </span>
+                                            </div>
+                                            {tables.find(t => t.id === selectedTableId)?.current_order?.items && (
+                                                <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1 pl-6 border-l-2 border-blue-200 dark:border-blue-800/50">
+                                                    <p className="font-bold text-gray-800 dark:text-gray-200">Já na mesa:</p>
+                                                    {tables.find(t => t.id === selectedTableId)?.current_order?.items.map((item: any, idx: number) => (
+                                                        <div key={idx} className="flex justify-between">
+                                                            <span>{item.quantity}x {item.product_name}</span>
+                                                        </div>
+                                                    ))}
+                                                    <div className="pt-1 mt-1 border-t border-blue-200 dark:border-blue-800/30 font-bold flex justify-between">
+                                                        <span>Total Atual:</span>
+                                                        <span>R$ {Number(tables.find(t => t.id === selectedTableId)?.current_order?.total).toFixed(2)}</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
                             {/* Customer Selection */}
                             <div>
                                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Cliente / Fidelidade</label>
@@ -907,59 +1029,61 @@ export default function PDV({ categories, allProducts, tables = [], customers = 
                                 )}
                             </div>
 
-                            {/* Payment Method */}
-                            <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Método de Pagamento</label>
-                                <div className="space-y-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setData('payment_method', 'cash')}
-                                        className={clsx("w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all",
-                                            data.payment_method === 'cash' ? "border-green-500 bg-green-50/50 dark:bg-green-900/10" : "border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5")}
-                                    >
-                                        <div className={clsx("h-10 w-10 rounded-full flex items-center justify-center", data.payment_method === 'cash' ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400")}>
-                                            <Banknote className="h-5 w-5" />
-                                        </div>
-                                        <div className="flex-1 text-left">
-                                            <span className={clsx("block font-bold", data.payment_method === 'cash' ? "text-green-900 dark:text-white" : "text-gray-700 dark:text-gray-300")}>Dinheiro</span>
-                                            <span className="text-xs text-gray-500">Pagamento em espécie</span>
-                                        </div>
-                                        {data.payment_method === 'cash' && <div className="h-4 w-4 bg-green-500 rounded-full border-2 border-white ring-2 ring-green-200" />}
-                                    </button>
+                            {/* Payment Method - Hide for Table Mode */}
+                            {data.order_mode !== 'table' && (
+                                <div className="animate-fade-in">
+                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Método de Pagamento</label>
+                                    <div className="space-y-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setData('payment_method', 'cash')}
+                                            className={clsx("w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all",
+                                                data.payment_method === 'cash' ? "border-green-500 bg-green-50/50 dark:bg-green-900/10" : "border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5")}
+                                        >
+                                            <div className={clsx("h-10 w-10 rounded-full flex items-center justify-center", data.payment_method === 'cash' ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400")}>
+                                                <Banknote className="h-5 w-5" />
+                                            </div>
+                                            <div className="flex-1 text-left">
+                                                <span className={clsx("block font-bold", data.payment_method === 'cash' ? "text-green-900 dark:text-white" : "text-gray-700 dark:text-gray-300")}>Dinheiro</span>
+                                                <span className="text-xs text-gray-500">Pagamento em espécie</span>
+                                            </div>
+                                            {data.payment_method === 'cash' && <div className="h-4 w-4 bg-green-500 rounded-full border-2 border-white ring-2 ring-green-200" />}
+                                        </button>
 
-                                    <button
-                                        type="button"
-                                        onClick={() => setData('payment_method', 'credit_card')}
-                                        className={clsx("w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all",
-                                            data.payment_method === 'credit_card' ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/10" : "border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5")}
-                                    >
-                                        <div className={clsx("h-10 w-10 rounded-full flex items-center justify-center", data.payment_method === 'credit_card' ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-400")}>
-                                            <CreditCard className="h-5 w-5" />
-                                        </div>
-                                        <div className="flex-1 text-left">
-                                            <span className={clsx("block font-bold", data.payment_method === 'credit_card' ? "text-blue-900 dark:text-white" : "text-gray-700 dark:text-gray-300")}>Cartão</span>
-                                            <span className="text-xs text-gray-500">Crédito ou Débito</span>
-                                        </div>
-                                        {data.payment_method === 'credit_card' && <div className="h-4 w-4 bg-blue-500 rounded-full border-2 border-white ring-2 ring-blue-200" />}
-                                    </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setData('payment_method', 'credit_card')}
+                                            className={clsx("w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all",
+                                                data.payment_method === 'credit_card' ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/10" : "border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5")}
+                                        >
+                                            <div className={clsx("h-10 w-10 rounded-full flex items-center justify-center", data.payment_method === 'credit_card' ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-400")}>
+                                                <CreditCard className="h-5 w-5" />
+                                            </div>
+                                            <div className="flex-1 text-left">
+                                                <span className={clsx("block font-bold", data.payment_method === 'credit_card' ? "text-blue-900 dark:text-white" : "text-gray-700 dark:text-gray-300")}>Cartão</span>
+                                                <span className="text-xs text-gray-500">Crédito ou Débito</span>
+                                            </div>
+                                            {data.payment_method === 'credit_card' && <div className="h-4 w-4 bg-blue-500 rounded-full border-2 border-white ring-2 ring-blue-200" />}
+                                        </button>
 
-                                    <button
-                                        type="button"
-                                        onClick={() => setData('payment_method', 'pix')}
-                                        className={clsx("w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all",
-                                            data.payment_method === 'pix' ? "border-teal-500 bg-teal-50/50 dark:bg-teal-900/10" : "border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5")}
-                                    >
-                                        <div className={clsx("h-10 w-10 rounded-full flex items-center justify-center", data.payment_method === 'pix' ? "bg-teal-100 text-teal-600" : "bg-gray-100 text-gray-400")}>
-                                            <QrCode className="h-5 w-5" />
-                                        </div>
-                                        <div className="flex-1 text-left">
-                                            <span className={clsx("block font-bold", data.payment_method === 'pix' ? "text-teal-900 dark:text-white" : "text-gray-700 dark:text-gray-300")}>Pix</span>
-                                            <span className="text-xs text-gray-500">Pagamento instantâneo</span>
-                                        </div>
-                                        {data.payment_method === 'pix' && <div className="h-4 w-4 bg-teal-500 rounded-full border-2 border-white ring-2 ring-teal-200" />}
-                                    </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setData('payment_method', 'pix')}
+                                            className={clsx("w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all",
+                                                data.payment_method === 'pix' ? "border-teal-500 bg-teal-50/50 dark:bg-teal-900/10" : "border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5")}
+                                        >
+                                            <div className={clsx("h-10 w-10 rounded-full flex items-center justify-center", data.payment_method === 'pix' ? "bg-teal-100 text-teal-600" : "bg-gray-100 text-gray-400")}>
+                                                <QrCode className="h-5 w-5" />
+                                            </div>
+                                            <div className="flex-1 text-left">
+                                                <span className={clsx("block font-bold", data.payment_method === 'pix' ? "text-teal-900 dark:text-white" : "text-gray-700 dark:text-gray-300")}>Pix</span>
+                                                <span className="text-xs text-gray-500">Pagamento instantâneo</span>
+                                            </div>
+                                            {data.payment_method === 'pix' && <div className="h-4 w-4 bg-teal-500 rounded-full border-2 border-white ring-2 ring-teal-200" />}
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Order Summary */}
                             <div>
@@ -1005,40 +1129,64 @@ export default function PDV({ categories, allProducts, tables = [], customers = 
                                     R$ {cartTotal.toFixed(2).replace('.', ',')}
                                 </span>
                             </div>
-                        </form>
 
-                        <div className="p-6 border-t border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-black/20 space-y-3">
-                            {/* Warning for delivery without address */}
-                            {data.order_mode === 'delivery' && !data.customer_name && (
-                                <div className="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl">
-                                    <AlertCircle className="h-4 w-4 text-yellow-600" />
-                                    <span className="text-xs font-medium text-yellow-800 dark:text-yellow-500">
-                                        Preencha o endereço de entrega
-                                    </span>
+
+                            {/* Error Message Display */}
+                            {Object.keys(errors).length > 0 && (
+                                <div className="mx-6 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl mb-3">
+                                    <div className="flex items-center gap-2 text-red-700 dark:text-red-400 font-bold text-sm mb-1">
+                                        <AlertCircle className="h-4 w-4" />
+                                        <span>Erro ao processar pedido</span>
+                                    </div>
+                                    <ul className="list-disc list-inside text-xs text-red-600 dark:text-red-300">
+                                        {Object.entries(errors).map(([key, msg]) => (
+                                            <li key={key}>{msg}</li>
+                                        ))}
+                                    </ul>
                                 </div>
                             )}
 
-                            <button
-                                onClick={(e) => submitOrder(e as any)}
-                                disabled={processing || (data.order_mode === 'delivery' && !data.customer_name)}
-                                className="w-full rounded-2xl bg-[#ff3d03] py-4 text-base font-bold uppercase tracking-wide text-white shadow-xl shadow-[#ff3d03]/20 hover:bg-[#e63700] hover:scale-[1.02] disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed transition-all"
-                            >
-                                {processing ? (
-                                    <span className="flex items-center justify-center gap-2">
-                                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                        </svg>
-                                        Processando...
-                                    </span>
-                                ) : (
-                                    `✓ Confirmar ${data.order_mode === 'delivery' ? 'Entrega' : data.order_mode === 'pickup' ? 'Retirada' : 'Mesa'} - R$ ${cartTotal.toFixed(2)}`
+                            <div className="p-6 border-t border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-black/20 space-y-3">
+                                {/* Warning for delivery without address */}
+                                {data.order_mode === 'delivery' && !data.customer_name && (
+                                    <div className="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl">
+                                        <AlertCircle className="h-4 w-4 text-yellow-600" />
+                                        <span className="text-xs font-medium text-yellow-800 dark:text-yellow-500">
+                                            Preencha o endereço de entrega
+                                        </span>
+                                    </div>
                                 )}
-                            </button>
-                        </div>
+
+                                <button
+                                    onClick={(e) => submitOrder(e as any)}
+                                    disabled={processing || (data.order_mode === 'delivery' && !data.customer_name) || (data.order_mode === 'table' && !selectedTableId)}
+                                    className="w-full rounded-2xl bg-[#ff3d03] py-4 text-base font-bold uppercase tracking-wide text-white shadow-xl shadow-[#ff3d03]/20 hover:bg-[#e63700] hover:scale-[1.02] disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed transition-all"
+                                >
+                                    {processing ? (
+                                        <span className="flex items-center justify-center gap-2">
+                                            <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                            </svg>
+                                            Processando...
+                                        </span>
+                                    ) : (
+                                        data.order_mode === 'table'
+                                            ? (!selectedTableId
+                                                ? 'Selecione uma Mesa'
+                                                : (tables.find(t => t.id === selectedTableId)?.status !== 'free'
+                                                    ? `Adicionar à Mesa ${tables.find(t => t.id === selectedTableId)?.number || ''}`
+                                                    : `Abrir Mesa ${tables.find(t => t.id === selectedTableId)?.number || ''}`))
+                                            : `✓ Confirmar ${data.order_mode === 'delivery' ? 'Entrega' : data.order_mode === 'pickup' ? 'Retirada' : 'Mesa'} - R$ ${cartTotal.toFixed(2)}`
+                                    )}
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                </div>
-            )}
+                </div >
+            )
+            }
+
 
             {/* Table Creation Modal */}
             <Modal show={isTableModalOpen} onClose={() => setIsTableModalOpen(false)} maxWidth="sm">

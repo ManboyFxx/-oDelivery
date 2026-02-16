@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { usePage, useForm, router, Head } from '@inertiajs/react';
 import { Transition } from '@headlessui/react';
-import { Store, Clock, Truck, CreditCard, Bell, Palette, CheckCircle } from 'lucide-react';
+import { Store, Clock, Truck, CreditCard, Bell, Palette, CheckCircle, Printer } from 'lucide-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { PageProps } from '@/types';
 
@@ -12,6 +12,7 @@ import DeliverySettings from './Partials/DeliverySettings';
 import PaymentSettings from './Partials/PaymentSettings';
 import NotificationSettings from './Partials/NotificationSettings';
 import SystemSettings from './Partials/SystemSettings';
+import PrinterSettings from './Partials/PrinterSettings';
 
 interface SettingsProps extends PageProps {
     settings: any;
@@ -110,7 +111,9 @@ export default function Settings({ auth, settings, deliveryZones: initialZones, 
 
         // System
         theme_color: settings?.theme_color || '#ff3d03',
-        paper_width: settings?.paper_width || 80,
+        printer_paper_width: settings?.printer_paper_width || 80,
+        auto_print_on_confirm: settings?.auto_print_on_confirm || false,
+        print_copies: settings?.print_copies || 1,
     });
 
     // Zone Form
@@ -256,6 +259,7 @@ export default function Settings({ auth, settings, deliveryZones: initialZones, 
         { id: 'payment', label: 'Pagamento', icon: CreditCard },
         { id: 'notifications', label: 'Notificações', icon: Bell },
         { id: 'system', label: 'Sistema', icon: Palette },
+        { id: 'printer', label: 'Impressão', icon: Printer },
     ];
 
     return (
@@ -376,6 +380,13 @@ export default function Settings({ auth, settings, deliveryZones: initialZones, 
 
                                 {activeTab === 'system' && (
                                     <SystemSettings
+                                        data={data}
+                                        setData={setData}
+                                    />
+                                )}
+
+                                {activeTab === 'printer' && (
+                                    <PrinterSettings
                                         data={data}
                                         setData={setData}
                                     />

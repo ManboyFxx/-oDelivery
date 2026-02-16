@@ -16,8 +16,17 @@ interface Order {
         quantity: number;
         product?: {
             description?: string;
-        }
+        };
+        complements?: {
+            id: string;
+            name: string;
+            quantity: number;
+        }[];
     }[];
+    table?: {
+        id: string;
+        number: number;
+    } | null;
 }
 
 interface Props {
@@ -103,9 +112,13 @@ export default function DraggableKitchenCard({ order, elapsedTime, isOverlay }: 
             <div className="p-6">
                 {/* Order Info */}
                 <div className="flex items-start gap-4 mb-6">
-                    <div className={`${colors.bg} p-4 rounded-2xl border ${colors.border}`}>
-                        <span className={`text-xs ${colors.text} uppercase font-bold block mb-1`}>Pedido</span>
-                        <span className="text-3xl font-black text-gray-800 dark:text-white">#{order.order_number}</span>
+                    <div className={`${colors.bg} p-4 rounded-2xl border ${colors.border} flex flex-col items-center justify-center min-w-[100px]`}>
+                        <span className={`text-[10px] ${colors.text} uppercase font-black block mb-0.5 tracking-widest`}>
+                            {order.mode === 'table' ? 'Mesa' : 'Pedido'}
+                        </span>
+                        <span className="text-3xl font-black text-gray-800 dark:text-white leading-none">
+                            {order.mode === 'table' && order.table ? order.table.number : `#${order.order_number}`}
+                        </span>
                     </div>
                     <div className="pt-1">
                         <h4 className="text-xl font-bold text-gray-800 dark:text-white mb-1">{order.customer_name}</h4>
@@ -131,6 +144,16 @@ export default function DraggableKitchenCard({ order, elapsedTime, isOverlay }: 
                                     <p className="text-sm text-gray-500 mt-1">
                                         {item.product.description}
                                     </p>
+                                )}
+
+                                {item.complements && item.complements.length > 0 && (
+                                    <div className="mt-2 pl-2 border-l-2 border-orange-200 dark:border-orange-500/30 space-y-1">
+                                        {item.complements.map(comp => (
+                                            <p key={comp.id} className="text-xs font-bold text-orange-600 dark:text-orange-400 uppercase tracking-tighter">
+                                                + {comp.quantity > 1 ? `${comp.quantity}x ` : ''}{comp.name}
+                                            </p>
+                                        ))}
+                                    </div>
                                 )}
                             </div>
                         </div>
