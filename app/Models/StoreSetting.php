@@ -72,10 +72,17 @@ class StoreSetting extends Model
         'referral_bonus_points',
         'referral_reward_points',
         'min_order_for_referral',
+        'referral_enabled',
+        'referral_referrer_points',
+        'referral_referred_points',
+        'referral_max_per_customer',
+        'referral_code_expiry_days',
+        'referral_min_order_value',
         'enable_otp_verification',
         'enable_password_login',
         'enable_quick_login',
         'enable_checkout_security',
+        'phone_digits_required',
     ];
 
     protected $casts = [
@@ -89,6 +96,12 @@ class StoreSetting extends Model
         'referral_bonus_points' => 'integer',
         'referral_reward_points' => 'integer',
         'min_order_for_referral' => 'float',
+        'referral_enabled' => 'boolean',
+        'referral_referrer_points' => 'integer',
+        'referral_referred_points' => 'integer',
+        'referral_max_per_customer' => 'integer',
+        'referral_code_expiry_days' => 'integer',
+        'referral_min_order_value' => 'float',
         'delivery_radius_km' => 'float',
         'min_order_delivery' => 'float',
         'free_delivery_min' => 'float',
@@ -103,6 +116,7 @@ class StoreSetting extends Model
         'enable_password_login' => 'boolean',
         'enable_quick_login' => 'boolean',
         'enable_checkout_security' => 'boolean',
+        'phone_digits_required' => 'integer',
         'printer_paper_width' => 'integer',
         'auto_print_on_confirm' => 'boolean',
         'print_copies' => 'integer',
@@ -112,7 +126,6 @@ class StoreSetting extends Model
         'is_delivery_paused' => 'boolean',
         'paused_until' => 'datetime',
         'default_motoboy_id' => 'string',
-        'enable_otp_verification' => 'boolean',
     ];
 
     /**

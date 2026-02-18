@@ -73,6 +73,47 @@ export default function SecuritySettings({ data, setData }: SecuritySettingsProp
                             />
                         </Switch>
                     </div>
+
+                    {/* Dígitos de Verificação do Telefone */}
+                    <div className="p-4 bg-gray-50 dark:bg-premium-dark rounded-2xl space-y-3">
+                        <div className="flex items-start gap-3">
+                            <div className="p-2 bg-white dark:bg-white/5 rounded-lg text-indigo-500">
+                                <Key className="h-5 w-5" />
+                            </div>
+                            <div className="flex-1">
+                                <h4 className="font-bold text-gray-900 dark:text-white">Dígitos de Verificação do Telefone</h4>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    Quantidade de dígitos finais do telefone que o cliente deve confirmar para criar senha ou verificar identidade.
+                                    {!data.enable_otp_verification && (
+                                        <span className="block mt-1 text-xs text-indigo-500 font-semibold">
+                                            Ativo pois OTP está desativado.
+                                        </span>
+                                    )}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-4 pl-11">
+                            <div className="flex items-center gap-2">
+                                {[2, 3, 4, 5, 6].map((n) => (
+                                    <button
+                                        key={n}
+                                        type="button"
+                                        onClick={() => setData('phone_digits_required', n)}
+                                        className={`h-10 w-10 rounded-xl font-bold text-sm transition-all ${
+                                            (data.phone_digits_required ?? 4) === n
+                                                ? 'bg-[#ff3d03] text-white shadow-lg shadow-[#ff3d03]/20'
+                                                : 'bg-white dark:bg-white/5 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-white/10 hover:border-[#ff3d03]/50'
+                                        }`}
+                                    >
+                                        {n}
+                                    </button>
+                                ))}
+                            </div>
+                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                                últimos dígitos
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -114,7 +155,7 @@ export default function SecuritySettings({ data, setData }: SecuritySettingsProp
                     {/* Quick Login (Trusted Devices) */}
                      <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-premium-dark rounded-2xl">
                         <div className="flex items-start gap-3">
-                            <div className="p-2 bg-white dark:bg-white/5 rounded-lg text-purple-500">
+                            <div className="p-2 bg-white dark:bg-white/5 rounded-lg text-blue-500">
                                 <Smartphone className="h-5 w-5" />
                             </div>
                             <div>

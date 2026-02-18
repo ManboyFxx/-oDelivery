@@ -135,10 +135,10 @@ export default function AdminDashboard({ metrics, recent_tenants, system_health 
                     {/* Total Orders */}
                     <div className="bg-white dark:bg-[#1a1b1e] p-6 rounded-[32px] border border-gray-100 dark:border-white/5 shadow-sm relative overflow-hidden group">
                         <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform duration-500">
-                            <ShoppingBag className="w-16 h-16 text-purple-500" />
+                            <ShoppingBag className="w-16 h-16 text-[#ff3d03]" />
                         </div>
                         <div className="relative z-10">
-                            <div className="w-12 h-12 rounded-2xl bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center mb-4 text-purple-500">
+                            <div className="w-12 h-12 rounded-2xl bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center mb-4 text-[#ff3d03]">
                                 <ShoppingBag className="w-6 h-6" />
                             </div>
                             <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
@@ -147,7 +147,7 @@ export default function AdminDashboard({ metrics, recent_tenants, system_health 
                             <h3 className="text-3xl font-black text-gray-900 dark:text-white">
                                 {metrics.total_orders}
                             </h3>
-                            <p className="text-xs font-bold text-purple-500 mt-2 flex items-center gap-1">
+                            <p className="text-xs font-bold text-[#ff3d03] mt-2 flex items-center gap-1">
                                 <TrendingUp className="w-3 h-3" />
                                 Todas as lojas
                             </p>
@@ -270,7 +270,7 @@ export default function AdminDashboard({ metrics, recent_tenants, system_health 
                             {/* Print System */}
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center text-purple-600">
+                                    <div className="w-10 h-10 rounded-xl bg-cyan-100 dark:bg-cyan-900/20 flex items-center justify-center text-cyan-600">
                                         <Printer className="w-5 h-5" />
                                     </div>
                                     <div>

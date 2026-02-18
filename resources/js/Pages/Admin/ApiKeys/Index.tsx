@@ -77,7 +77,7 @@ export default function ApiKeysIndex({ credentials, tenants }: Props) {
         const colors: Record<string, string> = {
             evolution: 'bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-400',
             mercadopago: 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400',
-            mapbox: 'bg-purple-50 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400',
+            mapbox: 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-400',
         };
 
         return (

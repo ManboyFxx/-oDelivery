@@ -90,6 +90,8 @@ function ProductDropdown() {
 }
 
 export default function Welcome({ auth }: PageProps) {
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
     return (
         <div className="min-h-screen bg-white font-sans antialiased selection:bg-[#ff3d03] selection:text-white overflow-x-hidden">
             <Head title="Crie seu Cardápio Digital Grátis - ÓoDelivery" />
@@ -123,7 +125,7 @@ export default function Welcome({ auth }: PageProps) {
                             </Link>
                         </div>
 
-                        <div className="flex items-center gap-4">
+                        <div className="hidden md:flex items-center gap-4">
                             <Link
                                 href={route('login')}
                                 className="text-sm font-bold text-gray-700 hover:text-[#ff3d03] transition-colors block"
@@ -137,8 +139,59 @@ export default function Welcome({ auth }: PageProps) {
                                 Começar Grátis
                             </Link>
                         </div>
+
+                        {/* Mobile Menu Button */}
+                        <div className="md:hidden flex items-center">
+                            <button
+                                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                                className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+                            >
+                                {isMobileMenuOpen ? (
+                                    <X className="h-6 w-6" />
+                                ) : (
+                                    <Menu className="h-6 w-6" />
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
+
+                {/* Mobile Menu Overlay */}
+                 {isMobileMenuOpen && (
+                    <div className="md:hidden absolute top-20 left-0 w-full bg-white border-b border-gray-100 shadow-xl z-50 animate-in slide-in-from-top-5 duration-200">
+                        <div className="flex flex-col p-4 space-y-4">
+                            <div className="px-4 py-2">
+                                <ProductDropdown />
+                            </div>
+                            <Link href={route('plans')} className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-50 hover:text-[#ff3d03] rounded-lg" onClick={() => setIsMobileMenuOpen(false)}>
+                                Planos
+                            </Link>
+                            <Link href="#" className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-50 hover:text-[#ff3d03] rounded-lg" onClick={() => setIsMobileMenuOpen(false)}>
+                                Sobre nós
+                            </Link>
+                            <Link href="#" className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-50 hover:text-[#ff3d03] rounded-lg" onClick={() => setIsMobileMenuOpen(false)}>
+                                Blog
+                            </Link>
+                            
+                            <div className="h-px bg-gray-100 my-2"></div>
+                            
+                            <div className="flex flex-col gap-3">
+                                <Link
+                                    href={route('login')}
+                                    className="w-full text-center px-4 py-2 text-sm font-bold text-gray-900 hover:bg-gray-50 rounded-lg"
+                                >
+                                    Entrar
+                                </Link>
+                                <Link
+                                    href={route('register')}
+                                    className="w-full text-center px-6 py-3 rounded-xl bg-[#ff3d03] text-white font-bold text-sm hover:bg-[#e63703] transition-all shadow-lg hover:shadow-[#ff3d03]/20 hover:shadow-[#ff3d03]/40"
+                                >
+                                    Começar Grátis
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </nav>
 
             {/* Hero Section */}

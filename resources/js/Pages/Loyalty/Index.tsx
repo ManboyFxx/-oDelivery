@@ -24,8 +24,13 @@ interface Settings {
     currency_per_point: number;
     loyalty_tiers?: LoyaltyTier[];
     loyalty_expiry_days?: number;
-    referral_bonus_points?: number;
-    referral_reward_points?: number;
+    // Referral
+    referral_enabled?: boolean;
+    referral_referrer_points?: number;
+    referral_referred_points?: number;
+    referral_max_per_customer?: number;
+    referral_min_order_value?: number;
+    referral_code_expiry_days?: number;
 }
 
 interface Customer {
@@ -33,6 +38,18 @@ interface Customer {
     name: string;
     phone: string;
     loyalty_points: number;
+}
+
+interface Referral {
+    id: string;
+    referrer: { name: string; phone: string };
+    referred: { name: string; phone: string } | null;
+    referral_code: string;
+    status: 'pending' | 'completed' | 'fraud' | 'expired';
+    referrer_points_awarded: number;
+    referred_points_awarded: number;
+    created_at: string;
+    completed_at: string | null;
 }
 
 interface HistoryItem {
@@ -44,8 +61,14 @@ interface HistoryItem {
     customer: Customer;
 }
 
-export default function LoyaltyIndex({ settings, history, customers }: { settings: Settings, history: HistoryItem[], customers: Customer[] }) {
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'settings'>('dashboard');
+export default function LoyaltyIndex({ settings, history, customers, referrals, referralStats }: { 
+    settings: Settings, 
+    history: HistoryItem[], 
+    customers: Customer[],
+    referrals?: { data: Referral[], links: any[] },
+    referralStats?: { total: number, completed: number, pending: number, total_points_awarded: number }
+}) {
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'referrals' | 'settings'>('dashboard');
     const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
 
     // Settings Form
@@ -54,8 +77,15 @@ export default function LoyaltyIndex({ settings, history, customers }: { setting
         points_per_currency: settings?.points_per_currency ?? 1,
         currency_per_point: settings?.currency_per_point ?? 0.10,
         loyalty_expiry_days: settings?.loyalty_expiry_days ?? null,
-        referral_bonus_points: settings?.referral_bonus_points ?? 0,
-        referral_reward_points: settings?.referral_reward_points ?? 0,
+        
+        // Referral Settings
+        referral_enabled: settings?.referral_enabled ?? false,
+        referral_referrer_points: settings?.referral_referrer_points ?? 50,
+        referral_referred_points: settings?.referral_referred_points ?? 20,
+        referral_max_per_customer: settings?.referral_max_per_customer ?? 10,
+        referral_min_order_value: settings?.referral_min_order_value ?? null,
+        referral_code_expiry_days: settings?.referral_code_expiry_days ?? null,
+
         loyalty_tiers: settings?.loyalty_tiers ?? [
             { name: 'Bronze', min_points: 0, multiplier: 1.0 },
             { name: 'Prata', min_points: 100, multiplier: 1.05 },
@@ -123,6 +153,18 @@ export default function LoyaltyIndex({ settings, history, customers }: { setting
                         >
                             <History className="h-4 w-4" />
                             Visão Geral
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('referrals')}
+                            className={clsx(
+                                "px-6 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap flex items-center gap-2",
+                                activeTab === 'referrals'
+                                    ? "bg-[#ff3d03] text-white shadow-md shadow-[#ff3d03]/20"
+                                    : "text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-white/5"
+                            )}
+                        >
+                            <Users className="h-4 w-4" />
+                            Indicações
                         </button>
                         <button
                             onClick={() => setActiveTab('settings')}
@@ -194,6 +236,103 @@ export default function LoyaltyIndex({ settings, history, customers }: { setting
                                                             <History className="h-8 w-8 text-gray-300" />
                                                         </div>
                                                         <p className="font-bold text-gray-900 dark:text-white">Nenhuma movimentação registrada.</p>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'referrals' && (
+                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            {/* Referral Stats */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="bg-white dark:bg-[#1a1b1e] p-6 rounded-[24px] shadow-sm border border-gray-100 dark:border-white/5">
+                                    <h4 className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Total de Indicações</h4>
+                                    <p className="text-3xl font-black text-gray-900 dark:text-white">{referralStats?.total ?? 0}</p>
+                                </div>
+                                <div className="bg-white dark:bg-[#1a1b1e] p-6 rounded-[24px] shadow-sm border border-gray-100 dark:border-white/5">
+                                    <h4 className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Pendentes</h4>
+                                    <p className="text-3xl font-black text-orange-500">{referralStats?.pending ?? 0}</p>
+                                </div>
+                                <div className="bg-white dark:bg-[#1a1b1e] p-6 rounded-[24px] shadow-sm border border-gray-100 dark:border-white/5">
+                                    <h4 className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Convertidas</h4>
+                                    <p className="text-3xl font-black text-green-500">{referralStats?.completed ?? 0}</p>
+                                </div>
+                                <div className="bg-white dark:bg-[#1a1b1e] p-6 rounded-[24px] shadow-sm border border-gray-100 dark:border-white/5">
+                                    <h4 className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Pontos Distribuídos</h4>
+                                    <p className="text-3xl font-black text-[#ff3d03]">{referralStats?.total_points_awarded ?? 0}</p>
+                                </div>
+                            </div>
+
+                            {/* Referrals Table */}
+                            <div className="bg-white dark:bg-[#1a1b1e] rounded-[32px] shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-white/5 overflow-hidden">
+                                <div className="p-6 border-b border-gray-100 dark:border-white/5 flex justify-between items-center">
+                                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">Últimas Indicações</h3>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="bg-gray-50 dark:bg-[#0f1012] text-gray-500 dark:text-gray-400 uppercase text-xs font-bold">
+                                            <tr>
+                                                <th className="px-6 py-4 rounded-tl-[32px]">Padrinho (Indicou)</th>
+                                                <th className="px-6 py-4">Indicado (Novo Cliente)</th>
+                                                <th className="px-6 py-4">Status</th>
+                                                <th className="px-6 py-4">Pontos (Padrinho)</th>
+                                                <th className="px-6 py-4 rounded-tr-[32px]">Data</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100 dark:divide-white/5">
+                                            {referrals?.data.map((referral) => (
+                                                <tr key={referral.id} className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                                    <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">
+                                                        {referral.referrer.name}
+                                                        <span className="block text-xs text-gray-500 font-normal">{referral.referrer.phone}</span>
+                                                    </td>
+                                                    <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">
+                                                        {referral.referred ? (
+                                                            <>
+                                                                {referral.referred.name}
+                                                                <span className="block text-xs text-gray-500 font-normal">{referral.referred.phone}</span>
+                                                            </>
+                                                        ) : (
+                                                            <span className="text-gray-400 italic">Aguardando cadastro</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        {referral.status === 'completed' && (
+                                                            <span className="inline-flex items-center gap-1.5 text-green-600 bg-green-50 dark:bg-green-500/10 px-3 py-1 rounded-lg text-xs font-bold border border-green-100 dark:border-green-500/20">
+                                                                Concluída
+                                                            </span>
+                                                        )}
+                                                        {referral.status === 'pending' && (
+                                                            <span className="inline-flex items-center gap-1.5 text-orange-600 bg-orange-50 dark:bg-orange-500/10 px-3 py-1 rounded-lg text-xs font-bold border border-orange-100 dark:border-orange-500/20">
+                                                                Pendente
+                                                            </span>
+                                                        )}
+                                                        {(referral.status === 'fraud' || referral.status === 'expired') && (
+                                                            <span className="inline-flex items-center gap-1.5 text-red-600 bg-red-50 dark:bg-red-500/10 px-3 py-1 rounded-lg text-xs font-bold border border-red-100 dark:border-red-500/20">
+                                                                {referral.status === 'fraud' ? 'Suspeita' : 'Expirada'}
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4 font-black text-gray-900 dark:text-white">
+                                                        {referral.referrer_points_awarded > 0 ? `+${referral.referrer_points_awarded}` : '-'}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-gray-400 dark:text-gray-500 text-xs font-medium">
+                                                        {new Date(referral.created_at).toLocaleDateString('pt-BR')}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {(!referrals?.data || referrals.data.length === 0) && (
+                                                <tr>
+                                                    <td colSpan={5} className="px-6 py-20 text-center text-gray-500 dark:text-gray-400">
+                                                        <div className="h-16 w-16 bg-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center mb-4 mx-auto">
+                                                            <Users className="h-8 w-8 text-gray-300" />
+                                                        </div>
+                                                        <p className="font-bold text-gray-900 dark:text-white">Nenhuma indicação encontrada.</p>
                                                     </td>
                                                 </tr>
                                             )}
@@ -280,11 +419,86 @@ export default function LoyaltyIndex({ settings, history, customers }: { setting
                                     </div>
 
                                     {/* Expiry & Referral */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 pt-6 border-t border-gray-100 dark:border-white/5">
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mt-8 mb-6 pt-6 border-t border-gray-100 dark:border-white/5">
+                                        Configuração de Indicações (Indique e Ganhe)
+                                    </h3>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Users className="h-4 w-4 text-blue-500" />
+                                                <InputLabel value="Pontos para quem INDICA (Padrinho)" />
+                                            </div>
+                                            <div className="relative group">
+                                                <TextInput
+                                                    type="number"
+                                                    value={settingsData.referral_referrer_points}
+                                                    onChange={(e) => setSettingsData('referral_referrer_points', parseInt(e.target.value) || 0)}
+                                                    className="w-full pr-16 h-14 text-lg font-bold"
+                                                    placeholder="50"
+                                                    min="0"
+                                                />
+                                                <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400 font-bold bg-transparent">
+                                                    pts
+                                                </div>
+                                            </div>
+                                            <p className="text-sm text-gray-500 mt-2 pl-1">Ganho pelo cliente que enviou o convite.</p>
+                                        </div>
+
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Gift className="h-4 w-4 text-green-500" />
+                                                <InputLabel value="Pontos para o INDICADO (Novo Cliente)" />
+                                            </div>
+                                            <div className="relative group">
+                                                <TextInput
+                                                    type="number"
+                                                    value={settingsData.referral_referred_points}
+                                                    onChange={(e) => setSettingsData('referral_referred_points', parseInt(e.target.value) || 0)}
+                                                    className="w-full pr-16 h-14 text-lg font-bold"
+                                                    placeholder="20"
+                                                    min="0"
+                                                />
+                                                <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400 font-bold bg-transparent">
+                                                    pts
+                                                </div>
+                                            </div>
+                                            <p className="text-sm text-gray-500 mt-2 pl-1">Ganho pelo novo cliente ao se cadastrar e comprar.</p>
+                                        </div>
+
+                                        <div>
+                                            <InputLabel value="Máximo de Indicações por Cliente" className="mb-2" />
+                                            <TextInput
+                                                type="number"
+                                                value={settingsData.referral_max_per_customer}
+                                                onChange={(e) => setSettingsData('referral_max_per_customer', parseInt(e.target.value) || 10)}
+                                                className="w-full h-14 text-lg font-bold"
+                                                placeholder="10"
+                                                min="1"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <InputLabel value="Valor Mínimo do 1º Pedido" className="mb-2" />
+                                            <div className="relative group">
+                                                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-gray-400 font-bold">R$</div>
+                                                <TextInput
+                                                    type="number"
+                                                    value={settingsData.referral_min_order_value ?? ''}
+                                                    onChange={(e) => setSettingsData('referral_min_order_value', e.target.value ? parseFloat(e.target.value) : null)}
+                                                    className="w-full pl-10 h-14 text-lg font-bold"
+                                                    placeholder="Opcional"
+                                                    step="0.01"
+                                                    min="0"
+                                                />
+                                            </div>
+                                            <p className="text-sm text-gray-500 mt-2 pl-1">Mínimo gasto pelo indicado para validar a recompensa.</p>
+                                        </div>
+
                                         <div>
                                             <div className="flex items-center gap-2 mb-2">
                                                 <History className="h-4 w-4 text-orange-500" />
-                                                <InputLabel value="Validade dos Pontos (Dias)" />
+                                                <InputLabel value="Validade dos Pontos (Geral)" />
                                             </div>
                                             <div className="relative group">
                                                 <TextInput
@@ -300,27 +514,6 @@ export default function LoyaltyIndex({ settings, history, customers }: { setting
                                                 </div>
                                             </div>
                                             <p className="text-sm text-gray-500 mt-2 pl-1">Deixe em branco para pontos nunca expirarem.</p>
-                                        </div>
-
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <Users className="h-4 w-4 text-blue-500" />
-                                                <InputLabel value="Bônus por Indicação (Indique e Ganhe)" />
-                                            </div>
-                                            <div className="relative group">
-                                                <TextInput
-                                                    type="number"
-                                                    value={settingsData.referral_bonus_points}
-                                                    onChange={(e) => setSettingsData('referral_bonus_points', parseInt(e.target.value) || 0)}
-                                                    className="w-full pr-16 h-14 text-lg font-bold"
-                                                    placeholder="0"
-                                                    min="0"
-                                                />
-                                                <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400 font-bold bg-transparent">
-                                                    pts
-                                                </div>
-                                            </div>
-                                            <p className="text-sm text-gray-500 mt-2 pl-1">Pontos que o cliente ganha ao indicar um amigo que comprar.</p>
                                         </div>
                                     </div>
 

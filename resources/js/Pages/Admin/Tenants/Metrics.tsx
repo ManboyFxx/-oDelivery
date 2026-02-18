@@ -60,9 +60,9 @@ export default function TenantMetrics({ tenant, metrics }: Props) {
                         </div>
 
                         <div className="flex gap-3">
-                            <div className="px-4 py-2 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl border border-indigo-100 dark:border-indigo-500/20">
-                                <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-wide mb-0.5">Plano</p>
-                                <p className="font-black text-indigo-700 dark:text-indigo-400">{metrics.plan_name}</p>
+                            <div className="px-4 py-2 bg-blue-50 dark:bg-blue-500/10 rounded-xl border border-blue-100 dark:border-blue-500/20">
+                                <p className="text-[10px] font-bold text-blue-500 uppercase tracking-wide mb-0.5">Plano</p>
+                                <p className="font-black text-blue-700 dark:text-blue-400">{metrics.plan_name}</p>
                             </div>
                             <div className="px-4 py-2 bg-green-50 dark:bg-green-500/10 rounded-xl border border-green-100 dark:border-green-500/20">
                                 <p className="text-[10px] font-bold text-green-500 uppercase tracking-wide mb-0.5">Status</p>
@@ -122,7 +122,7 @@ export default function TenantMetrics({ tenant, metrics }: Props) {
                     <div className="bg-white dark:bg-[#1a1b1e] p-6 rounded-[24px] border border-gray-100 dark:border-white/5 shadow-sm relative overflow-hidden group">
                         <div className="relative z-10">
                             <div className="flex items-center gap-3 mb-4">
-                                <div className="p-3 bg-purple-50 dark:bg-purple-500/10 rounded-xl text-purple-500">
+                                <div className="p-3 bg-orange-50 dark:bg-orange-500/10 rounded-xl text-orange-500">
                                     <Activity className="h-6 w-6" />
                                 </div>
                                 <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide">Pedidos Hoje</h3>

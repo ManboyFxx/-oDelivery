@@ -109,7 +109,7 @@ export default function AuditLogs({ logs, stats }: Props) {
 
                     <div className="bg-white dark:bg-[#1a1b1e] rounded-[24px] p-6 border border-gray-100 dark:border-white/5 shadow-sm">
                         <div className="flex items-center gap-4">
-                            <div className="p-3 bg-purple-50 dark:bg-purple-500/10 rounded-xl text-purple-600 dark:text-purple-400">
+                            <div className="p-3 bg-blue-50 dark:bg-blue-500/10 rounded-xl text-blue-600 dark:text-blue-400">
                                 <Users className="h-6 w-6" />
                             </div>
                             <div>

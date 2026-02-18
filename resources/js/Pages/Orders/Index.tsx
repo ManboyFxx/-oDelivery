@@ -56,11 +56,11 @@ export default function OrdersIndex({ orders, motoboys = [], products = [] }: { 
             title: 'Em Entrega',
             statuses: ['motoboy_accepted', 'out_for_delivery'],
             icon: Truck,
-            iconColor: 'text-indigo-500',
+            iconColor: 'text-cyan-500',
             headerBg: 'bg-white',
-            borderColor: 'border-indigo-100',
-            containerBg: 'bg-indigo-50/30',
-            badgeColor: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-700/10'
+            borderColor: 'border-cyan-100',
+            containerBg: 'bg-cyan-50/30',
+            badgeColor: 'bg-cyan-50 text-cyan-700 ring-1 ring-cyan-700/10'
         },
     ], []);
 

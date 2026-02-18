@@ -98,12 +98,14 @@ class CustomerAuthController extends Controller
                         'message' => 'Digite sua senha para entrar'
                     ]);
                 } else {
-                    // Start Password Setup Flow (One-time OTP)
-                    // We can trigger OTP sending here or ask user to confirm
+                    // No password yet → setup flow without OTP (since OTP is disabled)
+                    $digitsRequired = $storeSettings->phone_digits_required ?? 4;
                     return response()->json([
                         'exists' => true,
                         'requires_setup' => true,
-                        'message' => 'Precisamos configurar uma senha segura para você.'
+                        'otp_enabled' => false,
+                        'phone_digits_required' => $digitsRequired,
+                        'message' => "Confirme os últimos {$digitsRequired} dígitos do seu telefone para criar sua senha."
                     ]);
                 }
             }
@@ -173,21 +175,41 @@ class CustomerAuthController extends Controller
             'name' => $validated['name'],
             'phone' => $validated['phone'],
             'loyalty_points' => 0,
-            'loyalty_tier' => 'bronze', // Default tier for new customers
+            'loyalty_tier' => 'bronze',
         ]);
 
-        // After registration, we don't login immediately if password is required by policy?
-        // Actually, for better UX, let's login but mark as "needs password setup"
-        // But for consistency with Security, let's Redirect to Setup
+        // 🎁 Handle Referral Code
+        if (!empty($request->referral_code)) {
+            try {
+                app(\App\Services\ReferralService::class)->applyReferral(
+                    $customer,
+                    strtoupper($request->referral_code),
+                    $request->ip(),
+                    $request->input('device_fingerprint', 'unknown')
+                );
+            } catch (\Throwable $e) {
+                // Log but don't fail registration
+                \Log::warning('Failed to apply referral code during registration', [
+                    'customer_id' => $customer->id,
+                    'code' => $request->referral_code,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        // Check if OTP is enabled for this tenant
+        $storeSettings = \App\Models\StoreSetting::where('tenant_id', $tenant->id)->first();
+        $otpEnabled = $storeSettings ? (bool) $storeSettings->enable_otp_verification : true;
 
         return response()->json([
             'message' => 'Cadastro inicial realizado!',
             'customer' => [
                 'id' => $customer->id,
                 'name' => $customer->name,
-                'phone' => $validated['phone'] // Return phone for next step
+                'phone' => $validated['phone']
             ],
-            'requires_setup' => true // Trigger setup flow
+            'requires_setup' => true,
+            'otp_enabled' => $otpEnabled,
         ]);
     }
 
@@ -212,6 +234,16 @@ class CustomerAuthController extends Controller
                 $q->latest()->limit(5);
             }
         ])->find($customerId);
+
+        // 🎁 Auto-generate referral code if eligible (has orders) and missing
+        if (!$customer->referral_code && $customer->orders->isNotEmpty()) {
+            try {
+                $customer->referral_code = app(\App\Services\ReferralService::class)->generateCode($customer);
+                // No save needed as generateCode saves it, but we set it on instance for response
+            } catch (\Throwable $e) {
+                // Ignore errors
+            }
+        }
 
         // ✅ Sanitizar dados
         return response()->json([
@@ -356,37 +388,53 @@ class CustomerAuthController extends Controller
     }
 
     /**
-     * Setup Password (Requires OTP)
+     * Setup Password (OTP or Phone Digits verification)
      */
     public function setupPassword(Request $request)
     {
         $validated = $request->validate([
             'phone' => 'required|string',
-            'code' => 'required|string|size:6',
+            'code' => 'nullable|string|size:6',
+            'phone_last_digits' => 'nullable|string|min:2|max:8',
             'password' => 'required|string|min:6',
             'tenant_slug' => 'required|string',
             'device_fingerprint' => 'required|string',
         ]);
 
-        // Verify OTP first
-        $otp = OtpCode::where('phone', $validated['phone'])
-            ->where('code', $validated['code'])
-            ->where('used', false)
-            ->where('expires_at', '>', now())
-            ->first();
-
-        if (!$otp) {
-            return response()->json([
-                'message' => 'Código inválido ou expirado'
-            ], 422);
-        }
-
-        $otp->markAsUsed();
-
         $tenant = Tenant::where('slug', $validated['tenant_slug'])->firstOrFail();
+        $storeSettings = \App\Models\StoreSetting::where('tenant_id', $tenant->id)->first();
+        $otpEnabled = $storeSettings ? (bool) $storeSettings->enable_otp_verification : true;
+
         $customer = Customer::where('tenant_id', $tenant->id)
             ->where('phone', $validated['phone'])
             ->firstOrFail();
+
+        if ($otpEnabled) {
+            // Verify OTP code
+            if (empty($validated['code'])) {
+                return response()->json(['message' => 'Código OTP obrigatório.'], 422);
+            }
+
+            $otp = OtpCode::where('phone', $validated['phone'])
+                ->where('code', $validated['code'])
+                ->where('used', false)
+                ->where('expires_at', '>', now())
+                ->first();
+
+            if (!$otp) {
+                return response()->json(['message' => 'Código inválido ou expirado'], 422);
+            }
+
+            $otp->markAsUsed();
+        } else {
+            // Verify phone trailing digits
+            $digitsRequired = $storeSettings->phone_digits_required ?? 4;
+            $submittedDigits = $validated['phone_last_digits'] ?? '';
+
+            if (strlen($submittedDigits) !== $digitsRequired || substr($customer->phone, -$digitsRequired) !== $submittedDigits) {
+                return response()->json(['message' => "Dígitos do telefone incorretos."], 401);
+            }
+        }
 
         // Set Password
         $customer->password = \Illuminate\Support\Facades\Hash::make($validated['password']);
@@ -419,29 +467,44 @@ class CustomerAuthController extends Controller
     }
 
     /**
-     * Quick Login Secure (Last 4 digits validation)
+     * Quick Login Secure — validates trailing phone digits and logs the customer in.
+     * Accepts either customer_id OR phone+tenant_slug to resolve the customer.
      */
     public function quickLoginSecure(Request $request)
     {
         $validated = $request->validate([
-            'phone_last_4' => 'required|string|size:4',
-            'customer_id' => 'required|string',
+            'phone_last_digits' => 'required|string|min:2|max:8',
+            'phone' => 'nullable|string',
+            'tenant_slug' => 'nullable|string',
+            'customer_id' => 'nullable|string',
             'device_fingerprint' => 'required|string',
         ]);
 
-        $customer = Customer::find($validated['customer_id']);
+        // Resolve customer by phone+tenant or by customer_id
+        if (!empty($validated['customer_id'])) {
+            $customer = Customer::find($validated['customer_id']);
+        } elseif (!empty($validated['phone']) && !empty($validated['tenant_slug'])) {
+            $tenant = Tenant::where('slug', $validated['tenant_slug'])->first();
+            $customer = $tenant
+                ? Customer::where('tenant_id', $tenant->id)->where('phone', $validated['phone'])->first()
+                : null;
+        } else {
+            $customer = null;
+        }
 
         if (!$customer) {
             return response()->json(['message' => 'Cliente não encontrado.'], 404);
         }
 
-        // Validate Phone (Last 4 digits)
-        // Phone is encrypted/decrypted via accessor, so $customer->phone is plain text here
-        if (substr($customer->phone, -4) !== $validated['phone_last_4']) {
+        // Get configured digit count for this tenant
+        $storeSettings = \App\Models\StoreSetting::where('tenant_id', $customer->tenant_id)->first();
+        $digitsRequired = $storeSettings->phone_digits_required ?? 4;
+
+        // Validate the trailing digits match
+        if (substr($customer->phone, -$digitsRequired) !== $validated['phone_last_digits']) {
             return response()->json(['message' => 'Dígitos incorretos.'], 401);
         }
 
-        // Create Trusted Device (if not exists)
         $deviceToken = $this->createTrustedDevice(
             $customer->id,
             $validated['device_fingerprint'],
@@ -449,12 +512,11 @@ class CustomerAuthController extends Controller
             $request->ip()
         );
 
-        // Login
         $request->session()->regenerate();
         session([
             'customer_id' => $customer->id,
             'customer_tenant_id' => $customer->tenant_id,
-            'current_tenant_slug' => session('current_tenant_slug')
+            'current_tenant_slug' => $validated['tenant_slug'] ?? session('current_tenant_slug')
         ]);
 
         return response()->json([
@@ -463,6 +525,7 @@ class CustomerAuthController extends Controller
             'customer' => [
                 'id' => $customer->id,
                 'name' => $customer->name,
+                'loyalty_points' => $customer->loyalty_points ?? 0,
             ]
         ])->cookie('device_token', $deviceToken, 60 * 24 * 90);
     }

@@ -157,6 +157,11 @@ class Tenant extends Model
     }
 
     // Trial methods removed - unified plan has no trial period
+    // restore onTrial for backward compatibility with FinancialController
+    public function onTrial(): bool
+    {
+        return $this->trial_ends_at && $this->trial_ends_at->isFuture();
+    }
 
     /**
      * Check if the tenant has access to the system.

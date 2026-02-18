@@ -89,9 +89,9 @@ export default function History({
                 </div>
 
                 {/* Total de pontos de localização */}
-                <div className="bg-purple-50 rounded-2xl border border-purple-200 p-4">
-                    <p className="text-purple-600 text-xs font-bold uppercase">Localizações</p>
-                    <p className="text-3xl font-black text-purple-900 mt-2">
+                <div className="bg-cyan-50 rounded-2xl border border-cyan-200 p-4">
+                    <p className="text-cyan-600 text-xs font-bold uppercase">Localizações</p>
+                    <p className="text-3xl font-black text-cyan-900 mt-2">
                         {monthStatistics.location_updates_count}
                     </p>
                 </div>

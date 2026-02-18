@@ -41,7 +41,7 @@ export default function LockedFeatureOverlay({
                     <h3 className={`text-lg font-bold mb-2 ${light ? 'text-white' : ''}`}>{title}</h3>
                     <p className={`text-sm mb-6 ${light ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'}`}>{description}</p>
 
-                    <Link href={route('subscription.plans')}>
+                    <Link href={route('subscription.index')}>
                         <PrimaryButton className={`w-full justify-center ${light ? 'bg-white !text-[#ff3d03] hover:bg-gray-50 shadow-lg' : 'bg-gray-900 hover:bg-gray-800'}`}>
                             Fazer Upgrade
                         </PrimaryButton>

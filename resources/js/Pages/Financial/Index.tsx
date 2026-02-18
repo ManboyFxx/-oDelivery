@@ -66,7 +66,7 @@ export default function FinancialIndex({ metrics, chart_data, transactions, top_
     const [cashRegisterOpen, setCashRegisterOpen] = useState(false);
 
     // Derived state
-    const isPro = current_plan === 'pro' || current_plan === 'custom' || is_trial;
+    const isPro = current_plan === 'pro' || current_plan === 'custom' || current_plan === 'unified' || is_trial;
     const isFree = !isPro;
 
     const formatCurrency = (value: number) => {
@@ -127,7 +127,7 @@ export default function FinancialIndex({ metrics, chart_data, transactions, top_
                             <div className="flex items-center gap-2 bg-yellow-100 text-yellow-800 px-3 py-2 rounded-xl text-xs font-bold border border-yellow-200" title="Upgrade para selecionar datas">
                                 <Lock className="w-3.5 h-3.5" />
                                 <span>Últimos 7 dias</span>
-                                <Link href={route('subscription.plans')} className="text-[#ff3d03] hover:underline ml-1">
+                                <Link href={route('subscription.index')} className="text-[#ff3d03] hover:underline ml-1">
                                     Upgrade
                                 </Link>
                             </div>

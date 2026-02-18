@@ -194,12 +194,16 @@ class TenantMenuController extends Controller
             'availableCoupons' => $availableCoupons,
             'store' => [
                 'name' => $settings->store_name ?? 'ÓoDelivery Demo',
+                'description' => $settings->description,
                 'logo_url' => $settings->logo_path ? "/storage/{$settings->logo_path}" : $settings->logo_url,
                 'banner_url' => $settings->banner_path ? "/storage/{$settings->banner_path}" : $settings->banner_url,
                 'phone' => $settings->phone,
                 'whatsapp' => $settings->whatsapp,
                 'email' => $settings->email,
                 'address' => $settings->address,
+                'instagram' => $settings->instagram,
+                'facebook' => $settings->facebook,
+                'website' => $settings->website,
                 'theme_color' => $settings->pwa_theme_color ?? '#ff3d03',
                 'theme_mode' => $settings->menu_theme ?? 'modern-clean',
                 'loyalty_enabled' => $settings->loyalty_enabled ?? true,
@@ -210,7 +214,7 @@ class TenantMenuController extends Controller
                 'estimated_delivery_time' => $settings->estimated_delivery_time ?? 30,
                 'delivery_zones' => $deliveryZones,
                 'payment_methods' => $paymentMethods,
-                'settings' => $sanitizedSettings, // ✅ Usar versão sanitizada
+                'settings' => $sanitizedSettings,
             ]
         ]);
     }

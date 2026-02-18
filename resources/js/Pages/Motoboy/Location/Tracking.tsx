@@ -233,11 +233,11 @@ export default function Tracking({
 
                             {/* Duração */}
                             {trajectoryStatistics.duration && (
-                                <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg border border-purple-200">
-                                    <Clock className="w-5 h-5 text-purple-600 flex-shrink-0" />
+                                <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                                    <Clock className="w-5 h-5 text-orange-600 flex-shrink-0" />
                                     <div className="flex-1">
-                                        <p className="text-purple-600 text-xs font-bold">DURAÇÃO</p>
-                                        <p className="text-purple-900 font-black text-lg">
+                                        <p className="text-orange-600 text-xs font-bold">DURAÇÃO</p>
+                                        <p className="text-orange-900 font-black text-lg">
                                             {trajectoryStatistics.duration}
                                         </p>
                                     </div>

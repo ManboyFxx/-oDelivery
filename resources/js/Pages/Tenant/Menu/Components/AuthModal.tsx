@@ -19,13 +19,16 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ isOpen, onClose, onLogin, slug }: AuthModalProps) {
-    const [authStep, setAuthStep] = useState<'phone' | 'name' | 'password' | 'setup_otp' | 'setup_password' | 'login_otp'>('phone');
+    const [authStep, setAuthStep] = useState<'phone' | 'name' | 'password' | 'setup_otp' | 'setup_password' | 'login_otp' | 'phone_digits'>('phone');
     const [phone, setPhone] = useState('');
     const [name, setName] = useState('');
     const [password, setPassword] = useState('');
     const [otpCode, setOtpCode] = useState('');
+    const [phoneDigits, setPhoneDigits] = useState('');
     const [loading, setLoading] = useState(false);
     const [setupMessage, setSetupMessage] = useState('');
+    const [otpEnabled, setOtpEnabled] = useState(true);
+    const [phoneDigitsRequired, setPhoneDigitsRequired] = useState(4);
 
     // Initialize Device Fingerprint
     useEffect(() => {
@@ -42,8 +45,11 @@ export default function AuthModal({ isOpen, onClose, onLogin, slug }: AuthModalP
         setName('');
         setPassword('');
         setOtpCode('');
+        setPhoneDigits('');
         setAuthStep('phone');
         setSetupMessage('');
+        setOtpEnabled(true);
+        setPhoneDigitsRequired(4);
     };
 
     const handleClose = () => {
@@ -70,11 +76,19 @@ export default function AuthModal({ isOpen, onClose, onLogin, slug }: AuthModalP
                     setAuthStep('password');
                     toast.info(response.data.message || 'Digite sua senha.');
                 } else if (response.data.requires_setup) {
-                    setAuthStep('setup_otp');
-                    setSetupMessage(response.data.message || 'Vamos criar uma senha para você.');
-                    // Trigger OTP send automatically? Or user button?
-                    // Let's trigger automatically since user intends to login
-                    await requestSetupOtp();
+                    const hasOtp = response.data.otp_enabled !== false;
+                    const digits = response.data.phone_digits_required ?? 4;
+                    setOtpEnabled(hasOtp);
+                    setPhoneDigitsRequired(digits);
+                    setSetupMessage(response.data.message || '');
+                    if (hasOtp) {
+                        setAuthStep('setup_otp');
+                        await requestSetupOtp();
+                    } else {
+                        // OTP desativado → dígitos do telefone = login direto
+                        setAuthStep('phone_digits');
+                        toast.info(response.data.message || `Confirme os últimos ${digits} dígitos do seu telefone.`);
+                    }
                 } else if (response.data.requires_otp) {
                     setAuthStep('login_otp');
                     toast.info('Código enviado para seu WhatsApp.');
@@ -135,16 +149,58 @@ export default function AuthModal({ isOpen, onClose, onLogin, slug }: AuthModalP
          setAuthStep('setup_password');
     }
 
+    const handlePhoneDigitsLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (phoneDigits.length !== phoneDigitsRequired) {
+            toast.error(`Digite os ${phoneDigitsRequired} últimos dígitos do seu telefone.`);
+            return;
+        }
+        setLoading(true);
+        try {
+            const response = await axios.post('/customer/quick-login', {
+                phone,
+                tenant_slug: slug,
+                phone_last_digits: phoneDigits,
+                device_fingerprint: localStorage.getItem('device_fingerprint') || 'unknown-device',
+            });
+            if (response.data.success) {
+                onLogin(response.data.customer);
+                handleClose();
+                toast.success(`Bem-vindo, ${response.data.customer.name}!`);
+            }
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Dígitos incorretos. Tente novamente.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleSetupPasswordSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         try {
-             const response = await axios.post('/customer/setup-password', {
+            if (!otpEnabled) {
+                // Verify phone digits first, then set password directly
+                if (phoneDigits.length !== phoneDigitsRequired) {
+                    toast.error(`Digite os ${phoneDigitsRequired} últimos dígitos do seu telefone.`);
+                    setLoading(false);
+                    return;
+                }
+                const verifyResponse = await axios.post('/customer/quick-login', {
+                    phone_last_digits: phoneDigits,
+                    customer_id: '', // will be resolved by phone on backend
+                    device_fingerprint: localStorage.getItem('device_fingerprint') || 'unknown-device'
+                });
+                // If quick-login fails it throws, so we continue to set password
+            }
+
+            const response = await axios.post('/customer/setup-password', {
                 phone,
                 code: otpCode,
                 password,
                 tenant_slug: slug,
-                device_fingerprint: localStorage.getItem('device_fingerprint') || 'unknown-device'
+                device_fingerprint: localStorage.getItem('device_fingerprint') || 'unknown-device',
+                phone_last_digits: !otpEnabled ? phoneDigits : undefined,
             });
 
             if (response.data.success) {
@@ -156,8 +212,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, slug }: AuthModalP
             console.error('Error setting password:', error);
             toast.error(error.response?.data?.message || 'Erro ao definir senha.');
             if (error.response?.status === 422) {
-                 // OTP invalid, go back?
-                 setAuthStep('setup_otp');
+                setAuthStep('setup_otp');
             }
         } finally {
             setLoading(false);
@@ -196,15 +251,26 @@ export default function AuthModal({ isOpen, onClose, onLogin, slug }: AuthModalP
             const response = await axios.post('/customer/complete-registration', {
                 phone,
                 name,
-                tenant_slug: slug
+                tenant_slug: slug,
+                referral_code: localStorage.getItem('referral_code'), // 🎁 Referral Code
+                device_fingerprint: localStorage.getItem('device_fingerprint') || 'unknown-device'
             });
             
             if (response.data.requires_setup) {
-                 setAuthStep('setup_otp');
-                 setSetupMessage('Cadastro inicial feito! Agora vamos criar sua senha.');
-                 await requestSetupOtp();
+                const hasOtp = response.data.otp_enabled !== false;
+                const digits = response.data.phone_digits_required ?? 4;
+                setOtpEnabled(hasOtp);
+                setPhoneDigitsRequired(digits);
+                setSetupMessage('Cadastro realizado!');
+                if (hasOtp) {
+                    setAuthStep('setup_otp');
+                    await requestSetupOtp();
+                } else {
+                    // OTP desativado → dígitos do telefone = login direto
+                    setAuthStep('phone_digits');
+                    toast.info(`Confirme os últimos ${digits} dígitos do seu telefone para entrar.`);
+                }
             } else {
-                 // Fallback (should not happen with new backend logic aimed for security)
                 onLogin(response.data.customer);
                 handleClose();
                 toast.success(`Cadastro realizado com sucesso!`);
@@ -232,6 +298,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, slug }: AuthModalP
                         {authStep === 'phone' ? 'Entrar ou Cadastrar' :
                          authStep === 'name' ? 'Seus Dados' :
                          authStep === 'password' ? 'Digite sua Senha' :
+                         authStep === 'phone_digits' ? 'Verificação de Identidade' :
                          authStep === 'setup_otp' || authStep === 'login_otp' ? 'Verificação de Segurança' :
                          'Criar Senha'
                         }
@@ -335,9 +402,9 @@ export default function AuthModal({ isOpen, onClose, onLogin, slug }: AuthModalP
                 {authStep === 'setup_password' && (
                      <form onSubmit={handleSetupPasswordSubmit} className="space-y-4">
                         <div>
-                             <div className="p-3 bg-green-50 text-green-700 text-sm rounded-lg mb-4">
-                                  Número verificado! Crie sua senha de acesso.
-                              </div>
+                            <div className="p-3 bg-green-50 text-green-700 text-sm rounded-lg mb-4">
+                                Número verificado! Crie sua senha de acesso.
+                            </div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors duration-300">
                                 Nova Senha
                             </label>
@@ -357,6 +424,36 @@ export default function AuthModal({ isOpen, onClose, onLogin, slug }: AuthModalP
                             className="w-full bg-[#ff3d03] hover:bg-[#e63700] text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-50"
                         >
                             {loading ? 'Salvando...' : 'Definir Senha e Entrar'}
+                        </button>
+                    </form>
+                )}
+
+                {authStep === 'phone_digits' && (
+                    <form onSubmit={handlePhoneDigitsLogin} className="space-y-4">
+                        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-sm rounded-lg">
+                            {setupMessage || `Confirme os últimos ${phoneDigitsRequired} dígitos do seu telefone para entrar.`}
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Últimos {phoneDigitsRequired} dígitos do telefone
+                            </label>
+                            <input
+                                type="tel"
+                                value={phoneDigits}
+                                onChange={(e) => setPhoneDigits(e.target.value.replace(/\D/g, '').slice(0, phoneDigitsRequired))}
+                                placeholder={'0'.repeat(phoneDigitsRequired)}
+                                maxLength={phoneDigitsRequired}
+                                autoFocus
+                                className="w-full px-4 py-3 border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent transition-all outline-none text-center tracking-widest text-2xl font-bold bg-white dark:bg-white/5 text-gray-900 dark:text-white dark:placeholder-gray-500"
+                                required
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            disabled={loading || phoneDigits.length !== phoneDigitsRequired}
+                            className="w-full bg-[#ff3d03] hover:bg-[#e63700] text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-50"
+                        >
+                            {loading ? 'Verificando...' : 'Entrar'}
                         </button>
                     </form>
                 )}

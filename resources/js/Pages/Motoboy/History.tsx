@@ -9,8 +9,8 @@ export default function History() {
 
             <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-sm">
                 <div className="flex justify-center mb-6">
-                    <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center">
-                        <Clock className="w-8 h-8 text-purple-600" />
+                    <div className="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center">
+                        <Clock className="w-8 h-8 text-orange-600" />
                     </div>
                 </div>
                 <h2 className="text-2xl font-black text-gray-900 mb-3">Histórico de Entregas</h2>

@@ -132,7 +132,7 @@ export default function AdminUsersIndex({ users, filters }: IndexProps) {
                                             )}
                                         </td>
                                         <td className="py-4 px-4">
-                                            <span className={`px-2 py-1 rounded-md text-xs font-bold ${user.role === 'admin' ? 'bg-purple-50 text-purple-600' :
+                                            <span className={`px-2 py-1 rounded-md text-xs font-bold ${user.role === 'admin' ? 'bg-red-50 text-red-600' :
                                                     user.role === 'motoboy' ? 'bg-blue-50 text-blue-600' :
                                                         'bg-gray-100 text-gray-600'
                                                 }`}>

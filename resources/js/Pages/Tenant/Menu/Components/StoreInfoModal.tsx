@@ -28,7 +28,7 @@ export default function StoreInfoModal({ isOpen, onClose, store }: StoreInfoModa
                         className="relative bg-white dark:bg-premium-dark w-full max-w-xl h-full sm:h-auto sm:max-h-[85vh] sm:rounded-[48px] shadow-2xl overflow-y-auto text-gray-900 dark:text-gray-100 border-gray-100 dark:border-white/5 flex flex-col transition-colors duration-300"
                     >
                         {/* Cabeçalho de Navegação Mobile */}
-                        <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-100 p-4 flex items-center gap-4 sm:hidden">
+                        <div className="sticky top-0 z-20 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-100 dark:border-white/10 p-4 flex items-center gap-4 sm:hidden">
                             <button 
                                 onClick={onClose}
                                 className="h-10 w-10 bg-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center text-gray-900 dark:text-white active:scale-90 transition-all"
@@ -97,7 +97,7 @@ export default function StoreInfoModal({ isOpen, onClose, store }: StoreInfoModa
                                         </div>
                                         <div>
                                             <p className="text-[9px] font-black text-[#ff3d03]/60 uppercase tracking-widest">Tempo Médio</p>
-                                            <p className="text-sm font-black text-gray-950">{store?.estimated_delivery_time || '35-50'} min</p>
+                                            <p className="text-sm font-black text-gray-950 dark:text-white">{store?.estimated_delivery_time || '35-50'} min</p>
                                         </div>
                                     </div>
                                     <div className="p-5 bg-blue-50/50 rounded-3xl border border-blue-100 flex items-center gap-4">
@@ -106,7 +106,7 @@ export default function StoreInfoModal({ isOpen, onClose, store }: StoreInfoModa
                                         </div>
                                         <div>
                                             <p className="text-[9px] font-black text-blue-600/60 uppercase tracking-widest">Avaliação</p>
-                                            <p className="text-sm font-black text-blue-950">4.9 (500+)</p>
+                                            <p className="text-sm font-black text-blue-950 dark:text-blue-200">4.9 (500+)</p>
                                         </div>
                                     </div>
                                 </div>
@@ -118,7 +118,7 @@ export default function StoreInfoModal({ isOpen, onClose, store }: StoreInfoModa
                                     </h3>
                                     <div className="flex flex-col gap-6">
                                         <div>
-                                            <p className="text-sm font-bold text-gray-900 leading-relaxed mb-4">
+                                            <p className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-relaxed mb-4">
                                                 {store?.address || 'Endereço não informado'}
                                             </p>
                                             <div className="flex items-center gap-3">
@@ -142,7 +142,7 @@ export default function StoreInfoModal({ isOpen, onClose, store }: StoreInfoModa
                                             </div>
                                             <div>
                                                 <p className="text-[9px] font-black text-[#25D366] uppercase tracking-widest mb-1">WhatsApp</p>
-                                                <p className="text-sm font-bold text-gray-900">Falar com atendente</p>
+                                                <p className="text-sm font-bold text-gray-900 dark:text-gray-100">Falar com atendente</p>
                                             </div>
                                         </a>
                                     )}
@@ -154,7 +154,7 @@ export default function StoreInfoModal({ isOpen, onClose, store }: StoreInfoModa
                                             </div>
                                             <div>
                                                 <p className="text-[9px] font-black text-pink-500 uppercase tracking-widest mb-1">Instagram</p>
-                                                <p className="text-sm font-bold text-gray-900">Ver fotos e stories</p>
+                                                <p className="text-sm font-bold text-gray-900 dark:text-gray-100">Ver fotos e stories</p>
                                             </div>
                                         </a>
                                     )}

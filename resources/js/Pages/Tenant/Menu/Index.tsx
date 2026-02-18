@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAudio } from '@/Hooks/useAudio';
 import { toast } from 'sonner';
 import axios from 'axios';
-import { Loader2, Search } from 'lucide-react';
+import { Loader2, Search, Sun, Moon } from 'lucide-react';
 import clsx from 'clsx';
 
 import { Category, Product, Customer } from './Components/types';
@@ -44,9 +44,40 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
 
+    // 🎁 Capture Referral Code
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const refCode = params.get('ref');
+            if (refCode) {
+                localStorage.setItem('referral_code', refCode);
+                // Optional: clear from URL for cleaner look
+                // const newUrl = window.location.pathname;
+                // window.history.replaceState({}, '', newUrl);
+            }
+        }
+    }, []);
+
     // Auth
     const [customer, setCustomer] = useState<Customer | null>(authCustomer);
     const [addresses, setAddresses] = useState<any[]>([]);
+
+    // Dark mode toggle
+    const [isDark, setIsDark] = useState<boolean>(() => {
+        const saved = localStorage.getItem('menu_theme');
+        if (saved) return saved === 'dark';
+        if (store.theme_mode === 'dark') return true;
+        if (store.theme_mode === 'light') return false;
+        return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    });
+
+    const toggleTheme = () => {
+        setIsDark(prev => {
+            const next = !prev;
+            localStorage.setItem('menu_theme', next ? 'dark' : 'light');
+            return next;
+        });
+    };
 
     const loadAddresses = async () => {
         if (!customer) return;
@@ -102,21 +133,12 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
     // Theme Logic
     useEffect(() => {
         const root = window.document.documentElement;
-        const theme = store.theme_mode || 'auto'; // 'light', 'dark', 'auto'
-
-        if (theme === 'dark') {
+        if (isDark) {
             root.classList.add('dark');
-        } else if (theme === 'light') {
-            root.classList.remove('dark');
         } else {
-            // System preference
-            if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                root.classList.add('dark');
-            } else {
-                root.classList.remove('dark');
-            }
+            root.classList.remove('dark');
         }
-    }, [store.theme_mode]);
+    }, [isDark]);
 
     // Scroll Spy for Category Nav
     useEffect(() => {
@@ -258,6 +280,13 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                             />
                         </div>
                     </div>
+                    <button
+                        onClick={toggleTheme}
+                        aria-label={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
+                        className="h-10 w-10 rounded-xl bg-gray-100 dark:bg-white/10 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20 active:scale-90 transition-all shrink-0"
+                    >
+                        {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                    </button>
                 </div>
             </header>
 

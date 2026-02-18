@@ -24,7 +24,7 @@ export default function Downloads({ auth, tenant }: { auth: any, tenant: any }) 
 
                     {/* Header Section */}
                     <div className="mb-10 text-center">
-                        <div className="inline-flex items-center justify-center p-3 mb-4 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
+                        <div className="inline-flex items-center justify-center p-3 mb-4 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
                             <Server className="w-8 h-8" />
                         </div>
                         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Central de Downloads</h1>
@@ -36,9 +36,9 @@ export default function Downloads({ auth, tenant }: { auth: any, tenant: any }) 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
 
                         {/* Windows App */}
-                        <div className="group relative bg-white dark:bg-[#1a2333] rounded-3xl p-8 border border-gray-200 dark:border-indigo-500/30 shadow-xl overflow-hidden hover:border-indigo-500 transition-all duration-300">
+                        <div className="group relative bg-white dark:bg-[#1a2333] rounded-3xl p-8 border border-gray-200 dark:border-blue-500/30 shadow-xl overflow-hidden hover:border-blue-500 transition-all duration-300">
                             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                <Monitor className="w-32 h-32 text-indigo-500" />
+                                <Monitor className="w-32 h-32 text-blue-500" />
                             </div>
 
                             <div className="relative z-10">
@@ -52,18 +52,18 @@ export default function Downloads({ auth, tenant }: { auth: any, tenant: any }) 
 
                                 <ul className="space-y-3 mb-8">
                                     <li className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                                        <Terminal className="w-4 h-4 mr-2 text-indigo-400" />
+                                        <Terminal className="w-4 h-4 mr-2 text-blue-400" />
                                         Impressão Automática (ÓoPrint)
                                     </li>
                                     <li className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                                        <Shield className="w-4 h-4 mr-2 text-indigo-400" />
+                                        <Shield className="w-4 h-4 mr-2 text-blue-400" />
                                         Gestão em Tempo Real
                                     </li>
                                 </ul>
 
                                 <button
                                     onClick={() => window.location.href = '/downloads/installer.exe'}
-                                    className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium flex items-center justify-center gap-2 transition-colors shadow-lg shadow-indigo-600/20"
+                                    className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium flex items-center justify-center gap-2 transition-colors shadow-lg shadow-blue-600/20"
                                 >
                                     <Download className="w-4 h-4" />
                                     Baixar para Windows

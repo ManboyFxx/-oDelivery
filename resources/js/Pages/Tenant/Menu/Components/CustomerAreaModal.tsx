@@ -584,7 +584,7 @@ export default function CustomerAreaModal({ isOpen, onClose, customer, onLogout,
                                     </li>
                                     <li className="flex gap-3">
                                         <div className="h-6 w-6 bg-orange-100 text-[#ff3d03] rounded-full flex items-center justify-center font-bold text-xs shrink-0">3</div>
-                                        <p>Você ganha <strong className="text-gray-900 dark:text-white transition-colors duration-300">{store.settings.referral_bonus_points || 0} pontos</strong> automaticamente!</p>
+                                        <p>Você ganha <strong className="text-gray-900 dark:text-white transition-colors duration-300">{store.settings.referral_referrer_points || 0} pontos</strong> automaticamente!</p>
                                     </li>
                                 </ul>
                             </div>

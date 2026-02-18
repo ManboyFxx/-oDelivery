@@ -104,7 +104,7 @@ export default function Dashboard({ auth, metrics }: any) {
         switch (status) {
             case 'pending': return <Clock className="h-4 w-4 text-orange-500" />;
             case 'preparing': return <ChefHat className="h-4 w-4 text-blue-500" />;
-            case 'delivering': return <Bike className="h-4 w-4 text-purple-500" />;
+            case 'delivering': return <Bike className="h-4 w-4 text-cyan-500" />;
             case 'completed': return <CheckCircle2 className="h-4 w-4 text-green-500" />;
             case 'canceled': return <XCircle className="h-4 w-4 text-red-500" />;
             default: return <Clock className="h-4 w-4 text-gray-400" />;

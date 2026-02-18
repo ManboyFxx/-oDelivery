@@ -293,7 +293,7 @@ export default function EditTenant({ tenant, plans, currentLimits }: Props) {
                                                     <p className="font-bold text-gray-900 dark:text-white text-sm">{user.name}</p>
                                                     <p className="text-xs text-gray-500">{user.email}</p>
                                                 </div>
-                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${user.role === 'admin' ? 'bg-purple-50 text-purple-600' : 'bg-gray-100 text-gray-600'}`}>
+                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${user.role === 'admin' ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-600'}`}>
                                                     {user.role}
                                                 </span>
                                             </div>

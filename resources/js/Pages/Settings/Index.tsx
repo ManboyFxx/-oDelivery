@@ -32,8 +32,12 @@ export default function Settings({ auth, settings, deliveryZones: initialZones, 
 
     // UI State
     const [showingSuccessMessage, setShowingSuccessMessage] = useState(false);
-    const [logoPreview, setLogoPreview] = useState<string | null>(settings?.logo_url ? `/storage/${settings.logo_url}` : null);
-    const [bannerPreview, setBannerPreview] = useState<string | null>(settings?.banner_url ? `/storage/${settings.banner_url}` : null);
+    const [logoPreview, setLogoPreview] = useState<string | null>(
+        settings?.logo_path ? `/storage/${settings.logo_path}` : (settings?.logo_url || null)
+    );
+    const [bannerPreview, setBannerPreview] = useState<string | null>(
+        settings?.banner_path ? `/storage/${settings.banner_path}` : (settings?.banner_url || null)
+    );
 
     // Business Hours State
     const [businessHours, setBusinessHours] = useState(() => {
@@ -152,36 +156,36 @@ export default function Settings({ auth, settings, deliveryZones: initialZones, 
     // Handlers
     const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            setData('logo', file);
-            setData('remove_logo', false);
-            const reader = new FileReader();
-            reader.onload = (e) => setLogoPreview(e.target?.result as string);
-            reader.readAsDataURL(file);
-        }
+        if (!file) return;
+        // Show preview immediately
+        const reader = new FileReader();
+        reader.onload = (ev) => setLogoPreview(ev.target?.result as string);
+        reader.readAsDataURL(file);
+        // Upload directly to dedicated route
+        const formData = new FormData();
+        formData.append('logo', file);
+        router.post(route('settings.upload-logo'), formData, { preserveScroll: true });
     };
 
     const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            setData('banner', file);
-            setData('remove_banner', false);
-            const reader = new FileReader();
-            reader.onload = (e) => setBannerPreview(e.target?.result as string);
-            reader.readAsDataURL(file);
-        }
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => setBannerPreview(ev.target?.result as string);
+        reader.readAsDataURL(file);
+        const formData = new FormData();
+        formData.append('banner', file);
+        router.post(route('settings.upload-banner'), formData, { preserveScroll: true });
     };
 
     const handleLogoRemove = () => {
-        setData('logo', null);
-        setData('remove_logo', true);
         setLogoPreview(null);
+        router.delete(route('settings.remove-logo'), { preserveScroll: true });
     };
 
     const handleBannerRemove = () => {
-        setData('banner', null);
-        setData('remove_banner', true);
         setBannerPreview(null);
+        router.delete(route('settings.remove-banner'), { preserveScroll: true });
     };
 
     const submit = (e: React.FormEvent) => {

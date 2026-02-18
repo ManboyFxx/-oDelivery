@@ -17,8 +17,8 @@ class FinancialController extends Controller
         $tenantId = $user->tenant_id;
         $tenant = $user->tenant;
 
-        // Plan Logic: Check if user is restricted
-        $isRestricted = $tenant->plan === 'free' && !$tenant->onTrial();
+        // Plan Logic: Check if user is restricted (unified plan = always full access)
+        $isRestricted = $tenant->plan === 'free' && !$tenant->onTrial() && $tenant->plan !== 'unified';
 
         // Parse dates or default to current month
         if ($isRestricted) {
@@ -137,7 +137,7 @@ class FinancialController extends Controller
         $topProducts = [];
         $paymentMethods = [];
 
-        if ($tenant->plan === 'pro' || $tenant->plan === 'custom' || $tenant->onTrial()) {
+        if ($tenant->plan === 'pro' || $tenant->plan === 'custom' || $tenant->plan === 'unified' || $tenant->onTrial()) {
             // Top Products
             $topProducts = DB::table('order_items')
                 ->join('orders', 'order_items.order_id', '=', 'orders.id')
@@ -196,8 +196,8 @@ class FinancialController extends Controller
             'transactions' => $transactions,
             'top_products' => $topProducts,
             'payment_methods_stats' => $paymentMethods,
-            'current_plan' => $tenant->plan, // Pass explicit plan
-            // 'is_trial' => false,
+            'current_plan' => $tenant->plan,
+            'is_trial' => $tenant->onTrial(),
             'filters' => [
                 'start_date' => $startDate->format('Y-m-d'),
                 'end_date' => $endDate->format('Y-m-d'),

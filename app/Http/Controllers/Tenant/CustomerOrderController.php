@@ -10,6 +10,7 @@ use App\Models\ComplementOption;
 use App\Models\LoyaltyPromotion;
 use App\Models\Coupon;
 use App\Models\CouponUsage;
+use App\Services\ReferralService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -335,6 +336,13 @@ class CustomerOrderController extends Controller
 
             // ✅ Regenerar session após ação sensível
             session()->regenerate();
+
+            // 🎁 Referral: process reward if this is the customer's first order
+            try {
+                app(ReferralService::class)->processReward($customer, $orderTotal);
+            } catch (\Throwable $e) {
+                \Log::warning('ReferralService::processReward failed', ['error' => $e->getMessage()]);
+            }
 
             return response()->json([
                 'message' => 'Pedido realizado com sucesso!',

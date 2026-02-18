@@ -68,7 +68,7 @@ export default function BulkActionsBar({ selectedCount, actions, loading }: Bulk
                     <button
                         onClick={actions.onDuplicate}
                         disabled={loading}
-                        className="p-2 sm:px-3 sm:py-2 flex items-center gap-2 rounded-xl bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-500/20 transition-colors whitespace-nowrap"
+                        className="p-2 sm:px-3 sm:py-2 flex items-center gap-2 rounded-xl bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-500/20 transition-colors whitespace-nowrap"
                         title="Duplicar"
                     >
                         <Copy className="h-4 w-4" />

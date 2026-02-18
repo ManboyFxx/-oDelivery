@@ -157,7 +157,7 @@ export default function OrderCard({ order, motoboys, onAction, onQuickView }: Pr
             case 'pickup':
                 return { label: 'Retirada', color: 'bg-blue-100 text-blue-700 ring-1 ring-blue-500/20', icon: Clock };
             case 'table':
-                return { label: 'Mesa', color: 'bg-purple-100 text-purple-700 ring-1 ring-purple-500/20', icon: User };
+                return { label: 'Mesa', color: 'bg-cyan-100 text-cyan-700 ring-1 ring-cyan-500/20', icon: User };
             default:
                 return { label: mode, color: 'bg-gray-100 text-gray-700 ring-1 ring-gray-500/20', icon: Check };
         }
@@ -214,7 +214,7 @@ export default function OrderCard({ order, motoboys, onAction, onQuickView }: Pr
                             #{order.order_number}
                         </h3>
                         {order.mode === 'table' && order.table && (
-                            <div className="flex items-center justify-center bg-purple-600 text-white w-10 h-10 rounded-xl shadow-lg shadow-purple-500/20 -mt-1 ml-1 group-hover:scale-110 transition-transform">
+                            <div className="flex items-center justify-center bg-cyan-600 text-white w-10 h-10 rounded-xl shadow-lg shadow-cyan-500/20 -mt-1 ml-1 group-hover:scale-110 transition-transform">
                                 <span className="text-xl font-black">{order.table.number}</span>
                             </div>
                         )}
@@ -432,7 +432,7 @@ export default function OrderCard({ order, motoboys, onAction, onQuickView }: Pr
                 {order.status === 'waiting_motoboy' && order.motoboy && (
                     <button
                         onClick={() => handleStatusUpdate('motoboy_accepted')}
-                        className="w-full py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-bold shadow-md shadow-indigo-500/20 transition-all active:scale-95"
+                        className="w-full py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold shadow-md shadow-blue-500/20 transition-all active:scale-95"
                     >
                         🚴 Motoboy Saiu para Entrega
                     </button>

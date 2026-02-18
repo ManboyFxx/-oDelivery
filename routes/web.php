@@ -71,6 +71,8 @@ Route::post('/check-slug', [\App\Http\Controllers\Auth\RegisteredUserController:
 Route::middleware('throttle:20,1')->group(function () {
     Route::post('/customer/check-phone', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'checkPhone']);
     Route::post('/customer/complete-registration', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'completeRegistration']);
+    Route::post('/customer/quick-login', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'quickLoginSecure']);
+    Route::post('/customer/apply-referral', [\App\Http\Controllers\Tenant\ReferralController::class, 'applyReferral']); // Pública - cliente ainda não logado
 });
 
 // Customer Actions - ✅ COM RATE LIMITING E TENANT SCOPE
@@ -100,6 +102,7 @@ Route::middleware(['throttle:10,1', 'tenant.scope'])->group(function () {
     Route::post('/customer/checkout', [\App\Http\Controllers\Tenant\CustomerOrderController::class, 'store'])->middleware('plan.limit:orders');
     Route::post('/customer/redeem-product', [CustomerRedemptionController::class, 'redeemProduct']);
     Route::post('/customer/validate-coupon', [\App\Http\Controllers\CouponValidationController::class, 'validate']);
+    Route::get('/customer/referral-code', [\App\Http\Controllers\Tenant\ReferralController::class, 'generateCode']); // Gera/retorna código de indicação
 
     // Customer Notifications
     Route::get('/customer/notifications', [\App\Http\Controllers\Tenant\CustomerNotificationController::class, 'index']);

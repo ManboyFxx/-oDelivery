@@ -70,9 +70,9 @@ const BADGES: Record<BadgeType, BadgeConfig> = {
         id: 'new',
         label: 'Novo ✨',
         icon: <Sparkles className="w-5 h-5" />,
-        color: '#8B5CF6',
-        bgColor: 'bg-purple-50 dark:bg-purple-900/20',
-        borderColor: 'border-purple-200 dark:border-purple-800',
+        color: '#3B82F6',
+        bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+        borderColor: 'border-blue-200 dark:border-blue-800',
         description: 'Indica produtos novos'
     },
     exclusive: {
