@@ -18,7 +18,7 @@ class PlanCouponController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, \App\Services\PaymentGatewayService $paymentService)
     {
         $validated = $request->validate([
             'code' => 'required|string|unique:plan_coupons,code|uppercase',
@@ -29,9 +29,17 @@ class PlanCouponController extends Controller
             'plan_restriction' => 'nullable|string|in:pro,custom'
         ]);
 
-        PlanCoupon::create($validated);
+        try {
+            // Create in Stripe first
+            $stripeCouponId = $paymentService->createStripeCoupon($validated);
+            $validated['stripe_coupon_id'] = $stripeCouponId;
 
-        return back()->with('success', 'Cupom criado com sucesso!');
+            PlanCoupon::create($validated);
+
+            return back()->with('success', 'Cupom criado com sucesso (Local + Stripe)!');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Erro ao criar cupom no Stripe: ' . $e->getMessage());
+        }
     }
 
     public function update(Request $request, PlanCoupon $coupon)
@@ -50,15 +58,23 @@ class PlanCouponController extends Controller
         return back()->with('success', 'Cupom atualizado!');
     }
 
-    public function destroy(PlanCoupon $coupon)
+    public function destroy(PlanCoupon $coupon, \App\Services\PaymentGatewayService $paymentService)
     {
         if ($coupon->current_uses > 0) {
             return back()->with('error', 'Não é possível excluir um cupom que já foi utilizado. Desative-o em vez disso.');
         }
 
-        $coupon->delete();
+        try {
+            if ($coupon->stripe_coupon_id) {
+                $paymentService->deleteStripeCoupon($coupon->stripe_coupon_id);
+            }
 
-        return back()->with('success', 'Cupom excluído.');
+            $coupon->delete();
+
+            return back()->with('success', 'Cupom excluído (Local + Stripe).');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Erro ao excluir no Stripe: ' . $e->getMessage());
+        }
     }
 
     public function toggle(PlanCoupon $coupon)

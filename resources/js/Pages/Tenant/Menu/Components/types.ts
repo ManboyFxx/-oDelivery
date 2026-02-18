@@ -27,6 +27,7 @@ export interface Product {
     loyalty_redeemable?: boolean;
     loyalty_points_cost?: number;
     loyalty_earns_points?: boolean;
+    loyalty_points_multiplier?: number;
     promotional_price?: string;
     is_featured?: boolean;
     is_available?: boolean;
@@ -51,6 +52,7 @@ export interface Customer {
     phone: string;
     loyalty_points: number;
     loyalty_tier?: string;
+    referral_code?: string;
 }
 
 export interface Address {

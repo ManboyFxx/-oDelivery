@@ -7,6 +7,7 @@ import clsx from 'clsx';
 import { useToast } from '@/Hooks/useToast';
 import AddressForm from './Components/AddressForm';
 import { Switch } from '@headlessui/react';
+import { toast } from 'sonner';
 
 interface Address {
     id: string;
@@ -63,6 +64,9 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
     const [usePoints, setUsePoints] = useState(false);
     const [pointsToUse, setPointsToUse] = useState(0);
     const [pointsDiscount, setPointsDiscount] = useState(0);
+
+    const [isVerifyingIdentity, setIsVerifyingIdentity] = useState(false);
+    const [verificationDigits, setVerificationDigits] = useState('');
 
     const { success: showSuccess } = useToast();
 
@@ -169,7 +173,43 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
             }
         } catch (err: any) {
             console.error(err);
-            setError(err.response?.data?.message || 'Erro ao processar pedido.');
+            if (err.response?.status === 403 && err.response?.data?.requires_identity_verification) {
+                setIsVerifyingIdentity(true);
+                toast.warning('Confirme sua identidade para continuar.');
+            } else {
+                setError(err.response?.data?.message || 'Erro ao processar pedido.');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleIdentityVerify = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            // Ensure fingerprint exists
+            let fingerprint = localStorage.getItem('device_fingerprint');
+            if (!fingerprint) {
+                 fingerprint = 'device-' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+                 localStorage.setItem('device_fingerprint', fingerprint);
+            }
+
+            const response = await axios.post('/customer/quick-login', {
+                phone_last_4: verificationDigits,
+                customer_id: customer.id,
+                device_fingerprint: fingerprint
+            });
+
+            if (response.data.success) {
+                toast.success('Identidade confirmada!');
+                setIsVerifyingIdentity(false);
+                // Retry checkout automatically
+                handleSubmit(); 
+            }
+        } catch (err: any) {
+            console.error(err);
+            toast.error(err.response?.data?.message || 'Dígitos incorretos.');
         } finally {
             setLoading(false);
         }
@@ -267,16 +307,57 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                         <div />
                     )}
                     <h2 className="text-xl font-bold text-gray-900">
-                        {step === 'delivery' && 'Entrega ou Retirada'}
-                        {step === 'payment' && 'Pagamento'}
-                        {step === 'review' && 'Resumo do Pedido'}
+                        {isVerifyingIdentity ? 'Confirmação de Segurança' : (
+                            <>
+                                {step === 'delivery' && 'Entrega ou Retirada'}
+                                {step === 'payment' && 'Pagamento'}
+                                {step === 'review' && 'Resumo do Pedido'}
+                            </>
+                        )}
                     </h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
                         <X className="h-6 w-6" />
                     </button>
                 </div>
 
-                {!isAddingAddress && renderStepper()}
+                {isVerifyingIdentity ? (
+                    <div className="flex-1 flex flex-col items-center justify-center p-4">
+                         <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-4">
+                            <CheckCircle className="w-8 h-8 text-[#ff3d03]" />
+                         </div>
+                         <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Protegendo sua conta</h3>
+                         <p className="text-gray-500 text-center text-sm mb-6">
+                             Para continuar, confirme os <strong>4 últimos dígitos</strong> do seu telefone.
+                         </p>
+                         
+                         <form onSubmit={handleIdentityVerify} className="w-full max-w-xs space-y-4">
+                             <input
+                                type="text"
+                                value={verificationDigits}
+                                onChange={(e) => setVerificationDigits(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                                placeholder="0000"
+                                className="w-full text-center text-2xl font-bold tracking-widest py-3 border-2 border-gray-200 rounded-xl focus:border-[#ff3d03] focus:ring-0 outline-none transition-colors"
+                                autoFocus
+                             />
+                             <button
+                                type="submit"
+                                disabled={loading || verificationDigits.length < 4}
+                                className="w-full bg-[#ff3d03] hover:bg-[#e63700] text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-50"
+                             >
+                                 {loading ? 'Verificando...' : 'Confirmar'}
+                             </button>
+                             <button
+                                type="button"
+                                onClick={() => setIsVerifyingIdentity(false)}
+                                className="w-full text-gray-400 font-medium text-sm hover:text-gray-600"
+                             >
+                                 Cancelar
+                             </button>
+                         </form>
+                    </div>
+                ) : (
+                    <>
+                    {!isAddingAddress && renderStepper()}
 
                 {/* Content Area */}
                 <div className="flex-1 overflow-y-auto max-h-[60vh] px-1 py-1">
@@ -639,6 +720,8 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                             </button>
                         )}
                     </div>
+                )}
+                    </>
                 )}
             </div>
         </Modal>

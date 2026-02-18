@@ -163,7 +163,7 @@ class RegisteredUserController extends Controller
             'whatsapp' => 'required|string|max:20',
             'email' => 'required|string|lowercase|email|max:255|unique:' . User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'plan' => 'nullable|in:free,pro,custom',
+            'plan' => 'nullable|string', // Aceitar qualquer string ou validar apenas unified se necessário
         ], [
             'slug.regex' => 'O link deve conter apenas letras minúsculas, números e hífens.',
             'slug.unique' => 'Este link já está em uso.',
@@ -171,27 +171,14 @@ class RegisteredUserController extends Controller
             'whatsapp.required' => 'O WhatsApp é obrigatório.',
         ]);
 
-        // Determine plan configuration
-        $selectedPlan = $request->input('plan', 'free'); // Default to free (trial)
+        // Forçar plano unificado
+        $selectedPlan = 'unified';
 
-        // Plan configurations
-        $planConfig = match ($selectedPlan) {
-            'pro' => [
-                'plan' => 'pro',
-                'subscription_status' => 'pending', // Will be activated after payment
-                'trial_ends_at' => null,
-            ],
-            'custom' => [
-                'plan' => 'pro', // Start with PRO features
-                'subscription_status' => 'pending',
-                'trial_ends_at' => null,
-            ],
-            default => [ // 'free' or any other value defaults to trial
-                'plan' => 'pro',
-                'subscription_status' => 'trial',
-                'trial_ends_at' => now()->addDays(14),
-            ],
-        };
+        $planConfig = [
+            'plan' => 'unified',
+            'subscription_status' => 'pending', // Aguardando pagamento
+            'trial_ends_at' => null,
+        ];
 
         // Usar transação para garantir consistência
         $user = DB::transaction(function () use ($request, $planConfig) {
@@ -237,19 +224,8 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        // Redirect based on selected plan
-        if ($selectedPlan === 'pro') {
-            return redirect()->route('subscription.checkout', 'pro')
-                ->with('success', 'Conta criada! Complete o pagamento para ativar o Plano PRO.');
-        }
-
-        if ($selectedPlan === 'custom') {
-            return redirect()->route('subscription.index')
-                ->with('success', 'Conta criada! Entre em contato para configurar seu plano personalizado.');
-        }
-
-        // Trial or Free - redirect to dashboard
-        return redirect(route('dashboard', absolute: false))
-            ->with('success', 'Bem-vindo! Você tem 14 dias de acesso completo ao Plano PRO.');
+        // Sempre redirecionar para o checkout do plano unificado
+        return redirect()->route('subscription.checkout', 'unified')
+            ->with('success', 'Conta criada! Complete o pagamento para liberar seu acesso ilimitado.');
     }
 }

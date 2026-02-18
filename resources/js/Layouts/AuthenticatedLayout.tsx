@@ -2,8 +2,7 @@ import { ReactNode, useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import Sidebar from '@/Components/Sidebar';
 import TopBar from '@/Components/TopBar';
-import TrialExpiringModal from '@/Components/TrialExpiringModal';
-import TrialBanner from '@/Components/TrialBanner';
+// Trial components removed
 import { NotificationSettingsSync } from '@/Components/Toast/NotificationSettingsSync';
 import { useToast } from '@/Hooks/useToast';
 import { useAudio } from '@/Hooks/useAudio';
@@ -130,8 +129,7 @@ export default function Authenticated({ user, header, children, tenant: propTena
         return () => clearInterval(intervalId);
     }, [tenant?.id]); // Only re-run if tenant ID changes, NOT on every render/prop change
 
-    const showTrialModal = tenant?.is_trial_expiring_soon && (tenant?.trial_days_remaining ?? 0) > 0;
-    const isTrial = tenant?.is_trial_active || (tenant?.plan === 'free' && tenant?.trial_days_remaining <= 0);
+    // Trial logic removed
 
     return (
         <div className="flex h-screen bg-gray-50 dark:bg-premium-dark transition-colors">
@@ -148,15 +146,7 @@ export default function Authenticated({ user, header, children, tenant: propTena
 
                 <TopBar user={user || authUser} onMenuClick={() => setIsMobileMenuOpen(true)} hasUnread={hasUnread} onRead={() => setHasUnread(false)} />
 
-                {/* Trial Banner Global */}
-                {isTrial && (
-                    <div className="sticky top-0 z-30">
-                        <TrialBanner
-                            daysRemaining={tenant.trial_days_remaining}
-                            planName={tenant.plan_display_name}
-                        />
-                    </div>
-                )}
+                {/* Trial Banner Global Removed */}
 
                 {header && (
                     <header className="bg-white dark:bg-premium-card shadow">
@@ -172,13 +162,7 @@ export default function Authenticated({ user, header, children, tenant: propTena
                 </main>
             </div>
 
-            {/* Trial Expiring Modal */}
-            {showTrialModal && (
-                <TrialExpiringModal
-                    daysRemaining={tenant?.trial_days_remaining ?? 0}
-                    planName={tenant?.plan_display_name}
-                />
-            )}
+            {/* Trial Expiring Modal Removed */}
         </div>
     );
 }

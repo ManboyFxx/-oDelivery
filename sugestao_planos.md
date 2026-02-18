@@ -1,69 +1,93 @@
-# 🚀 Estrutura de Planos Definida - oDelivery
+# 🚀 Plano Único - oDelivery
 
-Este documento oficializa a estrutura dos planos com as regras de negócio e limites definidos.
+## Plano Único - R$ 129,90/mês 🟢
 
----
+**"Tudo liberado para fazer seu negócio crescer sem limites"**
 
-## 1. Plano Start (Gratuito) 🟢
-**"Para quem está começando com recursos essenciais"**
+### Preço
 
-*   **Preço:** R$ 0,00/mês
-*   **Limite de Pedidos:** 300 pedidos/mês.
-*   **Limite de Produtos:** 50 itens ativos.
-*   **Controle de Estoque:** 25 itens.
-*   **Equipe:** 3 Usuários (1 Admin + 2 Funcionários).
-*   **Gestão de Motoboys:** ❌ BLOQUEADO.
-*   **Automação WhatsApp (ÓoBot):** ❌ BLOQUEADO.
-*   **Impressão Automática:** ✅ Inclusa (ÓoPrint).
-*   **Fidelidade:** ✅ Ilimitado.
-*   **Cupons:** 2 ativos.
-*   **Suporte:** Suporte + Documentação + FAQ.
+- **R$ 129,90/mês** (com cupons de desconto disponíveis)
+- **R$ 1.299,00/ano** (economize 2 meses - equivalente a R$ 108,25/mês)
 
----
+### Features - TUDO LIBERADO ✅
 
-## 2. Plano Pro (Profissional) 🟡
-**"Todos os recursos liberados para fazer seu negócio crescer"**
+- 🚀 **Pedidos Ilimitados**
+- 🚀 **Produtos Ilimitados**
+- 🚀 **Controle de Estoque Ilimitado**
+- 🚀 **Usuários Ilimitados**
+- 🚀 **Motoboys Ilimitados**
+- 🚀 **Cupons Ilimitados**
+- ✅ **Gestão de Motoboys Completa**
+- ✅ **Automação WhatsApp (ÓoBot)**
+- ✅ **Impressão Automática (ÓoPrint)**
+- ✅ **Programa de Fidelidade**
+- ✅ **Cardápio Digital (PDV)**
+- ✅ **Integrações (API)**
+- ✅ **Gestão de Pedidos (Kanban)**
+- ✅ **Suporte Prioritário**
+- ✅ **Configuração de Cardápio Inclusa**
+- ✅ **Sem Marca D'água**
 
-*   **Preço:** R$ 79,90/mês
-*   **Limite de Pedidos:** 🚀 **Ilimitado**.
-*   **Limite de Produtos:** 🚀 **Ilimitado**.
-*   **Controle de Estoque:** 🚀 **Ilimitado**.
-*   **Equipe:** 8 Usuários (3 Admin + 5 Funcionários).
-*   **Gestão de Motoboys:** ✅ 6 Motoboys.
-*   **Automação WhatsApp (ÓoBot):** ✅ LIBERADO.
-*   **Impressão Automática:** ✅ Inclusa.
-*   **Fidelidade:** ✅ Ilimitado.
-*   **Cupons:** 🚀 **Ilimitado**.
-*   **Integrações:** API (Produção).
-*   **Setup:** Configuramos seu cardápio.
-*   **Suporte:** Prioritário + Comunidade + Documentação + FAQ.
+### Cupons de Desconto
+
+Cupons promocionais podem ser aplicados sobre o valor de R$ 129,90 para oferecer descontos especiais em campanhas e promoções.
 
 ---
 
-## 3. Plano Personalizado (Enterprise) 🟣
-**"A solução mais completa com tudo que você precisa"**
+## Benefícios do Plano Único
 
-*   **Preço:** R$ 149,90/mês
-*   **Tudo do Pro (Ilimitado)**
-*   **Equipe:** 🚀 **Ilimitado**.
-*   **Motoboys:** 🚀 **Ilimitado**.
-*   **Cupons:** 🚀 **Ilimitado**.
-*   **WhatsApp ÓoBot:** Conecte seu estabelecimento.
-*   **Setup:** Configuramos seu cardápio + Tratamento de imagens.
-*   **Integrações:** API (Produção).
-*   **Domínio Personalizado:** (Em breve).
-*   **Suporte:** Prioritário + Grupo Privado + Marketing + Documentação + FAQ.
+### 🎯 Simplicidade
+
+Não precisa escolher entre planos ou se preocupar com limites. Tudo está liberado desde o primeiro dia.
+
+### 💰 Custo-Benefício
+
+Pague um valor fixo e tenha acesso a TODOS os recursos, sem surpresas ou cobranças adicionais.
+
+### 🚀 Escalabilidade
+
+Cresça seu negócio sem se preocupar em atingir limites. Adicione quantos produtos, usuários e motoboys precisar.
+
+### 🎁 Cupons de Desconto
+
+Aproveite cupons promocionais para economizar ainda mais. Perfeito para campanhas especiais e parcerias.
 
 ---
 
-## Resumo Técnico (Tabela de Limites)
+## Comparação com Concorrentes
 
-| Regra / Feature | Plano Start (Free) | Plano Pro | Personalizado |
-| :--- | :---: | :---: | :---: |
-| **Pedidos Mensais** | 300 | **Ilimitado** | **Ilimitado** |
-| **Produtos** | 50 | **Ilimitado** | **Ilimitado** |
-| **Estoque (Itens)** | 25 | **Ilimitado** | **Ilimitado** |
-| **Cupons Ativos** | 2 | **Ilimitado** | **Ilimitado** |
-| **Limite Usuários** | 3 (1 Adm/2 Func) | 8 (3 Adm/5 Func) | **Ilimitado** |
-| **Motoboys** | 0 (Bloqueado) | 6 | **Ilimitado** |
-| **WhatsApp Bot** | ❌ Não | ✅ Sim | ✅ Sim |
+| Feature                  | ÓoDelivery | iFood     | Outros    |
+| ------------------------ | ---------- | --------- | --------- |
+| **Comissão por Pedido**  | ❌ R$ 0    | ✅ 12-27% | ✅ 10-20% |
+| **Mensalidade**          | R$ 129,90  | Grátis\*  | Varia     |
+| **Produtos Ilimitados**  | ✅         | ✅        | ❌        |
+| **Gestão de Motoboys**   | ✅         | ❌        | Limitado  |
+| **WhatsApp Bot**         | ✅         | ❌        | ❌        |
+| **Impressão Automática** | ✅         | ❌        | Pago      |
+| **Seu Domínio**          | ✅         | ❌        | ✅        |
+
+\*iFood não cobra mensalidade mas cobra comissão alta por pedido
+
+---
+
+## Perguntas Frequentes
+
+### Posso cancelar quando quiser?
+
+Sim! Não há fidelidade. Você pode cancelar sua assinatura a qualquer momento.
+
+### Tem limite de pedidos?
+
+Não! Você pode processar quantos pedidos quiser, sem limites mensais.
+
+### Como funcionam os cupons de desconto?
+
+Cupons promocionais são aplicados sobre o valor de R$ 129,90 e podem oferecer descontos percentuais ou fixos.
+
+### Preciso pagar comissão por pedido?
+
+Não! Diferente dos marketplaces, você paga apenas a mensalidade fixa de R$ 129,90.
+
+### O que acontece se eu não pagar?
+
+Sua conta será suspensa até a regularização do pagamento. Seus dados ficam salvos por 30 dias.

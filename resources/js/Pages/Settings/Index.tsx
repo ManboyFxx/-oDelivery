@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { usePage, useForm, router, Head } from '@inertiajs/react';
 import { Transition } from '@headlessui/react';
-import { Store, Clock, Truck, CreditCard, Bell, Palette, CheckCircle, Printer } from 'lucide-react';
+import { Store, Clock, Truck, CreditCard, Bell, Palette, CheckCircle, Printer, Shield } from 'lucide-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { PageProps } from '@/types';
 
@@ -13,6 +13,7 @@ import PaymentSettings from './Partials/PaymentSettings';
 import NotificationSettings from './Partials/NotificationSettings';
 import SystemSettings from './Partials/SystemSettings';
 import PrinterSettings from './Partials/PrinterSettings';
+import SecuritySettings from './Partials/SecuritySettings';
 
 interface SettingsProps extends PageProps {
     settings: any;
@@ -109,11 +110,16 @@ export default function Settings({ auth, settings, deliveryZones: initialZones, 
         estimated_delivery_time: settings?.estimated_delivery_time || 40,
         default_motoboy_id: settings?.default_motoboy_id || '',
 
-        // System
         theme_color: settings?.theme_color || '#ff3d03',
         printer_paper_width: settings?.printer_paper_width || 80,
         auto_print_on_confirm: settings?.auto_print_on_confirm || false,
         print_copies: settings?.print_copies || 1,
+
+        // Security
+        enable_password_login: settings?.enable_password_login ?? true,
+        enable_otp_verification: settings?.enable_otp_verification ?? false,
+        enable_quick_login: settings?.enable_quick_login ?? true,
+        enable_checkout_security: settings?.enable_checkout_security ?? true,
     });
 
     // Zone Form
@@ -258,6 +264,7 @@ export default function Settings({ auth, settings, deliveryZones: initialZones, 
         { id: 'delivery', label: 'Delivery', icon: Truck },
         { id: 'payment', label: 'Pagamento', icon: CreditCard },
         { id: 'notifications', label: 'Notificações', icon: Bell },
+        { id: 'security', label: 'Segurança', icon: Shield },
         { id: 'system', label: 'Sistema', icon: Palette },
         { id: 'printer', label: 'Impressão', icon: Printer },
     ];
@@ -374,6 +381,13 @@ export default function Settings({ auth, settings, deliveryZones: initialZones, 
                                     <NotificationSettings
                                         notificationSettings={notificationSettings}
                                         setNotificationSettings={setNotificationSettings}
+                                        setData={setData}
+                                    />
+                                )}
+
+                                {activeTab === 'security' && (
+                                    <SecuritySettings
+                                        data={data}
                                         setData={setData}
                                     />
                                 )}

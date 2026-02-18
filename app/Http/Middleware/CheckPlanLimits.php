@@ -15,6 +15,11 @@ class CheckPlanLimits
      */
     public function handle(Request $request, Closure $next, string $resource): Response
     {
+        // ✅ PLANO UNIFICADO - Sem limites
+        // Todos os recursos são ilimitados no plano único
+        return $next($request);
+
+        /* CÓDIGO ANTIGO DESABILITADO - Mantido para referência
         $user = $request->user();
 
         if (!$user || !$user->tenant) {
@@ -54,6 +59,7 @@ class CheckPlanLimits
         }
 
         return $next($request);
+        */
     }
 
     /**

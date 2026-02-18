@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // $middleware->append(\App\Http\Middleware\GlobalRateLimiter::class);
     
         $middleware->web(append: [
+            \App\Http\Middleware\SecurityHeadersMiddleware::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);

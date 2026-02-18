@@ -113,28 +113,14 @@ export default function AdminTenantsIndex({ tenants, filters, plans }: IndexProp
     const getPlanBadge = (plan: string) => {
         const colors = {
             free: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-            pro: 'bg-gradient-to-r from-[#ff3d03] to-[#e63700] text-white',
+            unified: 'bg-gradient-to-r from-[#ff3d03] to-[#e63700] text-white shadow-md shadow-orange-500/20',
+            pro: 'bg-gradient-to-r from-blue-500 to-blue-700 text-white',
             custom: 'bg-gradient-to-r from-purple-500 to-purple-700 text-white',
         };
         return colors[plan as keyof typeof colors] || colors.free;
     };
 
-    const getTrialBadge = (tenant: Tenant) => {
-        if (!tenant.is_trial_active) return null;
-
-        const daysLeft = tenant.trial_days_remaining;
-        const isExpiringSoon = daysLeft <= 3;
-
-        return (
-            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 ${isExpiringSoon
-                ? 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400'
-                : 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
-                }`}>
-                <Clock className="h-3 w-3" />
-                Trial: {daysLeft}d restantes
-            </span>
-        );
-    };
+    // getTrialBadge removed
 
     return (
         <AuthenticatedLayout>
@@ -256,7 +242,7 @@ export default function AdminTenantsIndex({ tenants, filters, plans }: IndexProp
                                                 <span className={`px-2.5 py-1 rounded-lg text-xs font-bold w-fit ${getPlanBadge(tenant.plan)}`}>
                                                     {tenant.plan.toUpperCase()}
                                                 </span>
-                                                {tenant.is_trial_active && getTrialBadge(tenant)}
+                                                {/* Trial badge removed */}
                                             </div>
                                         </td>
                                         <td className="py-4 px-6">
@@ -293,16 +279,6 @@ export default function AdminTenantsIndex({ tenants, filters, plans }: IndexProp
                                         <td className="py-4 px-6 text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 {/* Trial Actions */}
-                                                {tenant.is_trial_active && (
-                                                    <button
-                                                        onClick={() => handleExtendTrial(tenant.id, 7)}
-                                                        className="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-[10px] font-bold transition-colors"
-                                                        title="Estender +7 dias"
-                                                    >
-                                                        +7d
-                                                    </button>
-                                                )}
-
                                                 <Link
                                                     href={route('admin.tenants.impersonate', tenant.id)}
                                                     className="p-2 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-500/10 text-gray-400 hover:text-[#ff3d03] transition-colors"

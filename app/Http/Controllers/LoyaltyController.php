@@ -73,7 +73,14 @@ class LoyaltyController extends Controller
         $request->validate([
             'loyalty_enabled' => 'required|boolean',
             'points_per_currency' => 'required|numeric|min:0',
-            'currency_per_point' => 'required|numeric|min:0', // Value of each point in currency for redemption
+            'currency_per_point' => 'required|numeric|min:0',
+            'loyalty_tiers' => 'nullable|array',
+            'loyalty_tiers.*.name' => 'required|string',
+            'loyalty_tiers.*.min_points' => 'required|integer|min:0',
+            'loyalty_tiers.*.multiplier' => 'required|numeric|min:1',
+            'loyalty_expiry_days' => 'nullable|integer|min:1',
+            'referral_bonus_points' => 'nullable|integer|min:0',
+            'referral_reward_points' => 'nullable|integer|min:0',
         ]);
 
         $settings = StoreSetting::where('tenant_id', auth()->user()->tenant_id)->first();
@@ -82,7 +89,11 @@ class LoyaltyController extends Controller
             $settings->update($request->only([
                 'loyalty_enabled',
                 'points_per_currency',
-                'currency_per_point'
+                'currency_per_point',
+                'loyalty_tiers',
+                'loyalty_expiry_days',
+                'referral_bonus_points',
+                'referral_reward_points',
             ]));
         }
 

@@ -55,25 +55,17 @@ class ThrottleByPlan
     private function getLimitsForPlan(string $plan, string $resource): ?array
     {
         $limits = [
-            'free' => [
-                'api' => ['max' => 100, 'decay' => 60],      // 100 req/hora
-                'orders' => ['max' => 50, 'decay' => 60],
-            ],
-            'basic' => [
-                'api' => ['max' => 1000, 'decay' => 60],     // 1000 req/hora
-                'orders' => ['max' => 500, 'decay' => 60],
-            ],
-            'pro' => [
-                'api' => ['max' => 10000, 'decay' => 60],    // 10k req/hora
-                'orders' => ['max' => 5000, 'decay' => 60],
-            ],
-            'enterprise' => [
+            'unified' => [
                 'api' => null,  // Ilimitado
                 'orders' => null,
             ],
+            // Fallback para compatibilidade temporária
+            'free' => ['api' => null, 'orders' => null],
+            'pro' => ['api' => null, 'orders' => null],
+            'custom' => ['api' => null, 'orders' => null],
         ];
 
-        return $limits[$plan][$resource] ?? $limits['free'][$resource];
+        return $limits[$plan][$resource] ?? $limits['unified'][$resource];
     }
 
     /**

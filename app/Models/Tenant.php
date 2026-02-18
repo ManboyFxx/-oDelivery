@@ -142,60 +142,21 @@ class Tenant extends Model
     // ==========================================
 
     /**
-     * Check if the subscription is active (paid or free plan).
+     * Check if the subscription is active.
+     * With unified plan, all active tenants have access.
      */
     public function isSubscriptionActive(): bool
     {
-        if ($this->plan === 'free') {
-            return true;
-        }
-
-        if ($this->isTrialActive()) {
-            return true;
-        }
-
-        return $this->subscription_ends_at && $this->subscription_ends_at->isFuture();
-    }
-
-    /**
-     * Check if trial is currently active.
-     */
-    public function isTrialActive(): bool
-    {
-        return $this->trial_ends_at && $this->trial_ends_at->isFuture();
-    }
-
-    /**
-     * Check if trial has expired.
-     */
-    public function isTrialExpired(): bool
-    {
-        return $this->trial_ends_at && $this->trial_ends_at->isPast();
-    }
-
-    /**
-     * Get days remaining in trial.
-     */
-    public function trialDaysRemaining(): int
-    {
-        if (!$this->trial_ends_at || $this->trial_ends_at->isPast()) {
-            return 0;
-        }
-
-        return now()->diffInDays($this->trial_ends_at);
-    }
-
-    /**
-     * Check if trial is expiring soon (within 3 days).
-     */
-    public function isTrialExpiringSoon(): bool
-    {
-        if (!$this->isTrialActive()) {
+        // Se estiver suspenso, não está ativo
+        if ($this->is_suspended) {
             return false;
         }
 
-        return $this->trialDaysRemaining() <= 3;
+        // Verifica se a assinatura está ativa E se a data de expiração é futura
+        return $this->subscription_ends_at && $this->subscription_ends_at->isFuture();
     }
+
+    // Trial methods removed - unified plan has no trial period
 
     /**
      * Check if the tenant has access to the system.
@@ -363,21 +324,13 @@ class Tenant extends Model
     // ==========================================
 
     /**
-     * Upgrade to a new plan.
+     * Activate unified plan subscription.
      */
-    public function upgradeTo(string $plan, string $billingCycle = 'monthly', float $amount = 0): void
+    public function activateUnifiedPlan(string $billingCycle = 'monthly', float $amount = 129.90): void
     {
-        // Prevent unauthorized upgrades to 'pro' plan
-        // 'pro' (Personalizado) should only be set manually by super_admin
-        if ($plan === 'pro') {
-            throw new \Exception('O plano Personalizado requer aprovação manual. Entre em contato com o suporte.');
-        }
-
         $oldPlan = $this->plan;
 
         // Calculate new expiration date
-        // Logic: If currently active and in future, add time to current end date.
-        // If expired or null, start from NOW.
         $currentExpiry = $this->subscription_ends_at;
         $startFrom = ($currentExpiry && $currentExpiry->isFuture()) ? $currentExpiry->copy() : now();
 
@@ -386,14 +339,15 @@ class Tenant extends Model
             : $startFrom->addMonth();
 
         $this->update([
-            'plan' => $plan,
+            'plan' => 'unified',
             'billing_cycle' => $billingCycle,
             'subscription_status' => 'active',
             'subscription_ends_at' => $newExpiry,
-            'trial_ends_at' => null, // Clear trial
+            'trial_ends_at' => null,
+            'show_watermark' => false,
         ]);
 
-        SubscriptionHistory::recordUpgrade($this, $oldPlan, $plan, $amount, $billingCycle);
+        SubscriptionHistory::recordUpgrade($this, $oldPlan, 'unified', $amount, $billingCycle);
     }
 
     /**
@@ -410,121 +364,7 @@ class Tenant extends Model
         ]);
     }
 
-    /**
-     * Downgrade to free plan.
-     */
-    public function downgradeToFree(bool $force = false): void
-    {
-        // ✅ Validar antes de fazer downgrade
-        $validation = $this->canDowngradeTo('free');
-
-        if (!$validation['can_downgrade'] && !$force) {
-            throw new \Exception(
-                'Não é possível fazer downgrade. ' .
-                implode(' ', array_column($validation['issues'], 'action'))
-            );
-        }
-
-        $oldPlan = $this->plan;
-
-        // Apply free plan limits
-        $freePlan = PlanLimit::findByPlan('free');
-
-        $this->update([
-            'plan' => 'free',
-            'subscription_status' => 'active',
-            'subscription_ends_at' => null,
-            'billing_cycle' => null,
-            'next_billing_date' => null,
-            'max_users' => null, // Segue o padrão do PlanLimit
-            'max_products' => null, // Segue o padrão do PlanLimit
-            'show_watermark' => true,
-        ]);
-
-        SubscriptionHistory::recordDowngrade($this, $oldPlan, 'free');
-    }
-
-    /**
-     * Check if tenant can downgrade to a specific plan without data loss.
-     */
-    public function canDowngradeTo(string $targetPlan): array
-    {
-        $targetLimits = PlanLimit::findByPlan($targetPlan);
-
-        if (!$targetLimits) {
-            return [
-                'can_downgrade' => false,
-                'issues' => [['resource' => 'plan', 'message' => 'Plano não encontrado']]
-            ];
-        }
-
-        $issues = [];
-
-        // Verificar produtos
-        if ($targetLimits->max_products !== null) {
-            $currentProducts = $this->products()->count();
-            if ($currentProducts > $targetLimits->max_products) {
-                $excess = $currentProducts - $targetLimits->max_products;
-                $issues[] = [
-                    'resource' => 'products',
-                    'current' => $currentProducts,
-                    'limit' => $targetLimits->max_products,
-                    'excess' => $excess,
-                    'action' => "Você precisa desativar {$excess} produto(s) antes de fazer downgrade."
-                ];
-            }
-        }
-
-        // Verificar usuários
-        if ($targetLimits->max_users !== null) {
-            $currentUsers = $this->users()->count();
-            if ($currentUsers > $targetLimits->max_users) {
-                $excess = $currentUsers - $targetLimits->max_users;
-                $issues[] = [
-                    'resource' => 'users',
-                    'current' => $currentUsers,
-                    'limit' => $targetLimits->max_users,
-                    'excess' => $excess,
-                    'action' => "Você precisa remover {$excess} usuário(s) antes de fazer downgrade."
-                ];
-            }
-        }
-
-        // Verificar categorias
-        if ($targetLimits->max_categories !== null) {
-            $currentCategories = $this->categories()->count();
-            if ($currentCategories > $targetLimits->max_categories) {
-                $excess = $currentCategories - $targetLimits->max_categories;
-                $issues[] = [
-                    'resource' => 'categories',
-                    'current' => $currentCategories,
-                    'limit' => $targetLimits->max_categories,
-                    'excess' => $excess,
-                    'action' => "Você precisa remover {$excess} categoria(s) antes de fazer downgrade."
-                ];
-            }
-        }
-
-        // Verificar cupons ativos
-        if ($targetLimits->max_coupons !== null) {
-            $currentCoupons = $this->coupons()->where('is_active', true)->count();
-            if ($currentCoupons > $targetLimits->max_coupons) {
-                $excess = $currentCoupons - $targetLimits->max_coupons;
-                $issues[] = [
-                    'resource' => 'coupons',
-                    'current' => $currentCoupons,
-                    'limit' => $targetLimits->max_coupons,
-                    'excess' => $excess,
-                    'action' => "Você precisa desativar {$excess} cupom/cupons antes de fazer downgrade."
-                ];
-            }
-        }
-
-        return [
-            'can_downgrade' => empty($issues),
-            'issues' => $issues
-        ];
-    }
+    // Downgrade methods removed - unified plan only
 
     /**
      * Get usage percentage for a specific resource.
@@ -661,8 +501,8 @@ class Tenant extends Model
             return 'Suspensa';
         }
 
-        if ($this->isTrialActive()) {
-            return 'Em Trial';
+        if ($this->is_active && $this->plan === 'unified') {
+            return 'Ativa';
         }
 
         return match ($this->subscription_status) {

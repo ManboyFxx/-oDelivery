@@ -45,6 +45,7 @@ export default function Edit({ product, categories, complement_groups = [], ingr
         image: null as File | null,
         loyalty_redeemable: product.loyalty_redeemable || false,
         loyalty_points_cost: product.loyalty_points_cost || 0,
+        loyalty_points_multiplier: product.loyalty_points_multiplier || 1.0,
     });
 
     const [imagePreview, setImagePreview] = useState<string | null>(product.image_url || null);
@@ -215,6 +216,26 @@ export default function Edit({ product, categories, complement_groups = [], ingr
                                             </div>
                                         </div>
                                     )}
+
+                                    <div className="pt-4 border-t border-[#ff3d03]/10 mt-4">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Produto Turbo (Multiplicador)</label>
+                                                <p className="text-[10px] text-gray-500 font-bold mb-2 ml-1">Acelere os ganhos de pontos deste item</p>
+                                            </div>
+                                            <div className="relative w-24">
+                                                <input
+                                                    type="number"
+                                                    step="0.1"
+                                                    min="1"
+                                                    value={data.loyalty_points_multiplier}
+                                                    onChange={(e) => setData('loyalty_points_multiplier', parseFloat(e.target.value) || 1.0)}
+                                                    className="w-full px-3 py-2 rounded-xl border-gray-200 dark:border-white/10 dark:bg-white dark:text-gray-900 focus:ring-2 focus:ring-[#ff3d03] transition-all font-black text-center"
+                                                />
+                                                <span className="absolute right-8 top-1/2 -translate-y-1/2 text-xs font-black text-gray-400">x</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 

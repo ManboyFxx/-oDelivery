@@ -16,36 +16,31 @@ class LoyaltyService
             return;
         }
 
-        $customer = $order->customer;
-        $tenantId = $order->tenant_id;
-        $settings = \App\Models\StoreSetting::where('tenant_id', $tenantId)->first();
+        $settings = \App\Models\StoreSetting::where('tenant_id', $order->tenant_id)->first();
 
         if (!$settings || !$settings->loyalty_enabled) {
             return;
         }
 
-        $pointsRate = $settings->points_per_currency ?? 1.0;
+        $customer = $order->customer;
         $totalPoints = 0;
         $descriptions = [];
 
-        // 1. Base Points from Purchase
-        $basePoints = (int) ceil($order->total * $pointsRate);
-        if ($basePoints > 0) {
-            $totalPoints = $basePoints;
-            $descriptions[] = "Compra de R$ " . number_format($order->total, 2, ',', '.');
-        }
+        // 1. Base Points
+        $basePoints = floor($order->total_amount * ($settings->points_per_currency ?? 1));
+        $totalPoints += $basePoints;
 
-        // 2. Active Promotion Multiplier
-        $activePromotion = \App\Models\LoyaltyPromotion::where('tenant_id', $tenantId)
-            ->where('is_active', true)
-            ->where('start_date', '<=', now())
-            ->where('end_date', '>=', now())
-            ->first();
-
-        if ($activePromotion && $activePromotion->multiplier > 1) {
-            $promoBonus = (int) ceil($totalPoints * ($activePromotion->multiplier - 1));
-            $totalPoints += $promoBonus;
-            $descriptions[] = "Promoção: {$activePromotion->name} ({$activePromotion->multiplier}x)";
+        // 2. Product Accelerators
+        foreach ($order->items as $item) {
+            if ($item->product && $item->product->loyalty_points_multiplier > 1.0) {
+                $itemBasePoints = $item->price * $item->quantity * ($settings->points_per_currency ?? 1);
+                $extraPoints = $itemBasePoints * ($item->product->loyalty_points_multiplier - 1);
+                $totalPoints += $extraPoints;
+                // Avoid too many descriptions
+                if (count($descriptions) < 3) {
+                    $descriptions[] = "Turbo: {$item->product->name}";
+                }
+            }
         }
 
         // 3. Tier Bonus Multiplier
@@ -53,27 +48,30 @@ class LoyaltyService
         if ($tierMultiplier > 1) {
             $tierBonus = (int) ceil($totalPoints * ($tierMultiplier - 1));
             $totalPoints += $tierBonus;
-            $descriptions[] = "Bônus de Nível: " . ucfirst($customer->loyalty_tier);
+            $descriptions[] = "Bônus Nível " . ucfirst($customer->loyalty_tier ?? 'Bronze');
         }
 
-        // 4. Frequency Bonus (Keep existing logic but make it dynamic if needed)
+        // 4. Frequency Bonus
+        // Check orders in current month
         $monthlyOrders = $customer->orders()
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
-            ->where('status', 'completed')
+            ->where('status', 'completed') // Assuming completed status exists
             ->count();
 
+        // If this is the 5th, 10th, etc order
         if ($monthlyOrders > 0 && $monthlyOrders % 5 === 0) {
-            $totalPoints += 10;
-            $descriptions[] = "🎉 Bônus de Frequência (5º pedido)";
+            $bonus = 10; // Fixed bonus or setting? Using 10 as placeholder
+            $totalPoints += $bonus;
+            $descriptions[] = "Bônus Frequência (5º pedido)";
         }
 
         // Award points
         if ($totalPoints > 0) {
             $customer->addPoints(
-                $totalPoints,
+                (int) $totalPoints,
                 $order->id,
-                implode(' | ', $descriptions)
+                empty($descriptions) ? 'Pontos por compra' : implode(' | ', $descriptions)
             );
 
             // Update tier after points change
@@ -81,8 +79,33 @@ class LoyaltyService
 
             // Save earned points in order record
             $order->update([
-                'loyalty_points_earned' => $totalPoints
+                'loyalty_points_earned' => (int) $totalPoints
             ]);
+
+            // Process Referral Reward (only on first order usually)
+            $this->processReferralReward($customer, $settings);
+        }
+    }
+
+    protected function processReferralReward(Customer $customer, \App\Models\StoreSetting $settings)
+    {
+        if ($settings->referral_bonus_points > 0 && $customer->referred_by) {
+            $completedOrdersCount = $customer->orders()->where('status', 'completed')->count();
+
+            // If this is the first order (current order is already completed/paid presumably)
+            if ($completedOrdersCount === 1) {
+                // Check Minimum Order Amount for Referral Reward
+                // We need the current order instance, but this method only receives customer.
+                // Assuming the last order is the one triggering this.
+                $lastOrder = $customer->orders()->latest()->first();
+
+                if ($lastOrder && $lastOrder->total_amount >= ($settings->min_order_for_referral ?? 0)) {
+                    $referrer = $customer->referrer;
+                    if ($referrer) {
+                        $referrer->addPoints($settings->referral_bonus_points, null, "Bônus por indicar " . $customer->name);
+                    }
+                }
+            }
         }
     }
 

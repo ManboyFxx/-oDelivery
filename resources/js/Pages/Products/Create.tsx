@@ -24,6 +24,9 @@ export default function Create({ categories, complement_groups = [] }: { categor
         category_id: '',
         complement_groups: [] as string[],
         image: null as File | null,
+        loyalty_redeemable: false,
+        loyalty_points_cost: 0,
+        loyalty_points_multiplier: 1.0,
     });
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,6 +138,61 @@ export default function Create({ categories, complement_groups = [] }: { categor
                                 </select>
                                 {errors.category_id && <p className="mt-2 text-sm text-red-600">{errors.category_id}</p>}
                             </div>
+
+                    {/* Loyalty Section */}
+                    <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-200 dark:border-gray-700">
+                         <div className="flex items-center gap-3 mb-4">
+                            <span className="text-2xl">🎁</span>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Fidelidade & Gamificação</h3>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Redeemable Toggle */}
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Permite resgate com pontos?</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setData('loyalty_redeemable', !data.loyalty_redeemable)}
+                                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${data.loyalty_redeemable ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'}`}
+                                    >
+                                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${data.loyalty_redeemable ? 'translate-x-5' : 'translate-x-0'}`} />
+                                    </button>
+                                </div>
+                                
+                                {data.loyalty_redeemable && (
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Custo em Pontos</label>
+                                        <input
+                                            type="number"
+                                            value={data.loyalty_points_cost}
+                                            onChange={(e) => setData('loyalty_points_cost', parseInt(e.target.value) || 0)}
+                                            className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Multiplier */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">
+                                    Produto Turbo (Multiplicador de Pontos)
+                                </label>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        min="1"
+                                        value={data.loyalty_points_multiplier}
+                                        onChange={(e) => setData('loyalty_points_multiplier', parseFloat(e.target.value) || 1.0)}
+                                        className="block w-24 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700"
+                                    />
+                                    <span className="text-gray-500 font-bold">x</span>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">Defina 2.0x, 3.0x para produtos que aceleram o ganho de pontos.</p>
+                            </div>
+                        </div>
+                    </div>
                         </div>
                     </div>
 

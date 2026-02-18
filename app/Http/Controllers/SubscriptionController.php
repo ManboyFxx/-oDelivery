@@ -14,56 +14,59 @@ class SubscriptionController extends Controller
         $tenant = auth()->user()->tenant;
         $currentPlan = $tenant->plan;
 
-        $plans = \App\Models\PlanLimit::getActivePlans()->map(function ($plan) use ($tenant, $currentPlan) {
-            return [
-                'id' => $plan->plan,
-                'original_id' => $plan->plan,
-                'name' => $plan->display_name,
-                'price' => $plan->price_monthly,
+        // Sempre retorna o plano unificado para exibição
+        $unifiedPlan = PlanLimit::findByPlan('unified');
+
+        $planData = null;
+        if ($unifiedPlan) {
+            $planData = [
+                'id' => $unifiedPlan->plan,
+                'name' => $unifiedPlan->display_name,
+                'price' => $unifiedPlan->price_monthly,
                 'interval' => 'mês',
-                'features' => $plan->formatted_features,
+                'features' => $unifiedPlan->formatted_features,
                 'limits' => [
-                    'products' => $plan->max_products,
-                    'users' => $plan->max_users,
-                    'orders' => $plan->max_orders_per_month,
-                    'motoboys' => $plan->max_motoboys,
-                    'stock_items' => $plan->max_stock_items,
-                    'coupons' => $plan->max_coupons,
+                    'products' => $unifiedPlan->max_products,
+                    'users' => $unifiedPlan->max_users,
+                    'orders' => $unifiedPlan->max_orders_per_month,
+                    'motoboys' => $unifiedPlan->max_motoboys,
+                    'stock_items' => $unifiedPlan->max_stock_items,
+                    'coupons' => $unifiedPlan->max_coupons,
                 ],
-                'current' => $currentPlan === $plan->plan,
-                'subscription_status' => $currentPlan === $plan->plan ? ($tenant->subscription_status ?? 'active') : null,
+                'current' => $currentPlan === 'unified',
+                'subscription_status' => $tenant->subscription_status ?? 'active',
             ];
-        });
+        }
 
         return Inertia::render('Subscription/Index', [
             'currentPlan' => $currentPlan,
             'subscriptionStatus' => $tenant->subscription_status ?? 'active',
-            'plans' => $plans,
+            'plan' => $planData,
             'usage' => [
                 'products' => $tenant->products()->count(),
                 'users' => $tenant->users()->count(),
                 'orders' => $tenant->orders()->count(),
                 'motoboys' => $tenant->motoboys()->count(),
-                'stock_items' => 0, // Placeholder
-                'coupons' => 0, // Placeholder
+                'stock_items' => 0,
+                'coupons' => $tenant->coupons()->count(),
             ],
         ]);
     }
 
-    // Private formatFeatures method removed as logic is now in Model
-
-
     public function checkout(string $plan)
     {
-        $tenant = auth()->user()->tenant;
-        $planModel = \App\Models\PlanLimit::findByPlan($plan);
+        // Se tentar acessar outro plano, redireciona para unified
+        if ($plan !== 'unified') {
+            return redirect()->route('subscription.checkout', ['plan' => 'unified']);
+        }
 
+        $planModel = PlanLimit::findByPlan('unified');
         if (!$planModel) {
             return back()->with('error', 'Plano não encontrado.');
         }
 
         return Inertia::render('Subscription/Checkout', [
-            'plan' => $plan,
+            'plan' => 'unified',
             'price' => $planModel->price_monthly,
             'planName' => $planModel->display_name,
             'features' => collect($planModel->formatted_features)->where('included', true)->pluck('text')->toArray()
@@ -79,6 +82,7 @@ class SubscriptionController extends Controller
 
         $coupon = \App\Models\PlanCoupon::where('code', strtoupper($request->code))->first();
 
+        // Pass 'unified' context if plan is unified
         if (!$coupon || !$coupon->isValid($request->plan)) {
             return response()->json(['valid' => false, 'message' => 'Cupom inválido ou expirado.'], 422);
         }
@@ -91,7 +95,7 @@ class SubscriptionController extends Controller
         ]);
     }
 
-    public function processPayment(Request $request, \App\Services\PaymentGatewayService $paymentService)
+    public function processPayment(Request $request, PaymentGatewayService $paymentService)
     {
         $tenant = auth()->user()->tenant;
         $user = auth()->user();
@@ -99,7 +103,7 @@ class SubscriptionController extends Controller
         $data = $request->validate([
             'plan' => 'required|string',
             'payment_method' => 'required|in:credit_card,pix,boleto',
-            'payment_method_id' => 'nullable|string', // For Stripe Credit Card
+            'payment_method_id' => 'nullable|string',
             'cpf' => 'nullable|string',
             'cardholder_name' => 'nullable|string',
             'coupon_code' => 'nullable|string|exists:plan_coupons,code'
@@ -113,14 +117,18 @@ class SubscriptionController extends Controller
                     $tenant->update(['stripe_customer_id' => $customerId]);
                     $tenant->refresh();
                 } catch (\Exception $e) {
-                    // Ignore if customer creation fails (might already exist on Stripe side but not in DB)
-                    // In production, should handle better.
+                    // Ignore logic same as before
                 }
             }
 
             $planId = $data['plan'];
+            $planModel = PlanLimit::findByPlan($planId);
 
-            $planModel = \App\Models\PlanLimit::findByPlan($planId);
+            if (!$planModel) {
+                // Fallback if unified not found for some reason
+                $planModel = PlanLimit::findByPlan('unified');
+            }
+
             if (!$planModel) {
                 return back()->withErrors(['payment' => 'Plano inválido']);
             }
@@ -138,20 +146,21 @@ class SubscriptionController extends Controller
                     } else {
                         $amount -= $coupon->discount_value;
                     }
-                    $amount = max(0, $amount); // Ensure not negative
+                    $amount = max(0, $amount);
                 }
             }
 
-            // Map to PaymentGateway plan keys (pro, custom)
-            $stripePlanId = match ($planId) {
-                'custom' => 'custom',
-                'business' => 'custom',
-                default => 'pro'
-            };
+            // Map to PaymentGateway plan keys
+            // Agora tudo mapeia para 'unified' no metadata, mas o Stripe Plan ID pode variar se o user não tiver criado 'unified' lá.
+            // Vou assumir 'unified' como ID do plano no Stripe também.
+            $stripePlanId = 'unified';
 
             $metadata = ['plan' => $stripePlanId];
             if ($coupon) {
                 $metadata['coupon_code'] = $coupon->code;
+                if ($coupon->stripe_coupon_id) {
+                    $metadata['stripe_coupon_id'] = $coupon->stripe_coupon_id;
+                }
                 $coupon->increment('current_uses');
             }
 
@@ -164,31 +173,26 @@ class SubscriptionController extends Controller
                     'monthly',
                     $metadata
                 );
-
-                // Update local state temporarily/optimistically
-                // Real update happens via Webhook
                 return redirect()->back()->with('success', 'Assinatura processada com sucesso!');
 
             } elseif ($data['payment_method'] === 'pix') {
                 $result = $paymentService->createPixPayment(
                     $amount,
-                    "Assinatura Plano " . ucfirst($stripePlanId) . ($coupon ? " (Cupom: {$coupon->code})" : ""),
+                    "Assinatura Plano Único" . ($coupon ? " (Cupom: {$coupon->code})" : ""),
                     $tenant,
                     $metadata
                 );
-
-                return response()->json($result); // Frontend expects JSON for Pix
+                return response()->json($result);
 
             } elseif ($data['payment_method'] === 'boleto') {
                 $result = $paymentService->createBoletoPayment(
                     $amount,
-                    "Assinatura Plano " . ucfirst($stripePlanId) . ($coupon ? " (Cupom: {$coupon->code})" : ""),
+                    "Assinatura Plano Único" . ($coupon ? " (Cupom: {$coupon->code})" : ""),
                     $tenant,
                     $data['cpf'],
                     now()->addDays(3),
                     $metadata
                 );
-
                 return response()->json($result);
             }
 
@@ -200,75 +204,35 @@ class SubscriptionController extends Controller
     public function upgrade(Request $request)
     {
         $tenant = auth()->user()->tenant;
-        $requestedPlan = $request->input('plan');
 
-        // Validate that the plan is allowed for self-service upgrade
-        if (!in_array($requestedPlan, ['free', 'basic'])) {
-            return back()->withErrors([
-                'plan' => 'O plano Personalizado requer contato com nossa equipe. Entre em contato via WhatsApp.'
-            ]);
-        }
-
-        // Prevent downgrade from custom/pro to basic/free via this method
-        if (in_array($tenant->plan, ['custom', 'pro'])) {
-            return back()->withErrors([
-                'plan' => 'Para alterar seu plano Personalizado, entre em contato com o suporte.'
-            ]);
-        }
-
-        // TODO: Integrate with Stripe payment here
-        // For now, just update the plan (mock) with intelligent date calculation
+        // Simplesmente ativa o plano unificado (usado para reativar/atualizar)
         try {
-            $tenant->upgradeTo($requestedPlan);
+            $tenant->activateUnifiedPlan();
         } catch (\Exception $e) {
             return back()->withErrors(['plan' => $e->getMessage()]);
         }
 
-        return redirect()->route('dashboard')->with('success', "Plano atualizado para {$requestedPlan} com sucesso! (Modo de Teste)");
-    }
-
-    public function downgradeToFree(Request $request)
-    {
-        $tenant = auth()->user()->tenant;
-        $force = $request->input('force', false);
-
-        try {
-            $tenant->downgradeToFree($force);
-        } catch (\Exception $e) {
-            return back()->withErrors(['downgrade' => $e->getMessage()]);
-        }
-
-        return redirect()->route('dashboard')->with('success', 'Plano alterado para Gratuito.');
+        return redirect()->route('dashboard')->with('success', "Plano atualizado com sucesso!");
     }
 
     public function expired()
     {
         $tenant = auth()->user()->tenant;
-        $activePlans = PlanLimit::where('is_active', true)->orderBy('sort_order')->get();
+        $unifiedPlan = PlanLimit::findByPlan('unified');
 
-        $plans = $activePlans->map(function ($plan) {
-            return [
-                'id' => $plan->plan, // simplified mapping for this view
-                'plan' => $plan->plan,
-                'name' => $plan->display_name,
-                'price' => $plan->price_monthly,
-                'price_monthly' => $plan->price_monthly,
-                'price_yearly' => $plan->price_yearly,
-                'interval' => 'mês',
-                'features' => $plan->formatted_features,
-                'max_products' => $plan->max_products,
-                'max_users' => $plan->max_users,
-                'current' => auth()->user()->tenant->plan === $plan->plan,
-            ];
-        })->values();
-
-        // Check if downgrade is possible or needs warnings
-        $downgradeRisks = $tenant->canDowngradeTo('free');
+        $planData = [
+            'id' => $unifiedPlan->plan,
+            'name' => $unifiedPlan->display_name,
+            'price' => $unifiedPlan->price_monthly,
+            'interval' => 'mês',
+            'features' => $unifiedPlan->formatted_features,
+            'current' => true, // Única opção
+        ];
 
         return Inertia::render('Subscription/Expired', [
             'tenant' => $tenant,
-            'plans' => $plans,
-            'downgradeRisks' => $downgradeRisks
+            'plans' => [$planData], // Array com 1 elemento para compatibilidade da view Expired se não for reescrita agora
+            'downgradeRisks' => [] // Sem riscos
         ]);
     }
 

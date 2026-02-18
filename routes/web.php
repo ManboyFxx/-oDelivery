@@ -80,7 +80,12 @@ Route::middleware(['throttle:10,1', 'tenant.scope'])->group(function () {
 
     // Customer Auth (Phone-based)
     Route::post('/customer/check-phone', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'checkPhone']);
+    Route::post('/customer/complete-registration', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'completeRegistration']);
     Route::post('/customer/verify-otp', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'verifyOTP']);
+    Route::post('/customer/login-password', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'loginWithPassword']); // Nova rota senha
+    Route::post('/customer/send-setup-otp', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'sendSetupOtp']); // Nova rota setup
+    Route::post('/customer/setup-password', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'setupPassword']); // Nova rota setup
+    Route::post('/customer/quick-login', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'quickLoginSecure']); // Nova rota checkout security
     Route::post('/customer/register', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'register']);
     Route::post('/customer/logout', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'logout']);
 
@@ -95,6 +100,11 @@ Route::middleware(['throttle:10,1', 'tenant.scope'])->group(function () {
     Route::post('/customer/checkout', [\App\Http\Controllers\Tenant\CustomerOrderController::class, 'store'])->middleware('plan.limit:orders');
     Route::post('/customer/redeem-product', [CustomerRedemptionController::class, 'redeemProduct']);
     Route::post('/customer/validate-coupon', [\App\Http\Controllers\CouponValidationController::class, 'validate']);
+
+    // Customer Notifications
+    Route::get('/customer/notifications', [\App\Http\Controllers\Tenant\CustomerNotificationController::class, 'index']);
+    Route::post('/customer/notifications/{id}/read', [\App\Http\Controllers\Tenant\CustomerNotificationController::class, 'markAsRead']);
+    Route::post('/customer/notifications/read-all', [\App\Http\Controllers\Tenant\CustomerNotificationController::class, 'markAllAsRead']);
 });
 
 // Public API Routes (no auth required) - ✅ COM RATE LIMITING

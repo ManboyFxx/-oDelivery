@@ -59,14 +59,26 @@ class PaymentGatewayService
             $priceId = $this->getStripePriceId($planId, $billingCycle);
 
             try {
-                // Create subscription
-                $subscription = Subscription::create([
+                // Prepare subscription params
+                $params = [
                     'customer' => $customerId,
                     'items' => [['price' => $priceId]],
                     'default_payment_method' => $paymentMethodId, // Set as default payment method
                     'expand' => ['latest_invoice.payment_intent'],
                     'metadata' => $metadata,
-                ]);
+                ];
+
+                // Add coupon if provided
+                if (isset($metadata['coupon_code'])) {
+                    // Try to find coupon by code in Stripe or use ID passed in params if we changed signature
+                    // For now, let's assume the controller passed the Stripe Coupon ID in metadata as 'stripe_coupon_id'
+                    if (isset($metadata['stripe_coupon_id'])) {
+                        $params['coupon'] = $metadata['stripe_coupon_id'];
+                    }
+                }
+
+                // Create subscription
+                $subscription = Subscription::create($params);
 
                 return [
                     'subscription_id' => $subscription->id,
@@ -236,6 +248,9 @@ class PaymentGatewayService
         // These should be configured in .env or database
         // For now, using placeholder logic
         $priceMap = [
+            'unified_monthly' => config('services.stripe.price_unified_monthly'),
+            'unified_yearly' => config('services.stripe.price_unified_yearly'),
+            // Legacy mapping
             'basic_monthly' => config('services.stripe.price_basic_monthly'),
             'basic_yearly' => config('services.stripe.price_basic_yearly'),
             'pro_monthly' => config('services.stripe.price_pro_monthly'),
@@ -247,10 +262,74 @@ class PaymentGatewayService
         $key = "{$planId}_{$billingCycle}";
 
         if (!isset($priceMap[$key])) {
+            // Fallback for unified if not configured in env yet to avoid crash during dev
+            if ($planId === 'unified') {
+                // return 'price_dummy_unified'; // Uncomment for testing without env
+            }
             throw new Exception("Price ID not configured for {$key}");
         }
 
         return $priceMap[$key];
+    }
+
+    /**
+     * Create a coupon in Stripe
+     */
+    public function createStripeCoupon(array $data): string
+    {
+        if ($this->gateway === 'stripe') {
+            try {
+                $couponData = [
+                    'name' => $data['code'],
+                    'duration' => 'once', // Default to once for simplicity in this implementation
+                ];
+
+                if ($data['discount_type'] === 'percentage') {
+                    $couponData['percent_off'] = $data['discount_value'];
+                } else {
+                    $couponData['amount_off'] = (int) ($data['discount_value'] * 100);
+                    $couponData['currency'] = 'brl';
+                }
+
+                if (!empty($data['max_uses'])) {
+                    $couponData['max_redemptions'] = $data['max_uses'];
+                }
+
+                if (!empty($data['valid_until'])) {
+                    $couponData['redeem_by'] = \Carbon\Carbon::parse($data['valid_until'])->timestamp;
+                }
+
+                // Add metadata for syncing
+                $couponData['metadata'] = [
+                    'local_id' => $data['id'] ?? null,
+                    'code' => $data['code']
+                ];
+
+                $coupon = \Stripe\Coupon::create($couponData);
+                return $coupon->id;
+            } catch (\Stripe\Exception\ApiErrorException $e) {
+                throw new Exception("Stripe Coupon Error: " . $e->getMessage());
+            }
+        }
+        return '';
+    }
+
+    /**
+     * Delete a coupon in Stripe
+     */
+    public function deleteStripeCoupon(string $stripeCouponId): bool
+    {
+        if ($this->gateway === 'stripe' && $stripeCouponId) {
+            try {
+                $coupon = \Stripe\Coupon::retrieve($stripeCouponId);
+                $coupon->delete();
+                return true;
+            } catch (\Exception $e) {
+                // Coupon might already be deleted
+                return false;
+            }
+        }
+        return false;
     }
 
     /**

@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import { useAudio } from '@/Hooks/useAudio';
 import { toast } from 'sonner';
 import axios from 'axios';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Search } from 'lucide-react';
+import clsx from 'clsx';
 
 import { Category, Product, Customer } from './Components/types';
 import HeroSection from './Components/HeroSection';
@@ -11,6 +12,7 @@ import CategoryNav from './Components/CategoryNav';
 import ProductGrid from './Components/ProductGrid';
 import CartFloatingButton from './Components/CartFloatingButton';
 import CartSidebar from './Components/CartSidebar';
+import StoreInfoModal from './Components/StoreInfoModal';
 import ProductModal from './Components/ProductModal';
 import AuthModal from './Components/AuthModal';
 import CustomerAreaModal from './Components/CustomerAreaModal';
@@ -28,6 +30,7 @@ interface PageProps {
 export default function PublicMenu({ store, categories, slug, authCustomer, activePromotion, availableCoupons }: PageProps) {
     // --- State ---
     const [activeCategory, setActiveCategory] = useState<string>('all');
+    const [searchQuery, setSearchQuery] = useState('');
     const [cart, setCart] = useState<any[]>([]);
 
     // Modals
@@ -37,6 +40,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
     const [initialProductValues, setInitialProductValues] = useState<any>(null);
 
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const [showStoreInfo, setShowStoreInfo] = useState(false);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
 
@@ -194,6 +198,17 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
     const cartTotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
     const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
+    const handleUpdateQuantity = (index: number, newQuantity: number) => {
+        if (newQuantity < 1) return;
+        setCart(prev => prev.map((item, i) => {
+            if (i === index) {
+                const unitPrice = item.subtotal / item.quantity;
+                return { ...item, quantity: newQuantity, subtotal: unitPrice * newQuantity };
+            }
+            return item;
+        }));
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 text-gray-900 font-sans selection:bg-orange-100 selection:text-orange-900 pb-24 md:pb-0">
             <Head title={store.name} />
@@ -205,8 +220,27 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                 onOpenAuth={() => setIsAuthModalOpen(true)}
                 onOpenProfile={() => setIsCustomerModalOpen(true)}
                 onOpenCart={() => setIsCartOpen(true)}
+                onOpenInfo={() => setShowStoreInfo(true)}
                 cartCount={cartCount}
             />
+
+            {/* Sticky Search Header */}
+            <header className="sticky top-0 z-40 bg-white shadow-sm border-b border-gray-100">
+                <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 flex items-center justify-center gap-6">
+                    <div className="flex-1 max-w-2xl">
+                        <div className="relative group">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-black transition-colors" />
+                            <input
+                                type="text"
+                                placeholder="O que vamos pedir agora?"
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                className="w-full bg-gray-50/50 border border-transparent rounded-xl py-2.5 pl-11 pr-4 focus:ring-0 focus:border-gray-200 focus:bg-white transition-all outline-none font-medium text-sm text-gray-900 placeholder:text-gray-950"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </header>
 
             {/* Navigation */}
             <CategoryNav
@@ -221,10 +255,13 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                     {/* Products Column */}
                     <div className="flex-1 w-full">
                         <ProductGrid
-                            categories={activeCategory === 'all'
-                                ? categories
-                                : categories.filter(c => c.id === activeCategory)
-                            }
+                            categories={categories.map(cat => ({
+                                ...cat,
+                                products: cat.products.filter(p => 
+                                    p.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+                                    (activeCategory === 'all' || cat.id === activeCategory)
+                                )
+                            })).filter(cat => cat.products.length > 0)}
                             onAdd={handleProductAdd}
                         />
                     </div>
@@ -242,9 +279,17 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                 isOpen={isCartOpen}
                 onClose={() => setIsCartOpen(false)}
                 cart={cart}
+                onUpdateQuantity={handleUpdateQuantity}
                 onEdit={handleEditCartItem}
                 onRemove={handleRemoveCartItem}
                 onCheckout={handleCheckout}
+            />
+
+            {/* Store Information Modal */}
+            <StoreInfoModal 
+                isOpen={showStoreInfo} 
+                onClose={() => setShowStoreInfo(false)} 
+                store={store} 
             />
 
             {/* Modals */}

@@ -86,6 +86,7 @@ class ProductController extends Controller implements HasMiddleware
                 'stock_quantity' => 'nullable|integer',
                 'loyalty_redeemable' => 'boolean',
                 'loyalty_points_cost' => 'nullable|integer|min:0',
+                'loyalty_points_multiplier' => 'nullable|numeric|min:1',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             \Illuminate\Support\Facades\Log::error('Product Create Validation Error:', $e->errors());
@@ -151,6 +152,7 @@ class ProductController extends Controller implements HasMiddleware
                 'stock_quantity' => 'nullable|integer',
                 'loyalty_redeemable' => 'boolean',
                 'loyalty_points_cost' => 'nullable|integer|min:0',
+                'loyalty_points_multiplier' => 'nullable|numeric|min:1',
                 'ingredients' => 'nullable|array',
                 'ingredients.*.id' => 'required|exists:ingredients,id',
                 'ingredients.*.quantity' => 'required|numeric|min:0',

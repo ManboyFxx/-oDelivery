@@ -15,6 +15,9 @@ class Kernel extends ConsoleKernel
     {
         // Run cleanup of old orders daily at 3 AM
         $schedule->job(new CleanupOldOrders())->dailyAt('03:00');
+
+        // Expire loyalty points daily at 4 AM
+        $schedule->job(new \App\Jobs\ExpireLoyaltyPoints())->dailyAt('04:00');
     }
 
     /**
@@ -22,7 +25,7 @@ class Kernel extends ConsoleKernel
      */
     protected function commands(): void
     {
-        $this->load(__DIR__.'/Commands');
+        $this->load(__DIR__ . '/Commands');
 
         require base_path('routes/console.php');
     }

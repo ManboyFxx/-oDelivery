@@ -35,10 +35,7 @@ class SuperAdminController extends Controller
                 'email' => $tenant->email,
                 'plan' => $tenant->plan,
                 'subscription_status' => $tenant->subscription_status,
-                'trial_ends_at' => $tenant->trial_ends_at?->format('Y-m-d H:i:s'),
-                'trial_days_remaining' => $tenant->trialDaysRemaining(),
-                'is_trial_active' => $tenant->isTrialActive(),
-                'is_trial_expired' => $tenant->isTrialExpired(),
+                // Trial info removed
                 'is_suspended' => $tenant->is_suspended,
                 'created_at' => $tenant->created_at->format('d/m/Y'),
                 'usage' => [
@@ -58,32 +55,6 @@ class SuperAdminController extends Controller
     }
 
     /**
-     * Extend trial for a tenant
-     */
-    public function extendTrial(Request $request, string $tenantId)
-    {
-        if (auth()->user()->role !== 'super_admin') {
-            abort(403, 'Unauthorized');
-        }
-
-        $request->validate([
-            'days' => 'required|integer|min:1|max:90',
-        ]);
-
-        $tenant = Tenant::findOrFail($tenantId);
-
-        $currentExpiry = $tenant->trial_ends_at ?? now();
-        $newExpiry = $currentExpiry->addDays($request->days);
-
-        $tenant->update([
-            'trial_ends_at' => $newExpiry,
-            'subscription_status' => 'trial',
-        ]);
-
-        return back()->with('success', "Trial estendido por {$request->days} dias");
-    }
-
-    /**
      * Force upgrade tenant to a plan
      */
     public function forceUpgrade(Request $request, string $tenantId)
@@ -93,7 +64,7 @@ class SuperAdminController extends Controller
         }
 
         $request->validate([
-            'plan' => 'required|in:free,pro,custom',
+            'plan' => 'required|string',
         ]);
 
         $tenant = Tenant::findOrFail($tenantId);
@@ -105,26 +76,6 @@ class SuperAdminController extends Controller
         ]);
 
         return back()->with('success', "Tenant atualizado para plano {$request->plan}");
-    }
-
-    /**
-     * Reset trial for a tenant
-     */
-    public function resetTrial(string $tenantId)
-    {
-        if (auth()->user()->role !== 'super_admin') {
-            abort(403, 'Unauthorized');
-        }
-
-        $tenant = Tenant::findOrFail($tenantId);
-
-        $tenant->update([
-            'trial_ends_at' => now()->addDays(14),
-            'subscription_status' => 'trial',
-            'plan' => 'pro', // Give them pro features during trial
-        ]);
-
-        return back()->with('success', 'Trial resetado para 14 dias');
     }
 
     /**

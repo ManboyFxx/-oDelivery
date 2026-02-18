@@ -22,7 +22,8 @@ class PlanCoupon extends Model
         'current_uses',
         'valid_until',
         'is_active',
-        'plan_restriction'
+        'plan_restriction',
+        'stripe_coupon_id'
     ];
 
     protected $casts = [
@@ -44,8 +45,13 @@ class PlanCoupon extends Model
         if ($this->max_uses && $this->current_uses >= $this->max_uses)
             return false;
 
-        if ($this->plan_restriction && $plan && $this->plan_restriction !== $plan)
+        if ($this->plan_restriction && $plan && $this->plan_restriction !== $plan) {
+            // Permitir cupons antigos no plano unificado
+            if ($plan === 'unified' && in_array($this->plan_restriction, ['pro', 'basic', 'free', 'custom'])) {
+                return true;
+            }
             return false;
+        }
 
         return true;
     }

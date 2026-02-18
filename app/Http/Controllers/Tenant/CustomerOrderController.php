@@ -103,11 +103,31 @@ class CustomerOrderController extends Controller
             'loyalty_points_used' => 'nullable|integer|min:0',
         ]);
 
-        // ✅ Forçar tenant_id e customer_id da SESSION/MIDDLEWARE
         $validated['tenant_id'] = $tenant->id;
         $validated['customer_id'] = $customer->id;
 
         $settings = \App\Models\StoreSetting::where('tenant_id', $tenant->id)->first();
+
+        // 🔒 CHECKOUT SECURITY: Last 4 verify if not trusted
+        if ($settings && $settings->enable_checkout_security) {
+            $deviceToken = $request->cookie('device_token');
+            $isTrusted = false;
+
+            if ($deviceToken) {
+                $isTrusted = \App\Models\CustomerDevice::where('customer_id', $customer->id)
+                    ->where('device_token', $deviceToken)
+                    ->where('expires_at', '>', now())
+                    ->exists();
+            }
+
+            if (!$isTrusted) {
+                return response()->json([
+                    'message' => 'Verificação de identidade necessária.',
+                    'requires_identity_verification' => true,
+                    'phone_last_4_digits' => substr($customer->phone, -4)
+                ], 403);
+            }
+        }
 
         // Transaction to ensure data integrity
         return DB::transaction(function () use ($validated, $tenant, $settings) {

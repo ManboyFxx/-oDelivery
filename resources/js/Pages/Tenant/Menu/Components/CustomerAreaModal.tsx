@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Trophy, Gift, Sparkles, LogOut, MapPin, Home, Plus, Edit2, Trash2, Check, History } from 'lucide-react';
+import { X, Trophy, Gift, Sparkles, LogOut, MapPin, Home, Plus, Edit2, Trash2, Check, History, Share2, Copy, Bell } from 'lucide-react';
 import { Customer, Address, Order } from './types';
 import clsx from 'clsx';
 import axios from 'axios';
@@ -14,12 +14,53 @@ interface CustomerAreaModalProps {
 }
 
 export default function CustomerAreaModal({ isOpen, onClose, customer, onLogout, store }: CustomerAreaModalProps) {
-    const [activeTab, setActiveTab] = useState<'info' | 'addresses' | 'orders'>('info');
+    const [activeTab, setActiveTab] = useState<'info' | 'addresses' | 'orders' | 'referral'>('info');
     const [addresses, setAddresses] = useState<Address[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
     const [loadingOrders, setLoadingOrders] = useState(false);
     const [ordersPage, setOrdersPage] = useState(1);
     const [hasMoreOrders, setHasMoreOrders] = useState(false);
+    const [showNotifications, setShowNotifications] = useState(false);
+    const [notifications, setNotifications] = useState<any[]>([]);
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    // Load Notifications
+    const loadNotifications = async () => {
+        try {
+            const response = await axios.get('/customer/notifications');
+            setNotifications(response.data.notifications);
+            setUnreadCount(response.data.unread_count);
+        } catch (error) {
+            console.error('Error loading notifications:', error);
+        }
+    };
+
+    useEffect(() => {
+        if (isOpen) {
+            loadNotifications();
+        }
+    }, [isOpen]);
+
+    const markAsRead = async (id: string) => {
+        try {
+            await axios.post(`/customer/notifications/${id}/read`);
+            // Update local state
+            setNotifications(prev => prev.map(n => n.id === id ? { ...n, read_at: new Date().toISOString() } : n));
+            setUnreadCount(prev => Math.max(0, prev - 1));
+        } catch (error) {
+            console.error('Error marking as read:', error);
+        }
+    };
+
+    const markAllAsRead = async () => {
+         try {
+            await axios.post(`/customer/notifications/read-all`);
+            setNotifications(prev => prev.map(n => ({ ...n, read_at: new Date().toISOString() })));
+            setUnreadCount(0);
+        } catch (error) {
+            console.error('Error marking all as read:', error);
+        }
+    }
 
     // Address Form State
     const [showAddressForm, setShowAddressForm] = useState(false);
@@ -144,6 +185,19 @@ export default function CustomerAreaModal({ isOpen, onClose, customer, onLogout,
         setShowAddressForm(true);
     };
 
+    // Referral Logic
+    const referralLink = `${window.location.origin}/menu/${store.slug}?ref=${customer.referral_code}`;
+    const shareMessage = `Olá! Use meu código *${customer.referral_code}* no ${store.name} e ganhe benefícios incríveis! Peça aqui: ${referralLink}`;
+
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text);
+        toast.success('Copiado para a área de transferência!');
+    };
+
+    const shareOnWhatsApp = () => {
+        window.open(`https://wa.me/?text=${encodeURIComponent(shareMessage)}`, '_blank');
+    };
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div
@@ -153,27 +207,90 @@ export default function CustomerAreaModal({ isOpen, onClose, customer, onLogout,
 
             <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col relative z-20 shadow-2xl animate-in fade-in zoom-in duration-300">
                 {/* Header */}
-                <div className="p-6 border-b flex justify-between items-center">
+                <div className="p-6 border-b flex justify-between items-center bg-white rounded-t-2xl z-10 relative">
                     <h3 className="text-xl font-bold text-gray-900">Minha Conta</h3>
-                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
-                        <X className="h-6 w-6" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                         <button 
+                            onClick={() => setShowNotifications(!showNotifications)}
+                            className="p-2 text-gray-400 hover:text-[#ff3d03] hover:bg-orange-50 rounded-full transition-colors relative"
+                        >
+                            <Bell className="h-6 w-6" />
+                            {unreadCount > 0 && (
+                                <span className="absolute top-2 right-2 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                            )}
+                        </button>
+                        <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
+                            <X className="h-6 w-6" />
+                        </button>
+                    </div>
+
+                    {/* Notifications Dropdown */}
+                    {showNotifications && (
+                        <div className="absolute top-16 right-6 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 p-4 z-50 animate-in fade-in slide-in-from-top-2 max-h-[400px] overflow-y-auto">
+                             <div className="flex justify-between items-center mb-3">
+                                <h4 className="font-bold text-gray-900">Notificações</h4>
+                                {unreadCount > 0 && (
+                                    <button onClick={markAllAsRead} className="text-xs text-orange-500 font-bold hover:underline">Marcar todas como lidas</button>
+                                )}
+                            </div>
+                            <div className="space-y-3">
+                                {notifications.length === 0 ? (
+                                    <div className="text-center py-8 text-gray-400 text-sm italic">
+                                        Nenhuma notificação por enquanto.
+                                    </div>
+                                ) : (
+                                    notifications.map(notification => (
+                                        <div 
+                                            key={notification.id} 
+                                            onClick={() => !notification.read_at && markAsRead(notification.id)}
+                                            className={clsx(
+                                                "p-3 rounded-lg flex gap-3 items-start cursor-pointer transition-colors",
+                                                notification.read_at ? "bg-white opacity-60" : "bg-orange-50 hover:bg-orange-100"
+                                            )}
+                                        >
+                                            <div className={clsx(
+                                                "p-1.5 rounded-full shrink-0",
+                                                notification.read_at ? "bg-gray-100 text-gray-400" : "bg-orange-100 text-[#ff3d03]"
+                                            )}>
+                                                {/* Dynamic Icon based on type if feasible, currently assuming Gift/System */}
+                                                <Gift className="h-4 w-4" />
+                                            </div>
+                                            <div>
+                                                <p className={clsx("text-sm text-gray-800", !notification.read_at && "font-bold")}>
+                                                    {notification.title}
+                                                </p>
+                                                <p className="text-xs text-gray-500 mt-1 leading-snug">
+                                                    {notification.message}
+                                                </p>
+                                                <span className="text-[10px] text-gray-400 mt-1 block">
+                                                    {new Date(notification.created_at).toLocaleDateString()} {new Date(notification.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                </span>
+                                            </div>
+                                            {!notification.read_at && (
+                                                <div className="bg-red-500 h-2 w-2 rounded-full shrink-0 mt-2"></div>
+                                            )}
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Tabs */}
-                <div className="flex border-b bg-gray-50/50">
-                    {['info', 'addresses', 'orders'].map((tab) => (
+                <div className="flex border-b bg-gray-50/50 overflow-x-auto">
+                    {['info', 'addresses', 'orders', 'referral'].map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab as any)}
                             className={clsx(
-                                "flex-1 py-4 text-sm font-bold transition-all border-b-2",
+                                "flex-1 py-4 text-sm font-bold transition-all border-b-2 whitespace-nowrap px-4",
                                 activeTab === tab
                                     ? "text-[#ff3d03] border-[#ff3d03] bg-white"
                                     : "text-gray-500 border-transparent hover:text-gray-700 hover:bg-gray-100"
                             )}
                         >
-                            {tab === 'info' ? 'Meus Dados' : tab === 'addresses' ? 'Endereços' : 'Pedidos'}
+                            {tab === 'info' ? 'Meus Dados' : tab === 'addresses' ? 'Endereços' : tab === 'orders' ? 'Pedidos' : 'Indique e Ganhe'}
                         </button>
                     ))}
                 </div>
@@ -420,6 +537,65 @@ export default function CustomerAreaModal({ isOpen, onClose, customer, onLogout,
                                     <button onClick={() => loadOrders(ordersPage + 1)} className="px-4 py-2 bg-[#ff3d03] rounded-lg font-bold text-white">Próximos</button>
                                 )}
                             </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'referral' && (
+                        <div className="space-y-6">
+                            <div className="text-center">
+                                <h4 className="text-2xl font-black text-gray-900 mb-2">Indique e Ganhe! 🚀</h4>
+                                <p className="text-gray-500">
+                                    Convide amigos para o {store.name} e ganhem pontos juntos.
+                                </p>
+                            </div>
+
+                            <div className="bg-gradient-to-br from-orange-500 to-[#ff3d03] rounded-2xl p-6 text-white text-center shadow-lg shadow-orange-500/30">
+                                <p className="font-bold text-orange-100 uppercase text-xs tracking-wider mb-2">Seu Código de Indicação</p>
+                                <div className="flex items-center justify-center gap-3 mb-4">
+                                    <span className="text-4xl font-black tracking-widest border-2 border-white/20 px-6 py-2 rounded-xl bg-white/10 backdrop-blur-sm dashed">
+                                        {customer.referral_code || '---'}
+                                    </span>
+                                    <button
+                                        onClick={() => copyToClipboard(customer.referral_code || '')}
+                                        className="p-3 bg-white text-[#ff3d03] rounded-xl hover:bg-orange-50 transition-colors shadow-sm"
+                                        title="Copiar código"
+                                    >
+                                        <Copy className="h-6 w-6" />
+                                    </button>
+                                </div>
+                                <p className="text-sm text-white/90">
+                                    Compartilhe este código com seus amigos.
+                                </p>
+                            </div>
+
+                            <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
+                                <h5 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                    <Gift className="h-4 w-4 text-[#ff3d03]" />
+                                    Como funciona:
+                                </h5>
+                                <ul className="space-y-3 text-sm text-gray-600">
+                                    <li className="flex gap-3">
+                                        <div className="h-6 w-6 bg-orange-100 text-[#ff3d03] rounded-full flex items-center justify-center font-bold text-xs shrink-0">1</div>
+                                        <p>Envie seu código ou link para um amigo.</p>
+                                    </li>
+                                    <li className="flex gap-3">
+                                        <div className="h-6 w-6 bg-orange-100 text-[#ff3d03] rounded-full flex items-center justify-center font-bold text-xs shrink-0">2</div>
+                                        <p>Seu amigo faz a primeira compra usando seu código.</p>
+                                    </li>
+                                    <li className="flex gap-3">
+                                        <div className="h-6 w-6 bg-orange-100 text-[#ff3d03] rounded-full flex items-center justify-center font-bold text-xs shrink-0">3</div>
+                                        <p>Você ganha <strong className="text-gray-900">{store.settings.referral_bonus_points || 0} pontos</strong> automaticamente!</p>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <button
+                                onClick={shareOnWhatsApp}
+                                className="w-full py-4 bg-[#25D366] text-white font-bold rounded-xl hover:bg-[#128C7E] transition-colors shadow-lg shadow-green-500/30 flex items-center justify-center gap-2"
+                            >
+                                <Share2 className="h-5 w-5" />
+                                Compartilhar no WhatsApp
+                            </button>
                         </div>
                     )}
                 </div>

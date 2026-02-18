@@ -118,28 +118,12 @@ class WhatsAppController extends Controller
     }
 
     /**
-     * Update/Override Templates
+     * Update/Override Templates - DISABLED for Tenants
      */
     public function updateTemplates(Request $request)
     {
-        $tenant = auth()->user()->tenant;
-        $templates = $request->input('templates'); // Array of { key, message, is_active }
-
-        foreach ($templates as $data) {
-            WhatsAppTemplate::updateOrCreate(
-                [
-                    'tenant_id' => $tenant->id,
-                    'key' => $data['key'],
-                ],
-                [
-                    'name' => $data['name'] ?? 'Template', // Should ideally come from global template name
-                    'message' => $data['message'],
-                    'is_active' => $data['is_active'],
-                ]
-            );
-        }
-
-        return back()->with('success', 'Modelos de mensagem atualizados!');
+        // Restriction: Tenants are no longer allowed to override templates
+        abort(403, 'A edição de modelos de mensagem está restrita à administração da plataforma.');
     }
 
     /**

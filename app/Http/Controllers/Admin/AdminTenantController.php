@@ -52,9 +52,10 @@ class AdminTenantController extends Controller
                 'email' => $tenant->email,
                 'plan' => $tenant->plan,
                 'subscription_status' => $tenant->subscription_status,
-                'trial_ends_at' => $tenant->trial_ends_at?->format('Y-m-d H:i:s'),
-                'trial_days_remaining' => $tenant->trialDaysRemaining(),
-                'is_trial_active' => $tenant->isTrialActive(),
+                'subscription_status' => $tenant->subscription_status,
+                // 'trial_ends_at' => null, // Removed
+                // 'trial_days_remaining' => 0, // Removed
+                // 'is_trial_active' => false, // Removed
                 'is_suspended' => $tenant->is_suspended,
                 'is_active' => $tenant->is_active,
                 'created_at' => $tenant->created_at->format('d/m/Y'),
@@ -91,7 +92,7 @@ class AdminTenantController extends Controller
             'owner_name' => 'required|string|max:255',
             'owner_email' => 'required|email|max:255|unique:users,email',
             'password' => 'required|string|min:8',
-            'plan' => 'required|string|in:free,starter,basic,pro,custom',
+            'plan' => 'required|string', // Validar no frontend ou permitir flexibilidade
             'subscription_status' => 'nullable|string|in:active,trialing',
             'trial_ends_at' => 'nullable|date',
         ]);
@@ -147,7 +148,7 @@ class AdminTenantController extends Controller
     public function updatePlan(Request $request, Tenant $tenant)
     {
         $validated = $request->validate([
-            'plan' => 'required|string|in:free,basic,pro,trial,enterprise'
+            'plan' => 'required|string'
         ]);
 
         $tenant->update([

@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, usePage, useForm, router } from '@inertiajs/react';
-import { Gift, Save, Plus, History, Settings, Users, ArrowUpRight, ArrowDownLeft, Search } from 'lucide-react';
+import { Gift, Save, Plus, History, Settings, Users, ArrowUpRight, ArrowDownLeft, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { clsx } from 'clsx';
 import InputLabel from '@/Components/InputLabel';
@@ -11,11 +11,21 @@ import Modal from '@/Components/Modal';
 import PageHeader from '@/Components/PageHeader';
 import { Switch } from '@headlessui/react';
 
+interface LoyaltyTier {
+    name: string;
+    min_points: number;
+    multiplier: number;
+}
+
 interface Settings {
     id: string;
     loyalty_enabled: boolean;
     points_per_currency: number;
     currency_per_point: number;
+    loyalty_tiers?: LoyaltyTier[];
+    loyalty_expiry_days?: number;
+    referral_bonus_points?: number;
+    referral_reward_points?: number;
 }
 
 interface Customer {
@@ -43,6 +53,15 @@ export default function LoyaltyIndex({ settings, history, customers }: { setting
         loyalty_enabled: settings?.loyalty_enabled ?? false,
         points_per_currency: settings?.points_per_currency ?? 1,
         currency_per_point: settings?.currency_per_point ?? 0.10,
+        loyalty_expiry_days: settings?.loyalty_expiry_days ?? null,
+        referral_bonus_points: settings?.referral_bonus_points ?? 0,
+        referral_reward_points: settings?.referral_reward_points ?? 0,
+        loyalty_tiers: settings?.loyalty_tiers ?? [
+            { name: 'Bronze', min_points: 0, multiplier: 1.0 },
+            { name: 'Prata', min_points: 100, multiplier: 1.05 },
+            { name: 'Ouro', min_points: 500, multiplier: 1.10 },
+            { name: 'Diamante', min_points: 1000, multiplier: 1.15 },
+        ],
     });
 
     const submitSettings = (e: React.FormEvent) => {
@@ -215,11 +234,11 @@ export default function LoyaltyIndex({ settings, history, customers }: { setting
                                     </div>
                                 </div>
 
-                                {/* Rules Card */}
+                                    {/* Rules Card */}
                                 <div className="bg-white dark:bg-[#1a1b1e] rounded-[32px] shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-white/5 p-8">
                                     <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Regras de Pontuação</h3>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                                         <div>
                                             <InputLabel value="Pontos por Real Gasto" className="mb-2" />
                                             <div className="relative group">
@@ -257,6 +276,134 @@ export default function LoyaltyIndex({ settings, history, customers }: { setting
                                                 </div>
                                             </div>
                                             <p className="text-sm text-gray-500 mt-2 pl-1">Ex: Cada ponto vale <strong className="text-gray-900 dark:text-white">R$ 0,10</strong> de desconto.</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Expiry & Referral */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 pt-6 border-t border-gray-100 dark:border-white/5">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <History className="h-4 w-4 text-orange-500" />
+                                                <InputLabel value="Validade dos Pontos (Dias)" />
+                                            </div>
+                                            <div className="relative group">
+                                                <TextInput
+                                                    type="number"
+                                                    value={settingsData.loyalty_expiry_days ?? ''}
+                                                    onChange={(e) => setSettingsData('loyalty_expiry_days', e.target.value ? parseInt(e.target.value) : null)}
+                                                    className="w-full pr-16 h-14 text-lg font-bold"
+                                                    placeholder="Ex: 90"
+                                                    min="1"
+                                                />
+                                                <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400 font-bold bg-transparent">
+                                                    dias
+                                                </div>
+                                            </div>
+                                            <p className="text-sm text-gray-500 mt-2 pl-1">Deixe em branco para pontos nunca expirarem.</p>
+                                        </div>
+
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Users className="h-4 w-4 text-blue-500" />
+                                                <InputLabel value="Bônus por Indicação (Indique e Ganhe)" />
+                                            </div>
+                                            <div className="relative group">
+                                                <TextInput
+                                                    type="number"
+                                                    value={settingsData.referral_bonus_points}
+                                                    onChange={(e) => setSettingsData('referral_bonus_points', parseInt(e.target.value) || 0)}
+                                                    className="w-full pr-16 h-14 text-lg font-bold"
+                                                    placeholder="0"
+                                                    min="0"
+                                                />
+                                                <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400 font-bold bg-transparent">
+                                                    pts
+                                                </div>
+                                            </div>
+                                            <p className="text-sm text-gray-500 mt-2 pl-1">Pontos que o cliente ganha ao indicar um amigo que comprar.</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Loyalty Tiers Configuration */}
+                                    <div className="pt-6 border-t border-gray-100 dark:border-white/5">
+                                        <div className="flex justify-between items-center mb-6">
+                                            <div>
+                                                <h4 className="text-base font-bold text-gray-900 dark:text-white">Níveis de Fidelidade (Ranking)</h4>
+                                                <p className="text-sm text-gray-500">Defina os nomes e pontuações para cada nível.</p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const currentTiers = settingsData.loyalty_tiers || [];
+                                                    setSettingsData('loyalty_tiers', [
+                                                        ...currentTiers,
+                                                        { name: 'Novo Nível', min_points: 0, multiplier: 1.0 }
+                                                    ]);
+                                                }}
+                                                className="text-sm font-bold text-[#ff3d03] hover:text-[#e63700] flex items-center gap-1"
+                                            >
+                                                <Plus className="h-4 w-4" /> Adicionar Nível
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            {settingsData.loyalty_tiers?.map((tier: any, index: number) => (
+                                                <div key={index} className="flex gap-4 items-end bg-gray-50 dark:bg-white/5 p-4 rounded-2xl border border-gray-100 dark:border-white/5 group">
+                                                    <div className="flex-1">
+                                                        <InputLabel value="Nome do Nível" className="mb-1 text-xs" />
+                                                        <TextInput
+                                                            value={tier.name}
+                                                            onChange={(e) => {
+                                                                const newTiers = [...settingsData.loyalty_tiers];
+                                                                newTiers[index].name = e.target.value;
+                                                                setSettingsData('loyalty_tiers', newTiers);
+                                                            }}
+                                                            className="w-full h-10 text-sm font-bold"
+                                                            placeholder="Ex: Diamante"
+                                                        />
+                                                    </div>
+                                                    <div className="w-32">
+                                                        <InputLabel value="Min. Pontos" className="mb-1 text-xs" />
+                                                        <TextInput
+                                                            type="number"
+                                                            value={tier.min_points}
+                                                            onChange={(e) => {
+                                                                const newTiers = [...settingsData.loyalty_tiers];
+                                                                newTiers[index].min_points = parseInt(e.target.value) || 0;
+                                                                setSettingsData('loyalty_tiers', newTiers);
+                                                            }}
+                                                            className="w-full h-10 text-sm font-bold"
+                                                        />
+                                                    </div>
+                                                    <div className="w-24">
+                                                        <InputLabel value="Multiplicador" className="mb-1 text-xs" />
+                                                        <TextInput
+                                                            type="number"
+                                                            step="0.05"
+                                                            value={tier.multiplier}
+                                                            onChange={(e) => {
+                                                                const newTiers = [...settingsData.loyalty_tiers];
+                                                                newTiers[index].multiplier = parseFloat(e.target.value) || 1.0;
+                                                                setSettingsData('loyalty_tiers', newTiers);
+                                                            }}
+                                                            className="w-full h-10 text-sm font-bold"
+                                                        />
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const newTiers = settingsData.loyalty_tiers.filter((_, i) => i !== index);
+                                                            setSettingsData('loyalty_tiers', newTiers);
+                                                        }}
+                                                        className="h-10 w-10 flex items-center justify-center rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                                    >
+                                                        <Trash2 className="h-5 w-5" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            {(!settingsData.loyalty_tiers || settingsData.loyalty_tiers.length === 0) && (
+                                                <p className="text-center text-gray-500 py-4 italic">Nenhum nível configurado. Adicione um para começar.</p>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

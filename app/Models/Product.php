@@ -33,13 +33,14 @@ class Product extends Model
         'loyalty_earns_points',
         'loyalty_redeemable',
         'loyalty_points_cost',
+        'loyalty_points_multiplier', // Added
         'stock_quantity',
         'track_stock',
         'sort_order',
     ];
 
     protected $casts = [
-        'price' => 'float',
+        'price' => 'decimal:2', // Changed from 'float'
         'promotional_price' => 'float',
         'prep_time_minutes' => 'integer',
         'is_available' => 'boolean',

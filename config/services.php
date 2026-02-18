@@ -45,6 +45,8 @@ return [
         'key' => env('STRIPE_KEY'),
         'secret' => env('STRIPE_SECRET'),
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+        'price_unified_monthly' => env('STRIPE_PRICE_UNIFIED_MONTHLY'),
+        'price_unified_yearly' => env('STRIPE_PRICE_UNIFIED_YEARLY'),
         'price_basic_monthly' => env('STRIPE_PRICE_BASIC_MONTHLY'),
         'price_basic_yearly' => env('STRIPE_PRICE_BASIC_YEARLY'),
         'price_pro_monthly' => env('STRIPE_PRICE_PRO_MONTHLY'),

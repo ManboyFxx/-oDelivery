@@ -193,7 +193,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
                                     <div>
                                         <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2">
                                             {group.name}
-                                            {group.is_required && <span className="text-[#ff3d03] text-xs font-black uppercase bg-orange-50 px-2 py-0.5 rounded-full">Obrigatório</span>}
+                                            {group.is_required && <span className="text-[#ff3d03] text-xs font-black uppercase bg-[#ff3d03]/10 px-2 py-0.5 rounded-full">Obrigatório</span>}
                                         </h3>
                                         <p className="text-xs text-gray-500">
                                             {group.min_selections > 0 ? `Mín: ${group.min_selections}` : ''}
@@ -217,7 +217,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
                                         return (
                                             <div key={option.id} className={clsx(
                                                 "flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer",
-                                                qty > 0 ? "border-[#ff3d03] bg-orange-50" : "border-gray-100 hover:border-gray-200"
+                                                qty > 0 ? "border-[#ff3d03] bg-[#ff3d03]/5" : "border-gray-100 hover:border-gray-200"
                                             )}>
                                                 <div className="flex-1" onClick={() => canAdd && updateComplementQuantity(group.id, option.id, 1, maxQty, group.max_selections)}>
                                                     <div className="font-medium text-gray-900">{option.name}</div>
@@ -293,7 +293,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
                         </div>
                         <button
                             onClick={handleAddToCart}
-                            className="flex-1 bg-[#ff3d03] text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-500/30 hover:bg-[#e63700] hover:shadow-orange-500/50 transition-all active:scale-[0.98] flex items-center justify-between px-6"
+                            className="flex-1 bg-[#ff3d03] text-white font-bold py-4 rounded-xl shadow-lg shadow-[#ff3d03]/30 hover:bg-[#e63700] hover:shadow-[#ff3d03]/50 transition-all active:scale-[0.98] flex items-center justify-between px-6"
                         >
                             <span>{initialValues ? 'Atualizar Pedido' : 'Adicionar'}</span>
                             <span>R$ {calculateTotal().toFixed(2).replace('.', ',')}</span>

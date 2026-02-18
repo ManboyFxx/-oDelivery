@@ -58,10 +58,8 @@ class AdminDashboardController extends Controller
                 if (!$plan)
                     return 0;
 
-                // If trial, MRR is 0 (potential MRR, but not realized)
-                if ($tenant->isTrialActive())
-                    return 0;
-
+                // Removed trial check as unified plan has no trial
+    
                 if ($tenant->billing_cycle === 'yearly') {
                     return $plan->price_yearly / 12;
                 }

@@ -197,7 +197,7 @@ class FinancialController extends Controller
             'top_products' => $topProducts,
             'payment_methods_stats' => $paymentMethods,
             'current_plan' => $tenant->plan, // Pass explicit plan
-            'is_trial' => $tenant->isTrialActive(),
+            // 'is_trial' => false,
             'filters' => [
                 'start_date' => $startDate->format('Y-m-d'),
                 'end_date' => $endDate->format('Y-m-d'),

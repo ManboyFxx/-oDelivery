@@ -17,7 +17,7 @@ interface Props {
     tenant: {
         name: string;
         plan: string;
-        trial_ends_at: string | null;
+        // trial_ends_at removed
     };
     plans: Plan[];
     downgradeRisks?: {

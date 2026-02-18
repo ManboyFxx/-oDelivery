@@ -15,17 +15,22 @@ export default function ProductCard({ product, onAdd }: ProductCardProps) {
     return (
         <div
             onClick={() => onAdd(product)}
-            className="group bg-white rounded-2xl p-3 md:p-4 border border-gray-100 shadow-sm hover:shadow-md hover:border-orange-100 transition-all cursor-pointer flex md:flex-col gap-4 md:gap-0 h-full relative overflow-hidden"
+            className="group bg-white rounded-[32px] p-3 md:p-4 border border-gray-100 shadow-sm hover:shadow-xl hover:border-orange-100 transition-all duration-300 cursor-pointer flex md:flex-col gap-4 md:gap-0 h-full relative overflow-hidden"
         >
             {/* Discount/Status Badges */}
             <div className="absolute top-3 right-3 md:top-4 md:right-4 z-10 flex flex-col gap-1 items-end">
                 {hasDiscount && (
-                    <span className="bg-green-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm">
+                    <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg shadow-purple-500/50">
                         PROMO
                     </span>
                 )}
+                {product.loyalty_points_multiplier > 1 && (
+                    <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg shadow-orange-500/50 flex items-center gap-1">
+                        🔥 {product.loyalty_points_multiplier}x PONTOS
+                    </span>
+                )}
                 {product.is_new && (
-                    <span className="bg-blue-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm">
+                    <span className="bg-gradient-to-r from-green-400 to-emerald-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg shadow-green-500/50">
                         NOVO
                     </span>
                 )}
@@ -33,7 +38,7 @@ export default function ProductCard({ product, onAdd }: ProductCardProps) {
 
             {/* Image */}
             <div className="shrink-0 md:mb-4 relative">
-                <div className="h-24 w-24 md:h-48 md:w-full rounded-xl overflow-hidden bg-gray-50 relative">
+                <div className="h-24 w-24 md:h-48 md:w-full rounded-[24px] overflow-hidden bg-gray-50 relative">
                     {product.image_url ? (
                         <img
                             src={product.image_url}
@@ -48,7 +53,10 @@ export default function ProductCard({ product, onAdd }: ProductCardProps) {
 
                     {/* Desktop Overlay Add Button */}
                     <div className="hidden md:flex absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center">
-                        <button className="bg-white text-[#ff3d03] rounded-full p-3 shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-transform">
+                        <button 
+                            className="text-white rounded-full p-3 shadow-xl shadow-[#ff3d03]/40 transform translate-y-4 group-hover:translate-y-0 transition-transform"
+                            style={{ background: 'linear-gradient(135deg, #ff3d03 0%, #ff6b35 100%)' }}
+                        >
                             <Plus className="h-6 w-6" />
                         </button>
                     </div>
@@ -79,7 +87,10 @@ export default function ProductCard({ product, onAdd }: ProductCardProps) {
                     </div>
 
                     {/* Mobile Add Button */}
-                    <button className="md:hidden h-8 w-8 bg-gray-50 text-[#ff3d03] rounded-lg flex items-center justify-center hover:bg-[#ff3d03] hover:text-white transition-colors">
+                    <button 
+                        className="md:hidden h-8 w-8 text-white rounded-lg flex items-center justify-center shadow-md transition-all"
+                        style={{ background: 'linear-gradient(135deg, #ff3d03 0%, #ff6b35 100%)' }}
+                    >
                         <Plus className="h-5 w-5" />
                     </button>
                 </div>

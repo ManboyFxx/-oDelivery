@@ -145,6 +145,10 @@ export default function AdminPlanCouponsIndex({ coupons }: IndexProps) {
                                                     {coupon.plan_restriction && (
                                                         <span className="text-xs text-blue-500">Apenas {coupon.plan_restriction.toUpperCase()}</span>
                                                     )}
+                                                    <span className="text-[10px] text-gray-400 flex items-center gap-0.5 mt-0.5" title="Sincronizado com Stripe">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-[#635BFF]"></div>
+                                                        Stripe
+                                                    </span>
                                                 </div>
                                             </td>
                                             <td className="py-4 px-4">

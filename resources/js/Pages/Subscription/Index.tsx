@@ -1,315 +1,220 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, useForm, router } from '@inertiajs/react';
-import {
-    Check,
-    CreditCard,
-    AlertTriangle,
-    Star,
-    X,
-    AlertCircle
-} from 'lucide-react';
-import clsx from 'clsx';
-import { useState } from 'react';
-import DowngradeModal from '@/Components/DowngradeModal';
-
-interface Feature {
-    text: string;
-    included: boolean;
-}
-
-interface Plan {
-    id: string;
-    original_id: string;
-    name: string;
-    price: number | null;
-    interval: string;
-    features: Feature[];
-    limits: {
-        products: number | null;
-        users: number | null;
-        orders: number | null;
-        motoboys: number | null;
-        stock_items: number | null;
-        coupons: number | null;
-    };
-    current: boolean;
-    subscription_status?: string;
-}
-
-interface Usage {
-    products: number;
-    users: number;
-    orders: number;
-    motoboys: number;
-    stock_items: number;
-    coupons: number;
-}
+import { Head, Link } from '@inertiajs/react';
+import { CreditCard, Check, ShieldCheck, Zap, Package, Users, Bike, Ticket, BarChart3, Calendar, ArrowUpRight } from 'lucide-react';
 
 interface Props {
     auth: any;
     tenant: any;
-    plans: Plan[];
-    usage: Usage;
+    currentPlan: string;
+    subscriptionStatus: string;
+    plan: any;
+    usage: any;
 }
 
-export default function SubscriptionIndex({ auth, tenant, plans, usage }: Props) {
-    const { post, processing } = useForm();
-    const currentPlan = plans.find(p => p.current);
-    const [isDowngradeModalOpen, setIsDowngradeModalOpen] = useState(false);
-
-    const handleDowngradeClick = () => {
-        setIsDowngradeModalOpen(true);
-    };
-
-    const handleDowngradeConfirm = (reason: string) => {
-        router.post(route('subscription.downgrade'), { reason }, {
-            onSuccess: () => setIsDowngradeModalOpen(false),
-            onFinish: () => setIsDowngradeModalOpen(false),
-        });
-    };
+export default function SubscriptionIndex({ auth, tenant, plan, usage }: Props) {
+    const isActive = tenant.subscription_status === 'active';
 
     return (
         <AuthenticatedLayout
             user={auth.user}
-            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Assinatura e Planos</h2>}
+            header={<h2 className="font-black text-2xl text-gray-900 tracking-tight">Gerenciar Assinatura</h2>}
         >
             <Head title="Minha Assinatura" />
 
-            <div className="max-w-5xl mx-auto space-y-8 py-12 px-4">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <div className="flex items-center gap-2 mb-1">
-                            <span className="px-2 py-0.5 rounded-md bg-[#ff3d03]/10 text-[#ff3d03] text-[10px] font-bold uppercase tracking-wider">
-                                Financeiro
-                            </span>
-                        </div>
-                        <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Minha Assinatura</h2>
-                        <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Gerencie seu plano e acompanhe o consumo</p>
-                    </div>
-
-                    {tenant.plan === 'free' && (
-                        <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-100 to-orange-50 text-orange-800 rounded-xl border border-orange-200 shadow-sm">
-                            <AlertTriangle className="h-5 w-5 text-orange-600" />
-                            <div className="flex flex-col">
-                                <span className="text-xs font-bold uppercase tracking-wide">Plano Grátis</span>
-                                <span className="text-[10px] leading-tight">Faça upgrade para remover limites</span>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* STATUS DO PLANO E CONSUMO */}
-                <div className="grid md:grid-cols-3 gap-6">
-                    {/* Card Status */}
-                    <div className="md:col-span-1 bg-white dark:bg-[#1a1b1e] rounded-[32px] p-8 border border-gray-100 dark:border-white/5 shadow-sm relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-[#ff3d03] opacity-5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Plano Atual</h3>
-                        <div className="flex items-baseline gap-2 mb-4">
-                            <span className="text-3xl font-black text-[#ff3d03]">{tenant.plan_display_name || currentPlan?.name || 'Básico'}</span>
-                        </div>
-                        <div className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5">
-                            <div className="h-8 w-8 rounded-lg bg-green-100 text-green-600 flex items-center justify-center">
-                                <CreditCard className="h-4 w-4" />
+            <div className="py-12 bg-[#fafafa] min-h-[calc(100-80px)]">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+                    
+                    {/* Premium Status Header */}
+                    <div className="relative overflow-hidden bg-white rounded-[32px] p-8 md:p-10 shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-center gap-8">
+                        {/* Decorative Background */}
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-[#ff3d03]/5 rounded-full blur-3xl -mr-32 -mt-32"></div>
+                        
+                        <div className="relative z-10 flex items-center gap-6">
+                            <div className={`h-16 w-16 rounded-2xl flex items-center justify-center transition-all ${isActive ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600 animate-pulse'}`}>
+                                {isActive ? <ShieldCheck className="w-8 h-8" /> : <Zap className="w-8 h-8" />}
                             </div>
                             <div>
-                                <p className="text-[10px] font-bold text-gray-400 uppercase">Status</p>
-                                <p className="text-sm font-bold text-green-500">
-                                    {tenant.subscription_status === 'active' ? 'Ativo' : 'Ativo'}
+                                <div className="flex items-center gap-3 mb-1">
+                                    <h3 className="text-2xl font-black text-gray-900">{plan?.name || 'Plano Único'}</h3>
+                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                        {isActive ? 'Ativo' : 'Inativo / Pendente'}
+                                    </span>
+                                </div>
+                                <p className="text-gray-500 font-medium">
+                                    {isActive 
+                                        ? 'Sua conta possui acesso ilimitado a todos os recursos.' 
+                                        : 'Aguardando confirmação de pagamento para liberar o acesso.'}
                                 </p>
                             </div>
                         </div>
-                    </div>
-
-                    {/* Card Consumption Limit Bars */}
-                    <div className="md:col-span-2 bg-white dark:bg-[#1a1b1e] rounded-[32px] p-8 border border-gray-100 dark:border-white/5 shadow-sm">
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-[#ff3d03]"></div>
-                            Consumo de Recursos
-                        </h3>
-                        {currentPlan ? (
-                            <div className="grid sm:grid-cols-2 gap-x-8 gap-y-6">
-                                <UsageItem label="Pedidos (Mês)" current={usage.orders} limit={currentPlan.limits.orders} />
-                                <UsageItem label="Produtos" current={usage.products} limit={currentPlan.limits.products} />
-                                <UsageItem label="Estoque (Itens)" current={usage.stock_items} limit={currentPlan.limits.stock_items} />
-                                <UsageItem label="Usuários da Equipe" current={usage.users} limit={currentPlan.limits.users} />
-                                <UsageItem label="Motoboys" current={usage.motoboys} limit={currentPlan.limits.motoboys} />
-                                <UsageItem label="Cupons Ativos" current={usage.coupons} limit={currentPlan.limits.coupons} />
-                            </div>
-                        ) : (
-                            <p className="text-gray-500">Informações de consumo indisponíveis.</p>
-                        )}
-                    </div>
-                </div>
-
-                {/* Plans Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-                    {plans.map((plan) => {
-                        const isPro = plan.id === 'pro';
-                        const isCustom = plan.id === 'custom';
-                        const isFree = plan.id === 'free';
-
-                        return (
-                            <div
-                                key={plan.id}
-                                className={clsx(
-                                    "relative p-8 rounded-[32px] border transition-all duration-300 flex flex-col",
-                                    isPro || isCustom
-                                        ? "bg-gray-900 border-gray-900 text-white shadow-2xl"
-                                        : plan.current
-                                            ? "bg-white border-[#ff3d03] shadow-xl shadow-[#ff3d03]/10 scale-105 z-10"
-                                            : "bg-white border-gray-200 shadow-sm hover:border-gray-300"
-                                )}
-                            >
-                                {isPro && !plan.current && (
-                                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#ff3d03] text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg shadow-[#ff3d03]/30 flex items-center gap-1 z-20">
-                                        <Star className="h-3 w-3 fill-white" />
-                                        Recomendado
+                        
+                        <div className="relative z-10 flex flex-col sm:flex-row gap-4 items-center">
+                             {!isActive && (
+                                <Link 
+                                    href={route('subscription.checkout', 'unified')}
+                                    className="px-8 py-4 rounded-2xl bg-[#ff3d03] text-white font-black text-sm hover:bg-[#e63703] transition-all shadow-xl shadow-[#ff3d03]/20 flex items-center gap-2"
+                                >
+                                    Fazer Pagamento
+                                    <ArrowUpRight className="w-4 h-4" />
+                                </Link>
+                             )}
+                             {isActive && (
+                                <div className="text-right">
+                                    <span className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Ciclo de Cobrança</span>
+                                    <div className="flex items-center gap-2 font-bold text-gray-900">
+                                        <Calendar className="w-4 h-4 text-[#ff3d03]" />
+                                        {tenant.billing_cycle === 'yearly' ? 'Anual' : 'Mensal'}
                                     </div>
-                                )}
+                                </div>
+                             )}
+                        </div>
+                    </div>
 
-                                <div className="mb-8">
-                                    <p className={clsx(
-                                        "text-sm font-bold uppercase tracking-wider mb-2",
-                                        isPro || isCustom ? "text-gray-400" : "text-gray-500"
-                                    )}>
-                                        {plan.name}
-                                    </p>
-                                    <div className="flex items-baseline gap-1">
-                                        {plan.price !== null && (
-                                            <>
-                                                {plan.price > 0 && <span className={clsx("text-sm font-bold", isPro || isCustom ? "text-gray-400" : "text-gray-500")}>R$</span>}
-                                                <span className={clsx("text-4xl font-black", isPro || isCustom ? "text-white" : "text-gray-900")}>
-                                                    {plan.price === 0 ? 'Grátis' : plan.price.toString().replace('.', ',')}
+                    <div className="grid lg:grid-cols-3 gap-8">
+                        {/* Plan Details & Limits */}
+                        <div className="lg:col-span-2 space-y-8">
+                            <div className="bg-white rounded-[32px] border border-gray-100 shadow-sm overflow-hidden">
+                                <div className="p-8 border-b border-gray-50 flex justify-between items-center">
+                                    <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest flex items-center gap-3">
+                                        <CreditCard className="w-5 h-5 text-[#ff3d03]" />
+                                        Detalhes Financeiros
+                                    </h3>
+                                </div>
+                                
+                                <div className="p-8">
+                                    <div className="grid md:grid-cols-2 gap-12 mb-10">
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-400 font-bold text-sm uppercase tracking-tighter">Valor</span>
+                                                <span className="font-black text-2xl text-gray-900">R$ {plan?.price ? plan.price.toFixed(2).replace('.', ',') : '129,90'}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-400 font-bold text-sm uppercase tracking-tighter">Expira em</span>
+                                                <span className={`font-black text-sm ${isActive ? 'text-gray-900' : 'text-red-500'}`}>
+                                                    {tenant.subscription_ends_at 
+                                                        ? new Date(tenant.subscription_ends_at).toLocaleDateString() 
+                                                        : 'Não definido'}
                                                 </span>
-                                                {plan.price > 0 && <span className={clsx("text-sm font-medium", isPro || isCustom ? "text-gray-400" : "text-gray-500")}>/{plan.interval}</span>}
-                                            </>
-                                        )}
-                                        {plan.price === null && (
-                                            <span className={clsx("text-3xl font-black", isPro ? "text-white" : "text-gray-900")}>Sob Consulta</span>
-                                        )}
+                                            </div>
+                                        </div>
+                                        <div className="bg-[#fafafa] rounded-2xl p-6 border border-gray-100">
+                                            <p className="text-xs font-bold text-gray-500 leading-relaxed italic">
+                                                "O Plano Único garante que você nunca será cobrado a mais por vender muito. Sem limite de pedidos, sem fricção."
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-8 border-t border-gray-50">
+                                        <IncludedBenefit text="Pedidos Ilimitados" />
+                                        <IncludedBenefit text="Produtos Ilimitados" />
+                                        <IncludedBenefit text="Usuários App/PDV" />
+                                        <IncludedBenefit text="Impressão Automática" />
+                                        <IncludedBenefit text="WhatsApp ÓoBot" />
+                                        <IncludedBenefit text="Suporte Prioritário" />
                                     </div>
                                 </div>
+                            </div>
 
-                                <ul className="space-y-4 mb-8 flex-1">
-                                    {plan.features.map((feature, idx) => (
-                                        <li key={idx} className="flex items-start gap-3">
-                                            <div className={clsx(
-                                                "mt-0.5 h-5 w-5 rounded-full flex items-center justify-center shrink-0",
-                                                feature.included
-                                                    ? (isPro ? "bg-white/10" : "bg-green-100")
-                                                    : "bg-gray-100"
-                                            )}>
-                                                {feature.included ? (
-                                                    <Check className={clsx("h-3 w-3", isPro ? "text-green-400" : "text-green-600")} />
-                                                ) : (
-                                                    <X className="h-3 w-3 text-gray-400" />
-                                                )}
-                                            </div>
-                                            <div className="flex flex-col">
-                                                {(feature.text || '').split('\n').map((line, i) => (
-                                                    <span key={i} className={clsx(
-                                                        "text-sm font-medium",
-                                                        feature.included
-                                                            ? (isPro || isCustom ? "text-gray-300" : "text-gray-600")
-                                                            : "text-gray-400 line-through"
-                                                    )}>
-                                                        {line}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </li>
-                                    ))}
-                                </ul>
-
-                                <div className="mt-auto">
-                                    {plan.current ? (
-                                        <button
-                                            disabled
-                                            className={clsx(
-                                                "w-full py-4 rounded-xl border font-bold text-sm cursor-not-allowed flex items-center justify-center gap-2",
-                                                isPro || isCustom ? "border-gray-700 bg-gray-800 text-gray-400" : "border-gray-200 bg-gray-50 text-gray-400"
-                                            )}
-                                        >
-                                            <Check className="h-4 w-4" />
-                                            Plano Atual
-                                        </button>
-                                    ) : (
-                                        isFree ? (
-                                            <button
-                                                onClick={handleDowngradeClick}
-                                                className="block w-full py-4 rounded-xl font-bold text-center transition-all border border-gray-200 text-gray-900 hover:border-[#ff3d03] hover:text-[#ff3d03]"
-                                            >
-                                                Fazer Downgrade
-                                            </button>
-                                        ) : (
-                                            <Link
-                                                href={route('subscription.checkout', plan.id)}
-                                                className={clsx(
-                                                    "block w-full py-4 rounded-xl font-bold text-center transition-all",
-                                                    isPro || isCustom
-                                                        ? "bg-[#ff3d03] text-white hover:bg-[#e63700] shadow-lg shadow-[#ff3d03]/20"
-                                                        : "border border-gray-200 text-gray-900 hover:border-[#ff3d03] hover:text-[#ff3d03]"
-                                                )}
-                                            >
-                                                Assinar Agora
-                                            </Link>
-                                        )
-                                    )}
+                            {/* Payment History Placeholder */}
+                            <div className="bg-white rounded-[32px] border border-gray-100 shadow-sm p-8">
+                                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-6">Histórico Recente</h3>
+                                <div className="text-center py-12">
+                                    <div className="bg-gray-50 inline-flex items-center justify-center p-4 rounded-full mb-4">
+                                        <BarChart3 className="w-8 h-8 text-gray-300" />
+                                    </div>
+                                    <p className="text-sm text-gray-400 font-bold tracking-tight">Em breve você poderá visualizar suas faturas detalhadas aqui.</p>
                                 </div>
                             </div>
-                        );
-                    })}
+                        </div>
+
+                        {/* Usage Dashboard Sidebar */}
+                        <div className="space-y-8">
+                            <div className="bg-white rounded-[32px] border border-gray-100 shadow-sm p-8">
+                                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-8 flex items-center gap-2">
+                                    <BarChart3 className="w-4 h-4 text-[#ff3d03]" />
+                                    Métricas de Uso
+                                </h3>
+                                
+                                <div className="space-y-10">
+                                    <UsageStatItem icon={<Package className="w-4 h-4"/>} label="Pedidos" count={usage.orders} units="/mês" />
+                                    <UsageStatItem icon={<Package className="w-4 h-4"/>} label="Produtos" count={usage.products} units="total" />
+                                    <UsageStatItem icon={<Users className="w-4 h-4"/>} label="Equipe" count={usage.users} units="membros" />
+                                    <UsageStatItem icon={<Bike className="w-4 h-4"/>} label="Motoboys" count={usage.motoboys} units="membros" />
+                                    <UsageStatItem icon={<Ticket className="w-4 h-4"/>} label="Cupons" count={usage.coupons} units="ativos" />
+                                </div>
+
+                                <div className="mt-12 p-6 rounded-[24px] bg-gradient-to-br from-[#ff3d03] to-[#e63700] text-white">
+                                    <Trophy className="w-8 h-8 mb-4 opacity-50" />
+                                    <h4 className="font-black text-lg mb-2 leading-tight">Poder Ilimitado</h4>
+                                    <p className="text-[10px] font-bold opacity-80 leading-relaxed uppercase tracking-widest">
+                                        Você está no plano máximo. Não há barreiras para o seu crescimento hoje.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-
-            <DowngradeModal
-                show={isDowngradeModalOpen}
-                onClose={() => setIsDowngradeModalOpen(false)}
-                onConfirm={handleDowngradeConfirm}
-                currentPlanName={currentPlan?.name || 'Seu Plano'}
-                processing={processing}
-            />
-        </AuthenticatedLayout >
+        </AuthenticatedLayout>
     );
 }
 
-function UsageItem({ label, current, limit }: { label: string, current: number, limit: number | null }) {
-    if (limit === null) return (
-        <div className="mb-2">
-            <div className="flex justify-between text-xs font-medium mb-1">
-                <span className="text-gray-600 dark:text-gray-400">{label}</span>
-                <span className="text-green-500 font-bold">Ilimitado</span>
+function IncludedBenefit({ text }: { text: string }) {
+    return (
+        <div className="flex items-center gap-3">
+            <div className="h-5 w-5 rounded-full bg-green-50 flex items-center justify-center">
+                <Check className="w-3 h-3 text-green-500" />
             </div>
-            <div className="w-full bg-gray-100 dark:bg-white/5 rounded-full h-1.5 overflow-hidden">
-                <div className="h-1.5 rounded-full bg-green-500 w-full opacity-20"></div>
+            <span className="text-xs font-bold text-gray-600">{text}</span>
+        </div>
+    );
+}
+
+function UsageStatItem({ icon, label, count, units }: { icon: any, label: string, count: number, units: string }) {
+    return (
+        <div className="group">
+            <div className="flex justify-between items-center mb-3">
+                <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-lg bg-gray-50 border border-gray-100 group-hover:bg-[#ff3d03]/5 transition-colors">
+                        {icon}
+                    </div>
+                    <span className="text-sm font-bold text-gray-600 uppercase tracking-tighter">{label}</span>
+                </div>
+                <div className="text-right">
+                    <span className="text-lg font-black text-gray-900">{count}</span>
+                    <span className="text-[10px] font-bold text-gray-400 ml-1 uppercase">{units}</span>
+                </div>
+            </div>
+            <div className="w-full bg-gray-50 rounded-full h-1.5 overflow-hidden border border-gray-100">
+                <div 
+                    className="bg-[#ff3d03] h-full rounded-full opacity-60 transition-all duration-1000 shadow-[0_0_10px_rgba(255,61,3,0.3)]" 
+                    style={{ width: `${Math.min((count / 50) * 100, 100)}%` }} // Visual feedback, 50 as a soft target
+                ></div>
             </div>
         </div>
     );
+}
 
-    // Safety check: if limit is 0 (blocked feature), show as full red.
-    // If limit > 0, calculate percentage.
-    const percentage = limit > 0 ? Math.min((current / limit) * 100, 100) : 100;
-    const isCritical = percentage >= 90;
-    const isFull = percentage >= 100;
-
+function Trophy(props: any) {
     return (
-        <div className="mb-2">
-            <div className="flex justify-between text-xs font-medium mb-1">
-                <span className="text-gray-600 dark:text-gray-400">{label}</span>
-                <span className={clsx(isFull ? "text-red-500 font-bold" : "text-gray-500")}>
-                    {current} / {limit}
-                </span>
-            </div>
-            <div className="w-full bg-gray-100 dark:bg-white/5 rounded-full h-1.5 overflow-hidden">
-                <div
-                    className={clsx("h-1.5 rounded-full transition-all duration-500",
-                        isFull ? "bg-red-500" : (isCritical ? "bg-orange-500" : "bg-green-500")
-                    )}
-                    style={{ width: `${percentage}%` }}
-                ></div>
-            </div>
-            {isFull && <p className="text-[10px] text-red-500 mt-1 flex items-center gap-1 font-bold"><AlertCircle className="h-3 w-3" /> Limite atingido</p>}
-        </div>
+        <svg
+            {...props}
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+            <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+            <path d="M4 22h16" />
+            <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+            <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+            <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+        </svg>
     );
 }

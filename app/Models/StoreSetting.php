@@ -67,6 +67,15 @@ class StoreSetting extends Model
         'paused_until',
         'default_motoboy_id',
         'enable_otp_verification',
+        'loyalty_tiers',
+        'loyalty_expiry_days',
+        'referral_bonus_points',
+        'referral_reward_points',
+        'min_order_for_referral',
+        'enable_otp_verification',
+        'enable_password_login',
+        'enable_quick_login',
+        'enable_checkout_security',
     ];
 
     protected $casts = [
@@ -75,6 +84,11 @@ class StoreSetting extends Model
         'special_hours' => 'array',
         'menu_theme' => 'array',
         'notification_settings' => 'array',
+        'loyalty_tiers' => 'array', // JSON column
+        'loyalty_expiry_days' => 'integer',
+        'referral_bonus_points' => 'integer',
+        'referral_reward_points' => 'integer',
+        'min_order_for_referral' => 'float',
         'delivery_radius_km' => 'float',
         'min_order_delivery' => 'float',
         'free_delivery_min' => 'float',
@@ -85,6 +99,10 @@ class StoreSetting extends Model
         'points_per_currency' => 'float',
         'currency_per_point' => 'float',
         'loyalty_enabled' => 'boolean',
+        'enable_otp_verification' => 'boolean',
+        'enable_password_login' => 'boolean',
+        'enable_quick_login' => 'boolean',
+        'enable_checkout_security' => 'boolean',
         'printer_paper_width' => 'integer',
         'auto_print_on_confirm' => 'boolean',
         'print_copies' => 'integer',
@@ -96,6 +114,24 @@ class StoreSetting extends Model
         'default_motoboy_id' => 'string',
         'enable_otp_verification' => 'boolean',
     ];
+
+    /**
+     * Get loyalty tiers with defaults if not set
+     */
+    public function getLoyaltyTiersAttribute($value)
+    {
+        if ($value) {
+            return json_decode($value, true);
+        }
+
+        // Default tiers if none configured
+        return [
+            ['name' => 'Bronze', 'min_points' => 0, 'multiplier' => 1.0],
+            ['name' => 'Prata', 'min_points' => 100, 'multiplier' => 1.05],
+            ['name' => 'Ouro', 'min_points' => 500, 'multiplier' => 1.10],
+            ['name' => 'Diamante', 'min_points' => 1000, 'multiplier' => 1.15],
+        ];
+    }
 
     protected $hidden = [
         'mercadopago_access_token',

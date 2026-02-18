@@ -76,9 +76,14 @@ class CheckSubscription
             if ($request->expectsJson()) {
                 return response()->json([
                     'error' => 'subscription_expired',
-                    'message' => 'Seu período de teste expirou.',
+                    'message' => 'Sua assinatura não está ativa.',
                     'upgrade_url' => route('subscription.expired'),
                 ], 403);
+            }
+
+            // Se for novo cadastro (pending), manda direto pro checkout
+            if ($tenant->subscription_status === 'pending') {
+                return redirect()->route('subscription.checkout', 'unified');
             }
 
             return redirect()->route('subscription.expired');

@@ -1,3 +1,4 @@
+// VIBRANTE - Atualizado em 2026-02-17 22:53
 import clsx from 'clsx';
 import { useEffect, useRef } from 'react';
 
@@ -35,7 +36,7 @@ export default function CategoryNav({ categories, activeCategory, onSelectCatego
     }, [activeCategory]);
 
     return (
-        <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm py-2">
+        <div className="sticky top-[72px] z-30 bg-white/95 backdrop-blur-xl border-b border-gray-100/80 shadow-sm py-3 transition-all">
             <div className="max-w-7xl mx-auto px-4">
                 <div
                     ref={navRef}
@@ -45,16 +46,13 @@ export default function CategoryNav({ categories, activeCategory, onSelectCatego
                         id="nav-item-all"
                         onClick={() => onSelectCategory('all')}
                         className={clsx(
-                            "group relative px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap overflow-hidden",
+                            "group relative px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap overflow-hidden shadow-md",
                             activeCategory === 'all'
-                                ? "bg-[#ff3d03] text-white shadow-lg shadow-orange-500/30 ring-2 ring-orange-200 ring-offset-1 scale-105"
-                                : "bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                                ? "text-white shadow-lg shadow-[#ff3d03]/30 scale-105"
+                                : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                         )}
+                        style={activeCategory === 'all' ? { background: 'linear-gradient(135deg, #ff3d03 0%, #ff6b35 100%)' } : {}}
                     >
-                        {/* Shimmer Effect for Active State */}
-                        {activeCategory === 'all' && (
-                            <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                        )}
                         Todos
                     </button>
 
@@ -64,16 +62,13 @@ export default function CategoryNav({ categories, activeCategory, onSelectCatego
                             id={`nav-item-${category.id}`}
                             onClick={() => onSelectCategory(category.id)}
                             className={clsx(
-                                "group relative px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap overflow-hidden",
+                                "group relative px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap overflow-hidden shadow-md",
                                 activeCategory === category.id
-                                    ? "bg-[#ff3d03] text-white shadow-lg shadow-orange-500/30 ring-2 ring-orange-200 ring-offset-1 scale-105"
-                                    : "bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                                    ? "text-white shadow-lg shadow-[#ff3d03]/30 scale-105"
+                                    : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                             )}
+                            style={activeCategory === category.id ? { background: 'linear-gradient(135deg, #ff3d03 0%, #ff6b35 100%)' } : {}}
                         >
-                            {/* Shimmer Effect for Active State */}
-                            {activeCategory === category.id && (
-                                <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                            )}
                             {category.name}
                         </button>
                     ))}

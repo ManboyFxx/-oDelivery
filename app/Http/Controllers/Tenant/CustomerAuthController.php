@@ -89,27 +89,26 @@ class CustomerAuthController extends Controller
             }
 
             if (!$otpEnabled) {
-                // OTP disabled, login directly
-                $request->session()->regenerate();
-                session([
-                    'customer_id' => $customer->id,
-                    'customer_tenant_id' => $customer->tenant_id,
-                    'current_tenant_slug' => $tenantSlug
-                ]);
-
-                return response()->json([
-                    'exists' => true,
-                    'trusted_device' => true, // Treat as trusted since OTP is invalid
-                    'customer' => [
-                        'id' => $customer->id,
-                        'name' => $customer->name,
-                        'loyalty_points' => $customer->loyalty_points,
-                        'loyalty_tier' => $customer->loyalty_tier,
-                    ],
-                ]);
+                // OTP disabled -> Check for Password
+                if ($customer->password) {
+                    return response()->json([
+                        'exists' => true,
+                        'requires_password' => true,
+                        'name' => $customer->name, // Help UX
+                        'message' => 'Digite sua senha para entrar'
+                    ]);
+                } else {
+                    // Start Password Setup Flow (One-time OTP)
+                    // We can trigger OTP sending here or ask user to confirm
+                    return response()->json([
+                        'exists' => true,
+                        'requires_setup' => true,
+                        'message' => 'Precisamos configurar uma senha segura para você.'
+                    ]);
+                }
             }
 
-            // ❌ Dispositivo desconhecido: Enviar OTP
+            // ❌ Dispositivo desconhecido E OTP Ligado: Enviar OTP
             $otpCode = $this->generateAndSendOTP($customer->phone, $tenant->id);
 
             return response()->json([
@@ -162,23 +161,10 @@ class CustomerAuthController extends Controller
             ->first();
 
         if ($existingCustomer) {
-            // Already exists, just login
-            $request->session()->regenerate();
-
-            session([
-                'customer_id' => $existingCustomer->id,
-                'customer_tenant_id' => $existingCustomer->tenant_id,
-                'current_tenant_slug' => $tenantSlug
-            ]);
-
+            // If already exists, we redirect to login flow
             return response()->json([
-                'message' => 'Login realizado com sucesso!',
-                'customer' => [
-                    'id' => $existingCustomer->id,
-                    'name' => $existingCustomer->name,
-                    'loyalty_points' => $existingCustomer->loyalty_points,
-                    'loyalty_tier' => $existingCustomer->loyalty_tier,
-                ],
+                'exists' => true,
+                'message' => 'Cliente já cadastrado. Faça login.',
             ]);
         }
 
@@ -190,23 +176,18 @@ class CustomerAuthController extends Controller
             'loyalty_tier' => 'bronze', // Default tier for new customers
         ]);
 
-        // ✅ Regenerar session após criar conta
-        $request->session()->regenerate();
-
-        session([
-            'customer_id' => $customer->id,
-            'customer_tenant_id' => $customer->tenant_id,
-            'current_tenant_slug' => $tenantSlug
-        ]);
+        // After registration, we don't login immediately if password is required by policy?
+        // Actually, for better UX, let's login but mark as "needs password setup"
+        // But for consistency with Security, let's Redirect to Setup
 
         return response()->json([
-            'message' => 'Cadastro realizado com sucesso!',
+            'message' => 'Cadastro inicial realizado!',
             'customer' => [
                 'id' => $customer->id,
                 'name' => $customer->name,
-                'loyalty_points' => $customer->loyalty_points,
-                'loyalty_tier' => $customer->loyalty_tier,
+                'phone' => $validated['phone'] // Return phone for next step
             ],
+            'requires_setup' => true // Trigger setup flow
         ]);
     }
 
@@ -239,6 +220,7 @@ class CustomerAuthController extends Controller
             'loyalty_points' => $customer->loyalty_points,
             'loyalty_tier' => $customer->loyalty_tier,
             'orders' => $customer->orders,
+            'referral_code' => $customer->referral_code,
             // ❌ NÃO expor: phone, email, tenant_id
         ]);
     }
@@ -302,6 +284,187 @@ class CustomerAuthController extends Controller
                 'loyalty_tier' => $customer->loyalty_tier,
             ],
         ])->cookie('device_token', $deviceToken, 60 * 24 * 90); // 90 dias
+    }
+
+    /**
+     * Login with Password
+     */
+    public function loginWithPassword(Request $request)
+    {
+        $validated = $request->validate([
+            'phone' => 'required|string',
+            'password' => 'required|string',
+            'tenant_slug' => 'required|string',
+            'device_fingerprint' => 'required|string',
+        ]);
+
+        $tenant = Tenant::where('slug', $validated['tenant_slug'])->firstOrFail();
+        $customer = Customer::where('tenant_id', $tenant->id)
+            ->where('phone', $validated['phone'])
+            ->firstOrFail();
+
+        if (!$customer->password || !\Illuminate\Support\Facades\Hash::check($validated['password'], $customer->password)) {
+            return response()->json([
+                'message' => 'Senha incorreta.'
+            ], 401);
+        }
+
+        // Success - Create trusted device implicitly or explicit?
+        // Let's create trusted device to avoid future checks if needed
+        $deviceToken = $this->createTrustedDevice(
+            $customer->id,
+            $validated['device_fingerprint'],
+            $request->userAgent(),
+            $request->ip()
+        );
+
+        $request->session()->regenerate();
+        session([
+            'customer_id' => $customer->id,
+            'customer_tenant_id' => $customer->tenant_id,
+            'current_tenant_slug' => $validated['tenant_slug']
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'customer' => [
+                'id' => $customer->id,
+                'name' => $customer->name,
+                'loyalty_points' => $customer->loyalty_points,
+            ]
+        ])->cookie('device_token', $deviceToken, 60 * 24 * 90);
+    }
+
+    /**
+     * Send OTP for Password Setup
+     */
+    public function sendSetupOtp(Request $request)
+    {
+        $validated = $request->validate([
+            'phone' => 'required|string',
+            'tenant_slug' => 'required|string',
+        ]);
+
+        $tenant = Tenant::where('slug', $validated['tenant_slug'])->firstOrFail();
+
+        // Ensure customer exists or is new
+        // We actually only need phone.
+
+        $this->generateAndSendOTP($validated['phone'], $tenant->id);
+
+        return response()->json(['message' => 'Código de verificação enviado!']);
+    }
+
+    /**
+     * Setup Password (Requires OTP)
+     */
+    public function setupPassword(Request $request)
+    {
+        $validated = $request->validate([
+            'phone' => 'required|string',
+            'code' => 'required|string|size:6',
+            'password' => 'required|string|min:6',
+            'tenant_slug' => 'required|string',
+            'device_fingerprint' => 'required|string',
+        ]);
+
+        // Verify OTP first
+        $otp = OtpCode::where('phone', $validated['phone'])
+            ->where('code', $validated['code'])
+            ->where('used', false)
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if (!$otp) {
+            return response()->json([
+                'message' => 'Código inválido ou expirado'
+            ], 422);
+        }
+
+        $otp->markAsUsed();
+
+        $tenant = Tenant::where('slug', $validated['tenant_slug'])->firstOrFail();
+        $customer = Customer::where('tenant_id', $tenant->id)
+            ->where('phone', $validated['phone'])
+            ->firstOrFail();
+
+        // Set Password
+        $customer->password = \Illuminate\Support\Facades\Hash::make($validated['password']);
+        $customer->save();
+
+        // Auto Login
+        $deviceToken = $this->createTrustedDevice(
+            $customer->id,
+            $validated['device_fingerprint'],
+            $request->userAgent(),
+            $request->ip()
+        );
+
+        $request->session()->regenerate();
+        session([
+            'customer_id' => $customer->id,
+            'customer_tenant_id' => $customer->tenant_id,
+            'current_tenant_slug' => $validated['tenant_slug']
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Senha definida com sucesso!',
+            'customer' => [
+                'id' => $customer->id,
+                'name' => $customer->name,
+                'loyalty_points' => $customer->loyalty_points,
+            ]
+        ])->cookie('device_token', $deviceToken, 60 * 24 * 90);
+    }
+
+    /**
+     * Quick Login Secure (Last 4 digits validation)
+     */
+    public function quickLoginSecure(Request $request)
+    {
+        $validated = $request->validate([
+            'phone_last_4' => 'required|string|size:4',
+            'customer_id' => 'required|string',
+            'device_fingerprint' => 'required|string',
+        ]);
+
+        $customer = Customer::find($validated['customer_id']);
+
+        if (!$customer) {
+            return response()->json(['message' => 'Cliente não encontrado.'], 404);
+        }
+
+        // Validate Phone (Last 4 digits)
+        // Phone is encrypted/decrypted via accessor, so $customer->phone is plain text here
+        if (substr($customer->phone, -4) !== $validated['phone_last_4']) {
+            return response()->json(['message' => 'Dígitos incorretos.'], 401);
+        }
+
+        // Create Trusted Device (if not exists)
+        $deviceToken = $this->createTrustedDevice(
+            $customer->id,
+            $validated['device_fingerprint'],
+            $request->userAgent(),
+            $request->ip()
+        );
+
+        // Login
+        $request->session()->regenerate();
+        session([
+            'customer_id' => $customer->id,
+            'customer_tenant_id' => $customer->tenant_id,
+            'current_tenant_slug' => session('current_tenant_slug')
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Identidade confirmada!',
+            'customer' => [
+                'id' => $customer->id,
+                'name' => $customer->name,
+            ]
+        ])->cookie('device_token', $deviceToken, 60 * 24 * 90);
     }
 
     /**

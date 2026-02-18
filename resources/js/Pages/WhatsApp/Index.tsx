@@ -284,25 +284,25 @@ export default function Index({ auth }: PageProps) {
                             <div className="flex items-center justify-between mb-6">
                                 <div>
                                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                                        Editor de Modelos
+                                        Modelos de Mensagem
                                     </h3>
                                     <p className="text-xs text-gray-500 font-medium">
-                                        Personalize as mensagens automáticas enviadas aos clientes
+                                        Visualização dos modelos automáticos enviados pelo sistema
                                     </p>
                                 </div>
-                                <button
-                                    onClick={handleSaveTemplates}
-                                    disabled={processingTemplates}
-                                    className="px-4 py-2 bg-[#ff3d03] text-white rounded-xl text-sm font-bold hover:bg-[#e63600] transition-colors shadow-lg shadow-orange-500/20 disabled:opacity-50 flex items-center gap-2"
-                                >
-                                    {processingTemplates ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                                    Salvar Alterações
-                                </button>
+                            </div>
+
+                            {/* Informational Banner */}
+                            <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800 rounded-2xl flex items-start gap-3">
+                                <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                                <p className="text-xs font-bold text-amber-800 dark:text-amber-400 leading-relaxed uppercase tracking-tight">
+                                    Os modelos de mensagem são padronizados pela plataforma para garantir a melhor entrega e conformidade. A edição personalizada está desativada.
+                                </p>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {templateData.templates.map((template, index) => (
-                                    <div key={template.key} className="p-4 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/10">
+                                    <div key={template.key} className="p-4 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/10 opacity-80">
                                         <div className="flex items-center justify-between mb-3">
                                             <div className="flex items-center gap-2">
                                                 <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
@@ -312,21 +312,22 @@ export default function Index({ auth }: PageProps) {
                                             </div>
                                             <Switch
                                                 checked={template.is_active}
-                                                onChange={(val) => handleTemplateChange(index, 'is_active', val)}
+                                                disabled={true}
+                                                onChange={() => {}}
                                                 className={`${template.is_active ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700'
-                                                    } relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none cursor-pointer`}
+                                                    } relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none cursor-not-allowed`}
                                             >
                                                 <span className={`${template.is_active ? 'translate-x-4' : 'translate-x-1'} inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform`} />
                                             </Switch>
                                         </div>
                                         <textarea
                                             value={template.message}
-                                            onChange={(e) => handleTemplateChange(index, 'message', e.target.value)}
+                                            readOnly={true}
                                             rows={5}
-                                            className="w-full px-3 py-2 bg-white dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-xl text-xs md:text-sm focus:ring-green-500 focus:border-green-500 resize-none leading-relaxed"
+                                            className="w-full px-3 py-2 bg-white dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-xl text-xs md:text-sm focus:ring-green-500 focus:border-green-500 resize-none leading-relaxed cursor-not-allowed"
                                         />
                                         <p className="text-[10px] text-gray-400 mt-2">
-                                            Variáveis: {'{customer_name}, {order_number}, {order_total}, {store_name}'}
+                                            Variáveis fixas: {'{customer_name}, {order_number}, {order_total}, {store_name}'}
                                         </p>
                                     </div>
                                 ))}

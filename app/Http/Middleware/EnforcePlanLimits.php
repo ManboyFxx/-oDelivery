@@ -15,6 +15,11 @@ class EnforcePlanLimits
      */
     public function handle(Request $request, Closure $next, string $limitType)
     {
+        // ✅ PLANO UNIFICADO - Sem limites
+        // Todos os recursos são ilimitados no plano único
+        return $next($request);
+
+        /* CÓDIGO ANTIGO DESABILITADO - Mantido para referência
         $tenant = auth()->user()->tenant;
 
         // Fetch current plan limits
@@ -111,5 +116,6 @@ class EnforcePlanLimits
         }
 
         return $next($request);
+        */
     }
 }

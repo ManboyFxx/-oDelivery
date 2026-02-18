@@ -51,9 +51,10 @@ class HandleInertiaRequests extends Middleware
                 'plan_display_name' => $tenant->plan_display_name,
                 'subscription_status' => $tenant->subscription_status,
                 'limits' => $tenant->getUsageStats(), // Now cached
-                'is_trial_active' => $tenant->isTrialActive(),
-                'is_trial_expiring_soon' => $tenant->isTrialExpiringSoon(),
-                'trial_days_remaining' => $tenant->trialDaysRemaining(),
+                // Trial info removed
+                // 'is_trial_active' => false,
+                // 'is_trial_expiring_soon' => false,
+                // 'trial_days_remaining' => 0,
                 'is_subscription_active' => $tenant->isSubscriptionActive(),
                 'show_watermark' => $tenant->shouldShowWatermark(),
                 'features' => $tenant->getPlanLimits()?->features ?? [],
