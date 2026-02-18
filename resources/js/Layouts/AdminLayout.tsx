@@ -1,6 +1,6 @@
 import { PropsWithChildren } from 'react';
 import { Link, usePage } from '@inertiajs/react';
-import { Building2, Key, Shield, FileText, LogOut, LayoutDashboard } from 'lucide-react';
+import { Building2, Key, Shield, FileText, LogOut, LayoutDashboard, Ticket } from 'lucide-react';
 
 export default function AdminLayout({ children }: PropsWithChildren) {
     const { url } = usePage();

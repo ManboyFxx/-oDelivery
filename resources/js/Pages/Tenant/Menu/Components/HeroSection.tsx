@@ -28,7 +28,7 @@ export default function HeroSection({ store, customer, onOpenAuth, onOpenProfile
     const themeColor = '#ff3d03';
 
     return (
-        <div className="relative bg-gray-50 pb-8">
+        <div className="relative bg-gray-50 dark:bg-premium-dark pb-8 transition-colors duration-300">
             {/* --- STORE BANNER & BRANDING --- */}
             <div className="relative h-52 md:h-80 w-full overflow-hidden group">
                 <div className="absolute inset-0 bg-neutral-900">
@@ -57,7 +57,7 @@ export default function HeroSection({ store, customer, onOpenAuth, onOpenProfile
 
             {/* --- STORE HEADER CARD (CENTRALIZED) --- */}
             <div className="relative max-w-7xl mx-auto px-4 md:px-8 -mt-16 md:-mt-24 z-20 mb-4">
-                <div className="bg-white rounded-[32px] shadow-2xl p-6 md:p-8 flex flex-col items-center justify-center border border-gray-100 relative overflow-visible">
+                <div className="bg-white dark:bg-premium-card rounded-[32px] shadow-2xl p-6 md:p-8 flex flex-col items-center justify-center border border-gray-100 dark:border-white/5 relative overflow-visible transition-colors duration-300">
                     
                     {/* Background Decor */}
                     <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-transparent via-gray-100 to-transparent opacity-50" />
@@ -90,7 +90,7 @@ export default function HeroSection({ store, customer, onOpenAuth, onOpenProfile
 
                         <div className="w-full mt-4">
                             <div className="flex flex-col items-center justify-center gap-3 mb-8">
-                                <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tighter leading-tight">
+                                <h1 className="text-3xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tighter leading-tight transition-colors duration-300">
                                     {store?.name}
                                 </h1>
                                 
@@ -98,7 +98,7 @@ export default function HeroSection({ store, customer, onOpenAuth, onOpenProfile
 
                                 <button 
                                     onClick={onOpenInfo}
-                                    className="inline-flex items-center gap-2 bg-gray-50 text-gray-900 hover:bg-gray-100 hover:scale-105 active:scale-95 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-gray-200 transition-all shadow-sm mt-2"
+                                    className="inline-flex items-center gap-2 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10 hover:scale-105 active:scale-95 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-gray-200 dark:border-white/10 transition-all shadow-sm mt-2"
                                 >
                                     Mais informações <ChevronRight className="h-3 w-3" />
                                 </button>

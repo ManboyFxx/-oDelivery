@@ -25,13 +25,13 @@ export default function StoreInfoModal({ isOpen, onClose, store }: StoreInfoModa
                         animate={{ x: 0 }}
                         exit={{ x: "100%" }}
                         transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                        className="relative bg-white w-full max-w-xl h-full sm:h-auto sm:max-h-[85vh] sm:rounded-[48px] shadow-2xl overflow-y-auto text-gray-900 border-gray-100 flex flex-col"
+                        className="relative bg-white dark:bg-premium-dark w-full max-w-xl h-full sm:h-auto sm:max-h-[85vh] sm:rounded-[48px] shadow-2xl overflow-y-auto text-gray-900 dark:text-gray-100 border-gray-100 dark:border-white/5 flex flex-col transition-colors duration-300"
                     >
                         {/* Cabeçalho de Navegação Mobile */}
                         <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-100 p-4 flex items-center gap-4 sm:hidden">
                             <button 
                                 onClick={onClose}
-                                className="h-10 w-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-900 active:scale-90 transition-all"
+                                className="h-10 w-10 bg-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center text-gray-900 dark:text-white active:scale-90 transition-all"
                             >
                                 <ChevronRight className="h-6 w-6 rotate-180" />
                             </button>
@@ -60,7 +60,7 @@ export default function StoreInfoModal({ isOpen, onClose, store }: StoreInfoModa
                         <div className="px-6 md:px-10 pb-12 -mt-12 relative z-10">
                             {/* Logo e Nome Dinâmico */}
                             <div className="flex items-start gap-6 mb-8">
-                                <div className="h-28 w-28 rounded-[32px] border-[6px] border-white overflow-hidden bg-white shadow-2xl shrink-0 flex items-center justify-center" style={{ backgroundColor: store?.theme_color || '#ff3d03' }}>
+                                <div className="h-28 w-28 rounded-[32px] border-[6px] border-white dark:border-premium-dark overflow-hidden bg-white dark:bg-premium-dark shadow-2xl shrink-0 flex items-center justify-center transition-colors duration-300" style={{ backgroundColor: store?.theme_color || '#ff3d03' }}>
                                     {store?.logo_url ? (
                                         <img src={store.logo_url} className="h-full w-full object-cover" />
                                     ) : (
@@ -91,7 +91,7 @@ export default function StoreInfoModal({ isOpen, onClose, store }: StoreInfoModa
                                 
                                 {/* Entrega & Tempo - Row Horizontal */}
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="p-5 bg-orange-50/50 rounded-3xl border border-orange-100 flex items-center gap-4">
+                                    <div className="p-5 bg-orange-50/50 dark:bg-white/5 rounded-3xl border border-orange-100 dark:border-white/5 flex items-center gap-4 transition-colors duration-300">
                                         <div className="h-10 w-10 flex items-center justify-center bg-white rounded-2xl shadow-sm text-[#ff3d03]">
                                             <Clock className="h-5 w-5" />
                                         </div>
@@ -112,7 +112,7 @@ export default function StoreInfoModal({ isOpen, onClose, store }: StoreInfoModa
                                 </div>
 
                                 {/* Localização Interativa */}
-                                <div className="p-6 bg-gray-50 rounded-[40px] border border-gray-100">
+                                <div className="p-6 bg-gray-50 dark:bg-white/5 rounded-[40px] border border-gray-100 dark:border-white/5 transition-colors duration-300">
                                     <h3 className="font-black text-sm uppercase tracking-widest mb-4 flex items-center gap-2">
                                         <MapPin className="h-4 w-4 text-gray-400" /> Endereço oficial
                                     </h3>
@@ -148,7 +148,7 @@ export default function StoreInfoModal({ isOpen, onClose, store }: StoreInfoModa
                                     )}
                                     
                                     {store?.instagram && (
-                                        <a href={`https://instagram.com/${store.instagram.replace('@', '')}`} target="_blank" className="p-5 bg-pink-50 rounded-3xl border border-pink-100 flex items-center gap-4 group hover:bg-pink-100 transition-all cursor-pointer">
+                                        <a href={`https://instagram.com/${store.instagram.replace('@', '')}`} target="_blank" className="p-5 bg-pink-50 dark:bg-white/5 rounded-3xl border border-pink-100 dark:border-white/5 flex items-center gap-4 group hover:bg-pink-100 dark:hover:bg-white/10 transition-all cursor-pointer">
                                             <div className="h-12 w-12 flex items-center justify-center bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-500 text-white rounded-2xl shadow-lg shadow-pink-500/20 group-hover:scale-110 transition-transform">
                                                 <Instagram className="h-6 w-6" />
                                             </div>
@@ -161,12 +161,12 @@ export default function StoreInfoModal({ isOpen, onClose, store }: StoreInfoModa
                                 </div>
 
                                 {/* Horários Detalhados */}
-                                <div className="p-6 rounded-[32px] border border-gray-100 bg-white shadow-sm">
+                                <div className="p-6 rounded-[32px] border border-gray-100 dark:border-white/5 bg-white dark:bg-white/5 shadow-sm transition-colors duration-300">
                                     <h3 className="font-black text-sm uppercase tracking-widest mb-4 flex items-center gap-2">
                                         <Clock className="h-4 w-4 text-gray-400" /> Horário de Funcionamento
                                     </h3>
                                     <div className="space-y-3">
-                                        <p className="text-sm text-gray-600 whitespace-pre-line leading-relaxed">
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-line leading-relaxed transition-colors duration-300">
                                             {store?.operating_hours_formatted || "Horário não informado."}
                                         </p>
                                     </div>

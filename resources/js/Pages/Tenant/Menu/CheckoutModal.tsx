@@ -268,19 +268,19 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                             "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 border-2",
                             isActive ? "bg-[#ff3d03] border-[#ff3d03] text-white shadow-lg scale-110" :
                                 isCompleted ? "bg-green-500 border-green-500 text-white" :
-                                    "bg-white border-gray-300 text-gray-400"
+                                    "bg-white dark:bg-premium-card border-gray-300 dark:border-gray-700 text-gray-400 dark:text-gray-500"
                         )}>
                             <s.icon className="w-5 h-5" />
                         </div>
                         <span className={clsx(
-                            "text-xs font-semibold mt-2",
-                            isActive ? "text-[#ff3d03]" : isCompleted ? "text-green-600" : "text-gray-400"
+                            "text-xs font-semibold mt-2 transition-colors duration-300",
+                            isActive ? "text-[#ff3d03]" : isCompleted ? "text-green-600 dark:text-green-400" : "text-gray-400 dark:text-gray-500"
                         )}>{s.label}</span>
                     </div>
                 );
             })}
             {/* Progress Bar Background */}
-            <div className="absolute top-[4.5rem] left-10 right-10 h-0.5 bg-gray-200 -z-0" />
+            <div className="absolute top-[4.5rem] left-10 right-10 h-0.5 bg-gray-200 dark:bg-gray-700 -z-0 transition-colors duration-300" />
             <div className={clsx(
                 "absolute top-[4.5rem] left-10 h-0.5 bg-green-500 transition-all duration-300 -z-0",
                 step === 'delivery' ? "w-0" : step === 'payment' ? "w-1/2" : "w-[calc(100%-5rem)]"
@@ -296,17 +296,17 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                 onComplete={() => setShowPointsAnimation(false)}
             />
 
-            <div className="p-6 min-h-[500px] flex flex-col">
+            <div className="p-6 min-h-[500px] flex flex-col bg-white dark:bg-premium-dark transition-colors duration-300">
                 {/* Header */}
                 <div className="flex justify-between items-center mb-4">
                     {step !== 'delivery' ? (
-                        <button onClick={handleBackStep} className="p-1 hover:bg-gray-100 rounded-full">
-                            <ArrowLeft className="h-6 w-6 text-gray-600" />
+                        <button onClick={handleBackStep} className="p-1 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors duration-300">
+                            <ArrowLeft className="h-6 w-6 text-gray-600 dark:text-gray-300" />
                         </button>
                     ) : (
                         <div />
                     )}
-                    <h2 className="text-xl font-bold text-gray-900">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white transition-colors duration-300">
                         {isVerifyingIdentity ? 'Confirmação de Segurança' : (
                             <>
                                 {step === 'delivery' && 'Entrega ou Retirada'}
@@ -315,30 +315,30 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                             </>
                         )}
                     </h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                    <button onClick={onClose} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-300">
                         <X className="h-6 w-6" />
                     </button>
                 </div>
 
                 {isVerifyingIdentity ? (
                     <div className="flex-1 flex flex-col items-center justify-center p-4">
-                         <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-4">
-                            <CheckCircle className="w-8 h-8 text-[#ff3d03]" />
-                         </div>
-                         <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Protegendo sua conta</h3>
-                         <p className="text-gray-500 text-center text-sm mb-6">
-                             Para continuar, confirme os <strong>4 últimos dígitos</strong> do seu telefone.
-                         </p>
+                          <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/20 rounded-full flex items-center justify-center mb-4 transition-colors duration-300">
+                             <CheckCircle className="w-8 h-8 text-[#ff3d03]" />
+                          </div>
+                          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 text-center transition-colors duration-300">Protegendo sua conta</h3>
+                          <p className="text-gray-500 dark:text-gray-400 text-center text-sm mb-6 transition-colors duration-300">
+                              Para continuar, confirme os <strong>4 últimos dígitos</strong> do seu telefone.
+                          </p>
                          
                          <form onSubmit={handleIdentityVerify} className="w-full max-w-xs space-y-4">
                              <input
                                 type="text"
                                 value={verificationDigits}
                                 onChange={(e) => setVerificationDigits(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                                placeholder="0000"
-                                className="w-full text-center text-2xl font-bold tracking-widest py-3 border-2 border-gray-200 rounded-xl focus:border-[#ff3d03] focus:ring-0 outline-none transition-colors"
-                                autoFocus
-                             />
+                                 placeholder="0000"
+                                 className="w-full text-center text-2xl font-bold tracking-widest py-3 border-2 border-gray-200 dark:border-gray-700 dark:bg-white/5 dark:text-white rounded-xl focus:border-[#ff3d03] dark:focus:border-[#ff3d03] focus:ring-0 outline-none transition-all duration-300"
+                                 autoFocus
+                              />
                              <button
                                 type="submit"
                                 disabled={loading || verificationDigits.length < 4}
@@ -346,11 +346,11 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                              >
                                  {loading ? 'Verificando...' : 'Confirmar'}
                              </button>
-                             <button
-                                type="button"
-                                onClick={() => setIsVerifyingIdentity(false)}
-                                className="w-full text-gray-400 font-medium text-sm hover:text-gray-600"
-                             >
+                              <button
+                                 type="button"
+                                 onClick={() => setIsVerifyingIdentity(false)}
+                                 className="w-full text-gray-400 dark:text-gray-500 font-medium text-sm hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-300"
+                              >
                                  Cancelar
                              </button>
                          </form>
@@ -362,7 +362,7 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                 {/* Content Area */}
                 <div className="flex-1 overflow-y-auto max-h-[60vh] px-1 py-1">
                     {error && (
-                        <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm font-medium flex items-center gap-2">
+                        <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-lg mb-4 text-sm font-medium flex items-center gap-2 transition-colors duration-300">
                             <X className="w-4 h-4" /> {error}
                         </div>
                     )}
@@ -383,10 +383,10 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                                         <button
                                             onClick={() => setMode('delivery')}
                                             className={clsx(
-                                                "p-4 rounded-xl border-2 font-bold transition-all flex flex-col items-center gap-2",
+                                                "p-4 rounded-xl border-2 font-bold transition-all flex flex-col items-center gap-2 duration-300",
                                                 mode === 'delivery'
-                                                    ? "border-[#ff3d03] bg-orange-50 text-[#ff3d03]"
-                                                    : "border-gray-200 text-gray-600 hover:border-gray-300"
+                                                    ? "border-[#ff3d03] bg-orange-50 dark:bg-[#ff3d03]/10 text-[#ff3d03]"
+                                                    : "border-gray-200 dark:border-gray-700 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
                                             )}
                                         >
                                             <MapPin className="w-6 h-6" />
@@ -395,10 +395,10 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                                         <button
                                             onClick={() => setMode('pickup')}
                                             className={clsx(
-                                                "p-4 rounded-xl border-2 font-bold transition-all flex flex-col items-center gap-2",
+                                                "p-4 rounded-xl border-2 font-bold transition-all flex flex-col items-center gap-2 duration-300",
                                                 mode === 'pickup'
-                                                    ? "border-[#ff3d03] bg-orange-50 text-[#ff3d03]"
-                                                    : "border-gray-200 text-gray-600 hover:border-gray-300"
+                                                    ? "border-[#ff3d03] bg-orange-50 dark:bg-[#ff3d03]/10 text-[#ff3d03]"
+                                                    : "border-gray-200 dark:border-gray-700 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
                                             )}
                                         >
                                             <div className="w-6 h-6 relative">
@@ -410,8 +410,8 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
 
                                     {mode === 'delivery' && (
                                         <div className="space-y-3">
-                                            <div className="flex justify-between items-center">
-                                                <h3 className="font-bold text-gray-800">Selecione o Endereço</h3>
+                                            <div className="flex justify-between items-center bg-white dark:bg-premium-dark transition-colors duration-300">
+                                                <h3 className="font-bold text-gray-800 dark:text-gray-200 transition-colors duration-300">Selecione o Endereço</h3>
                                                 <button
                                                     onClick={() => setIsAddingAddress(true)}
                                                     className="text-sm font-bold text-[#ff3d03] hover:underline"
@@ -421,12 +421,12 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                                             </div>
 
                                             {addresses.length === 0 ? (
-                                                <div className="text-center py-6 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                                                    <MapPin className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                                                    <p className="text-gray-500 mb-2">Nenhum endereço cadastrado</p>
+                                                <div className="text-center py-6 bg-gray-50 dark:bg-white/5 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 transition-colors duration-300">
+                                                    <MapPin className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2 transition-colors duration-300" />
+                                                    <p className="text-gray-500 dark:text-gray-400 mb-2 transition-colors duration-300">Nenhum endereço cadastrado</p>
                                                     <button
                                                         onClick={() => setIsAddingAddress(true)}
-                                                        className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50"
+                                                        className="px-4 py-2 bg-white dark:bg-white/10 border border-gray-300 dark:border-white/10 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-white/20 text-gray-900 dark:text-white transition-colors duration-300"
                                                     >
                                                         Cadastrar Agora
                                                     </button>
@@ -437,23 +437,23 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                                                         key={addr.id}
                                                         onClick={() => setSelectedAddressId(addr.id)}
                                                         className={clsx(
-                                                            "p-4 rounded-xl border-2 cursor-pointer transition-all flex items-start justify-between group",
+                                                            "p-4 rounded-xl border-2 cursor-pointer transition-all flex items-start justify-between group duration-300",
                                                             selectedAddressId === addr.id
-                                                                ? "border-[#ff3d03] bg-orange-50/50"
-                                                                : "border-gray-100 hover:border-gray-200 hover:bg-gray-50"
+                                                                ? "border-[#ff3d03] bg-orange-50/50 dark:bg-[#ff3d03]/10"
+                                                                : "border-gray-100 dark:border-gray-700 bg-white dark:bg-white/5 hover:border-gray-200 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-white/10"
                                                         )}
                                                     >
                                                         <div className="flex gap-3">
                                                             <div className={clsx(
-                                                                "mt-1 w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0",
-                                                                selectedAddressId === addr.id ? "border-[#ff3d03] bg-[#ff3d03]" : "border-gray-300"
+                                                                "mt-1 w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors duration-300",
+                                                                selectedAddressId === addr.id ? "border-[#ff3d03] bg-[#ff3d03]" : "border-gray-300 dark:border-gray-600"
                                                             )}>
                                                                 {selectedAddressId === addr.id && <div className="w-2 h-2 bg-white rounded-full"></div>}
                                                             </div>
                                                             <div>
-                                                                <p className="font-bold text-gray-900">{addr.street}, {addr.number}</p>
-                                                                <p className="text-sm text-gray-500">{addr.neighborhood} - {addr.city}</p>
-                                                                {addr.complement && <p className="text-xs text-gray-400 mt-0.5">{addr.complement}</p>}
+                                                                <p className="font-bold text-gray-900 dark:text-white transition-colors duration-300">{addr.street}, {addr.number}</p>
+                                                                <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">{addr.neighborhood} - {addr.city}</p>
+                                                                {addr.complement && <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 transition-colors duration-300">{addr.complement}</p>}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -468,20 +468,20 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                             {step === 'payment' && (
                                 <div className="space-y-6">
                                     {/* Coupon */}
-                                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                        <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2 text-sm">
+                                    <div className="bg-gray-50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5 transition-colors duration-300">
+                                        <h3 className="font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2 text-sm transition-colors duration-300">
                                             <Ticket className="h-4 w-4 text-[#ff3d03]" />
                                             Cupom de Desconto
                                         </h3>
                                         {appliedCoupon ? (
-                                            <div className="bg-white border border-green-200 rounded-lg p-3 flex justify-between items-center shadow-sm">
+                                            <div className="bg-white dark:bg-white/5 border border-green-200 dark:border-green-800/50 rounded-lg p-3 flex justify-between items-center shadow-sm transition-colors duration-300">
                                                 <div>
-                                                    <p className="font-bold text-green-700 text-sm">✓ {appliedCoupon.code}</p>
-                                                    <p className="text-xs text-green-600">
+                                                    <p className="font-bold text-green-700 dark:text-green-400 text-sm transition-colors duration-300">✓ {appliedCoupon.code}</p>
+                                                    <p className="text-xs text-green-600 dark:text-green-500/80 transition-colors duration-300">
                                                         Desconto de {appliedCoupon.discount_type === 'fixed' ? formatPrice(appliedCoupon.discount_value) : `${appliedCoupon.discount_value}%`}
                                                     </p>
                                                 </div>
-                                                <button onClick={() => setAppliedCoupon(null)} className="text-gray-400 hover:text-red-500">
+                                                <button onClick={() => setAppliedCoupon(null)} className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors duration-300">
                                                     <X className="h-4 w-4" />
                                                 </button>
                                             </div>
@@ -492,7 +492,7 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                                                     value={couponCode}
                                                     onChange={(e) => { setCouponCode(e.target.value); setCouponError(''); }}
                                                     placeholder="Código do cupom"
-                                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-[#ff3d03] focus:border-[#ff3d03]"
+                                                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-white/5 dark:text-white rounded-lg text-sm focus:ring-[#ff3d03] focus:border-[#ff3d03] transition-colors duration-300"
                                                 />
                                                 <button
                                                     onClick={applyCoupon}
@@ -509,11 +509,11 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                                     {/* Loyalty Points Cashback */}
                                     {store?.loyalty_enabled && customer?.loyalty_points > 0 && (
                                         <div className={clsx(
-                                            "p-4 rounded-xl border transition-all",
-                                            usePoints ? "bg-orange-50 border-orange-200" : "bg-gray-50 border-gray-100"
+                                            "p-4 rounded-xl border transition-all duration-300",
+                                            usePoints ? "bg-orange-50 dark:bg-[#ff3d03]/10 border-orange-200 dark:border-[#ff3d03]/30" : "bg-gray-50 dark:bg-white/5 border-gray-100 dark:border-white/5"
                                         )}>
                                             <div className="flex justify-between items-center mb-2">
-                                                <h3 className="font-bold text-gray-900 flex items-center gap-2 text-sm">
+                                                <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 text-sm transition-colors duration-300">
                                                     <Gift className="h-4 w-4 text-orange-500" />
                                                     Abater com Pontos
                                                 </h3>
@@ -544,8 +544,8 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                                             </div>
                                             <div className="flex justify-between items-end">
                                                 <div>
-                                                    <p className="text-xs text-gray-500">Saldo: <span className="font-bold">{customer.loyalty_points} pontos</span></p>
-                                                    <p className="text-[10px] text-gray-400">1 ponto = {formatPrice(store.settings?.currency_per_point || 0.10)}</p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors duration-300">Saldo: <span className="font-bold">{customer.loyalty_points} pontos</span></p>
+                                                    <p className="text-[10px] text-gray-400 dark:text-gray-500 transition-colors duration-300">1 ponto = {formatPrice(store.settings?.currency_per_point || 0.10)}</p>
                                                 </div>
                                                 {usePoints && (
                                                     <p className="text-sm font-bold text-orange-600">-{formatPrice(pointsDiscount)}</p>
@@ -556,7 +556,7 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
 
                                     {/* Methods */}
                                     <div>
-                                        <h3 className="font-bold text-gray-900 mb-3">Forma de Pagamento</h3>
+                                        <h3 className="font-bold text-gray-900 dark:text-white mb-3 transition-colors duration-300">Forma de Pagamento</h3>
                                         <div className="grid grid-cols-2 gap-3">
                                             {[
                                                 { id: 'credit_card', label: 'Crédito', sub: 'Maquininha', icon: CreditCard },
@@ -568,16 +568,16 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                                                     key={m.id}
                                                     onClick={() => setPaymentMethod(m.id as any)}
                                                     className={clsx(
-                                                        "p-3 rounded-xl border-2 cursor-pointer transition-all flex flex-col items-center text-center gap-2 hover:shadow-md",
+                                                        "p-3 rounded-xl border-2 cursor-pointer transition-all flex flex-col items-center text-center gap-2 hover:shadow-md duration-300",
                                                         paymentMethod === m.id
-                                                            ? "border-[#ff3d03] bg-orange-50 shadow-sm"
-                                                            : "border-gray-100 hover:border-gray-200"
+                                                            ? "border-[#ff3d03] bg-orange-50 dark:bg-[#ff3d03]/10 shadow-sm"
+                                                            : "border-gray-100 dark:border-gray-700 bg-white dark:bg-white/5 hover:border-gray-200 dark:hover:border-gray-600"
                                                     )}
                                                 >
-                                                    <m.icon className={clsx("w-6 h-6", paymentMethod === m.id ? "text-[#ff3d03]" : "text-gray-400")} />
+                                                    <m.icon className={clsx("w-6 h-6 transition-colors duration-300", paymentMethod === m.id ? "text-[#ff3d03]" : "text-gray-400 dark:text-gray-500")} />
                                                     <div>
-                                                        <p className={clsx("font-bold text-sm", paymentMethod === m.id ? "text-[#ff3d03]" : "text-gray-700")}>{m.label}</p>
-                                                        <p className="text-[10px] text-gray-400">{m.sub}</p>
+                                                        <p className={clsx("font-bold text-sm transition-colors duration-300", paymentMethod === m.id ? "text-[#ff3d03]" : "text-gray-700 dark:text-gray-200")}>{m.label}</p>
+                                                        <p className="text-[10px] text-gray-400 dark:text-gray-500 transition-colors duration-300">{m.sub}</p>
                                                     </div>
                                                 </div>
                                             ))}
@@ -586,18 +586,18 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
 
                                     {paymentMethod === 'cash' && (
                                         <div className="animate-in fade-in slide-in-from-top-2 duration-200">
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Troco para quanto?</label>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 transition-colors duration-300">Troco para quanto?</label>
                                             <div className="relative">
-                                                <span className="absolute left-3 top-2.5 text-gray-500">R$</span>
+                                                <span className="absolute left-3 top-2.5 text-gray-500 dark:text-gray-400 transition-colors duration-300">R$</span>
                                                 <input
                                                     type="text"
                                                     value={changeFor}
                                                     onChange={(e) => setChangeFor(e.target.value)}
                                                     placeholder="0,00"
-                                                    className="w-full pl-9 px-4 py-2 border border-gray-300 rounded-lg focus:ring-[#ff3d03] focus:border-[#ff3d03]"
+                                                    className="w-full pl-9 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-white/5 dark:text-white rounded-lg focus:ring-[#ff3d03] focus:border-[#ff3d03] transition-colors duration-300"
                                                 />
                                             </div>
-                                            <p className="text-xs text-gray-500 mt-1">Total do pedido: {formatPrice(finalTotal)}</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 transition-colors duration-300">Total do pedido: {formatPrice(finalTotal)}</p>
                                         </div>
                                     )}
                                 </div>
@@ -607,10 +607,10 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                             {step === 'review' && (
                                 <div className="space-y-6">
                                     {/* Order Summary Card */}
-                                    <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-                                        <div className="bg-gray-50 px-4 py-3 border-b border-gray-100 flex justify-between items-center">
-                                            <h3 className="font-bold text-gray-800">Resumo do Pedido</h3>
-                                            <span className="text-xs font-medium bg-gray-200 px-2 py-1 rounded-full text-gray-600">
+                                    <div className="bg-white dark:bg-premium-card border border-gray-200 dark:border-white/5 rounded-xl shadow-sm overflow-hidden transition-colors duration-300">
+                                        <div className="bg-gray-50 dark:bg-white/5 px-4 py-3 border-b border-gray-100 dark:border-white/5 flex justify-between items-center transition-colors duration-300">
+                                            <h3 className="font-bold text-gray-800 dark:text-white transition-colors duration-300">Resumo do Pedido</h3>
+                                            <span className="text-xs font-medium bg-gray-200 dark:bg-white/10 px-2 py-1 rounded-full text-gray-600 dark:text-gray-300 transition-colors duration-300">
                                                 {cart.length} itens
                                             </span>
                                         </div>
@@ -618,17 +618,17 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                                             {cart.map((item, idx) => (
                                                 <div key={idx} className="flex justify-between text-sm">
                                                     <div className="flex gap-2">
-                                                        <span className="font-bold text-gray-900">{item.quantity}x</span>
-                                                        <span className="text-gray-600 line-clamp-1">{item.product.name}</span>
+                                                        <span className="font-bold text-gray-900 dark:text-white transition-colors duration-300">{item.quantity}x</span>
+                                                        <span className="text-gray-600 dark:text-gray-300 line-clamp-1 transition-colors duration-300">{item.product.name}</span>
                                                     </div>
-                                                    <span className="text-gray-900 font-medium">{formatPrice(item.subtotal)}</span>
+                                                    <span className="text-gray-900 dark:text-white font-medium transition-colors duration-300">{formatPrice(item.subtotal)}</span>
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
 
                                     {/* Delivery Info */}
-                                    <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-xl text-sm text-blue-800">
+                                    <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-sm text-blue-800 dark:text-blue-300 transition-colors duration-300">
                                         <MapPin className="w-5 h-5 shrink-0 mt-0.5" />
                                         <div>
                                             <p className="font-bold">{mode === 'delivery' ? 'Entrega em:' : 'Retirada em Loja'}</p>
@@ -643,38 +643,39 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                                     </div>
 
                                     {/* Estimated Loyalty Points */}
+                                    {/* Estimated Loyalty Points */}
                                     {estimatedPoints > 0 && (
-                                        <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-100">
-                                            <div className="bg-yellow-100 p-1.5 rounded-full text-yellow-600">
+                                        <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/10 dark:to-orange-900/10 rounded-xl border border-yellow-100 dark:border-yellow-900/20 transition-colors duration-300">
+                                            <div className="bg-yellow-100 dark:bg-yellow-900/20 p-1.5 rounded-full text-yellow-600 dark:text-yellow-400 transition-colors duration-300">
                                                 <Gift className="w-4 h-4" />
                                             </div>
                                             <div>
-                                                <p className="text-sm font-bold text-yellow-800">Você ganhará {estimatedPoints} pontos!</p>
-                                                <p className="text-xs text-yellow-600">Neste pedido</p>
+                                                <p className="text-sm font-bold text-yellow-800 dark:text-yellow-400 transition-colors duration-300">Você ganhará {estimatedPoints} pontos!</p>
+                                                <p className="text-xs text-yellow-600 dark:text-yellow-500/80 transition-colors duration-300">Neste pedido</p>
                                             </div>
                                         </div>
                                     )}
 
                                     {/* Totals */}
-                                    <div className="space-y-2 pt-2 border-t border-gray-100">
-                                        <div className="flex justify-between text-gray-500 text-sm">
+                                    <div className="space-y-2 pt-2 border-t border-gray-100 dark:border-white/5 transition-colors duration-300">
+                                        <div className="flex justify-between text-gray-500 dark:text-gray-400 text-sm transition-colors duration-300">
                                             <span>Subtotal</span>
                                             <span>{formatPrice(subtotal)}</span>
                                         </div>
                                         {mode === 'delivery' && (
-                                            <div className="flex justify-between text-gray-500 text-sm">
+                                            <div className="flex justify-between text-gray-500 dark:text-gray-400 text-sm transition-colors duration-300">
                                                 <span>Taxa de Entrega</span>
                                                 <span>{formatPrice(deliveryFee)}</span>
                                             </div>
                                         )}
                                         {discountAmount > 0 && (
-                                            <div className="flex justify-between text-green-600 text-sm font-medium">
+                                            <div className="flex justify-between text-green-600 dark:text-green-400 text-sm font-medium transition-colors duration-300">
                                                 <span>Desconto</span>
                                                 <span>- {formatPrice(discountAmount)}</span>
                                             </div>
                                         )}
-                                        <div className="flex justify-between items-end pt-2 mt-2 border-t border-gray-100">
-                                            <span className="text-gray-900 font-bold">Total Final</span>
+                                        <div className="flex justify-between items-end pt-2 mt-2 border-t border-gray-100 dark:border-white/5 transition-colors duration-300">
+                                            <span className="text-gray-900 dark:text-white font-bold transition-colors duration-300">Total Final</span>
                                             <span className="text-2xl font-black text-[#ff3d03]">{formatPrice(finalTotal)}</span>
                                         </div>
                                     </div>
@@ -686,18 +687,18 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
 
                 {/* Footer Actions */}
                 {!isAddingAddress && (
-                    <div className="mt-6 pt-4 border-t border-gray-100 flex gap-3">
+                    <div className="mt-6 pt-4 border-t border-gray-100 dark:border-white/5 flex gap-3 transition-colors duration-300">
                         {step !== 'delivery' ? (
                             <button
                                 onClick={handleBackStep}
-                                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+                                className="flex-1 px-4 py-3 bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-white/20 transition-colors duration-300"
                             >
                                 Voltar
                             </button>
                         ) : (
                             <button
                                 onClick={onClose}
-                                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+                                className="flex-1 px-4 py-3 bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-white/20 transition-colors duration-300"
                             >
                                 Cancelar
                             </button>

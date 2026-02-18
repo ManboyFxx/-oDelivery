@@ -15,7 +15,7 @@ export default function ProductCard({ product, onAdd }: ProductCardProps) {
     return (
         <div
             onClick={() => onAdd(product)}
-            className="group bg-white rounded-[32px] p-3 md:p-4 border border-gray-100 shadow-sm hover:shadow-xl hover:border-orange-100 transition-all duration-300 cursor-pointer flex md:flex-col gap-4 md:gap-0 h-full relative overflow-hidden"
+            className="group bg-white dark:bg-premium-card rounded-[32px] p-3 md:p-4 border border-gray-100 dark:border-white/5 shadow-sm hover:shadow-xl hover:border-orange-100 dark:hover:border-orange-500/30 transition-all duration-300 cursor-pointer flex md:flex-col gap-4 md:gap-0 h-full relative overflow-hidden"
         >
             {/* Discount/Status Badges */}
             <div className="absolute top-3 right-3 md:top-4 md:right-4 z-10 flex flex-col gap-1 items-end">
@@ -38,7 +38,7 @@ export default function ProductCard({ product, onAdd }: ProductCardProps) {
 
             {/* Image */}
             <div className="shrink-0 md:mb-4 relative">
-                <div className="h-24 w-24 md:h-48 md:w-full rounded-[24px] overflow-hidden bg-gray-50 relative">
+                <div className="h-24 w-24 md:h-48 md:w-full rounded-[24px] overflow-hidden bg-gray-50 dark:bg-white/5 relative transition-colors duration-300">
                     {product.image_url ? (
                         <img
                             src={product.image_url}
@@ -66,10 +66,10 @@ export default function ProductCard({ product, onAdd }: ProductCardProps) {
             {/* Content */}
             <div className="flex flex-col flex-1 justify-between md:space-y-2">
                 <div>
-                    <h3 className="font-bold text-gray-900 leading-tight mb-1 line-clamp-2 md:text-lg">
+                    <h3 className="font-bold text-gray-900 dark:text-white leading-tight mb-1 line-clamp-2 md:text-lg transition-colors duration-300">
                         {product.name}
                     </h3>
-                    <p className="text-xs md:text-sm text-gray-500 line-clamp-2 md:line-clamp-3 mb-2">
+                    <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 line-clamp-2 md:line-clamp-3 mb-2 transition-colors duration-300">
                         {product.description}
                     </p>
                 </div>
@@ -77,7 +77,7 @@ export default function ProductCard({ product, onAdd }: ProductCardProps) {
                 <div className="flex items-end justify-between mt-auto">
                     <div className="flex flex-col">
                         {hasDiscount && (
-                            <span className="text-xs text-gray-400 line-through">
+                            <span className="text-xs text-gray-400 dark:text-gray-500 line-through transition-colors duration-300">
                                 R$ {originalPrice.toFixed(2).replace('.', ',')}
                             </span>
                         )}

@@ -226,9 +226,9 @@ export default function AuthModal({ isOpen, onClose, onLogin, slug }: AuthModalP
                 onClick={handleClose}
             />
 
-            <div className="bg-white rounded-2xl p-6 max-w-md w-full relative z-10 shadow-xl animate-in fade-in zoom-in duration-300">
+            <div className="bg-white dark:bg-premium-dark rounded-2xl p-6 max-w-md w-full relative z-10 shadow-xl animate-in fade-in zoom-in duration-300 transition-colors duration-300">
                 <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-bold text-gray-900">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white transition-colors duration-300">
                         {authStep === 'phone' ? 'Entrar ou Cadastrar' :
                          authStep === 'name' ? 'Seus Dados' :
                          authStep === 'password' ? 'Digite sua Senha' :
@@ -236,7 +236,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, slug }: AuthModalP
                          'Criar Senha'
                         }
                     </h3>
-                    <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors">
+                    <button onClick={handleClose} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
                         <X className="h-6 w-6" />
                     </button>
                 </div>
@@ -244,7 +244,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, slug }: AuthModalP
                 {authStep === 'phone' && (
                     <form onSubmit={handlePhoneSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors duration-300">
                                 Número de Telefone
                             </label>
                             <input
@@ -252,7 +252,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, slug }: AuthModalP
                                 value={phone}
                                 onChange={(e) => setPhone(e.target.value)}
                                 placeholder="(00) 00000-0000"
-                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent transition-all outline-none"
+                                className="w-full px-4 py-3 border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent transition-all outline-none bg-white dark:bg-white/5 text-gray-900 dark:text-white dark:placeholder-gray-500"
                                 required
                             />
                         </div>
@@ -269,7 +269,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, slug }: AuthModalP
                 {authStep === 'password' && (
                      <form onSubmit={handlePasswordLogin} className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors duration-300">
                                 Senha
                             </label>
                             <input
@@ -277,7 +277,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, slug }: AuthModalP
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 placeholder="******"
-                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent transition-all outline-none"
+                                className="w-full px-4 py-3 border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent transition-all outline-none bg-white dark:bg-white/5 text-gray-900 dark:text-white dark:placeholder-gray-500"
                                 required
                             />
                         </div>
@@ -318,7 +318,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, slug }: AuthModalP
                                 onChange={(e) => setOtpCode(e.target.value)}
                                 placeholder="000000"
                                 maxLength={6}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent transition-all outline-none text-center tracking-widest text-lg"
+                                className="w-full px-4 py-3 border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent transition-all outline-none text-center tracking-widest text-lg bg-white dark:bg-white/5 text-gray-900 dark:text-white dark:placeholder-gray-500"
                                 required
                             />
                         </div>
@@ -338,7 +338,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, slug }: AuthModalP
                              <div className="p-3 bg-green-50 text-green-700 text-sm rounded-lg mb-4">
                                   Número verificado! Crie sua senha de acesso.
                               </div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors duration-300">
                                 Nova Senha
                             </label>
                             <input
@@ -347,7 +347,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, slug }: AuthModalP
                                 onChange={(e) => setPassword(e.target.value)}
                                 placeholder="Mínimo 6 caracteres"
                                 minLength={6}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent transition-all outline-none"
+                                className="w-full px-4 py-3 border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent transition-all outline-none bg-white dark:bg-white/5 text-gray-900 dark:text-white dark:placeholder-gray-500"
                                 required
                             />
                         </div>
@@ -364,15 +364,12 @@ export default function AuthModal({ isOpen, onClose, onLogin, slug }: AuthModalP
                 {authStep === 'name' && (
                     <form onSubmit={handleNameSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors duration-300">
                                 Seu Nome
                             </label>
                             <input
-                                type="text"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
                                 placeholder="Digite seu nome"
-                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent transition-all outline-none"
+                                className="w-full px-4 py-3 border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent transition-all outline-none bg-white dark:bg-white/5 text-gray-900 dark:text-white dark:placeholder-gray-500"
                                 required
                             />
                         </div>

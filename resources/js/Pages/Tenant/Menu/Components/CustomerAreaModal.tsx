@@ -205,30 +205,30 @@ export default function CustomerAreaModal({ isOpen, onClose, customer, onLogout,
                 onClick={onClose}
             />
 
-            <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col relative z-20 shadow-2xl animate-in fade-in zoom-in duration-300">
+            <div className="bg-white dark:bg-premium-dark rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col relative z-20 shadow-2xl animate-in fade-in zoom-in duration-300 transition-colors duration-300">
                 {/* Header */}
-                <div className="p-6 border-b flex justify-between items-center bg-white rounded-t-2xl z-10 relative">
-                    <h3 className="text-xl font-bold text-gray-900">Minha Conta</h3>
+                <div className="p-6 border-b border-gray-100 dark:border-white/5 flex justify-between items-center bg-white dark:bg-premium-dark rounded-t-2xl z-10 relative transition-colors duration-300">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white transition-colors duration-300">Minha Conta</h3>
                     <div className="flex items-center gap-2">
                          <button 
                             onClick={() => setShowNotifications(!showNotifications)}
-                            className="p-2 text-gray-400 hover:text-[#ff3d03] hover:bg-orange-50 rounded-full transition-colors relative"
+                            className="p-2 text-gray-400 dark:text-gray-500 hover:text-[#ff3d03] hover:bg-orange-50 dark:hover:bg-white/10 rounded-full transition-colors relative"
                         >
                             <Bell className="h-6 w-6" />
                             {unreadCount > 0 && (
-                                <span className="absolute top-2 right-2 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                                <span className="absolute top-2 right-2 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-white dark:border-premium-dark"></span>
                             )}
                         </button>
-                        <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
+                        <button onClick={onClose} className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors">
                             <X className="h-6 w-6" />
                         </button>
                     </div>
 
                     {/* Notifications Dropdown */}
                     {showNotifications && (
-                        <div className="absolute top-16 right-6 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 p-4 z-50 animate-in fade-in slide-in-from-top-2 max-h-[400px] overflow-y-auto">
+                        <div className="absolute top-16 right-6 w-80 bg-white dark:bg-premium-card rounded-xl shadow-2xl border border-gray-100 dark:border-white/5 p-4 z-50 animate-in fade-in slide-in-from-top-2 max-h-[400px] overflow-y-auto transition-colors duration-300">
                              <div className="flex justify-between items-center mb-3">
-                                <h4 className="font-bold text-gray-900">Notificações</h4>
+                                <h4 className="font-bold text-gray-900 dark:text-white transition-colors duration-300">Notificações</h4>
                                 {unreadCount > 0 && (
                                     <button onClick={markAllAsRead} className="text-xs text-orange-500 font-bold hover:underline">Marcar todas como lidas</button>
                                 )}
@@ -244,22 +244,22 @@ export default function CustomerAreaModal({ isOpen, onClose, customer, onLogout,
                                             key={notification.id} 
                                             onClick={() => !notification.read_at && markAsRead(notification.id)}
                                             className={clsx(
-                                                "p-3 rounded-lg flex gap-3 items-start cursor-pointer transition-colors",
-                                                notification.read_at ? "bg-white opacity-60" : "bg-orange-50 hover:bg-orange-100"
+                                                "p-3 rounded-lg flex gap-3 items-start cursor-pointer transition-colors duration-300",
+                                                notification.read_at ? "bg-white dark:bg-white/5 opacity-60" : "bg-orange-50 dark:bg-[#ff3d03]/10 hover:bg-orange-100 dark:hover:bg-[#ff3d03]/20"
                                             )}
                                         >
                                             <div className={clsx(
-                                                "p-1.5 rounded-full shrink-0",
-                                                notification.read_at ? "bg-gray-100 text-gray-400" : "bg-orange-100 text-[#ff3d03]"
+                                                "p-1.5 rounded-full shrink-0 transition-colors duration-300",
+                                                notification.read_at ? "bg-gray-100 dark:bg-white/10 text-gray-400 dark:text-gray-500" : "bg-orange-100 dark:bg-[#ff3d03]/20 text-[#ff3d03]"
                                             )}>
                                                 {/* Dynamic Icon based on type if feasible, currently assuming Gift/System */}
                                                 <Gift className="h-4 w-4" />
                                             </div>
                                             <div>
-                                                <p className={clsx("text-sm text-gray-800", !notification.read_at && "font-bold")}>
+                                                <p className={clsx("text-sm text-gray-800 dark:text-gray-200 transition-colors duration-300", !notification.read_at && "font-bold")}>
                                                     {notification.title}
                                                 </p>
-                                                <p className="text-xs text-gray-500 mt-1 leading-snug">
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-snug transition-colors duration-300">
                                                     {notification.message}
                                                 </p>
                                                 <span className="text-[10px] text-gray-400 mt-1 block">
@@ -278,16 +278,16 @@ export default function CustomerAreaModal({ isOpen, onClose, customer, onLogout,
                 </div>
 
                 {/* Tabs */}
-                <div className="flex border-b bg-gray-50/50 overflow-x-auto">
+                <div className="flex border-b border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/5 overflow-x-auto transition-colors duration-300">
                     {['info', 'addresses', 'orders', 'referral'].map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab as any)}
                             className={clsx(
-                                "flex-1 py-4 text-sm font-bold transition-all border-b-2 whitespace-nowrap px-4",
+                                "flex-1 py-4 text-sm font-bold transition-all border-b-2 whitespace-nowrap px-4 duration-300",
                                 activeTab === tab
-                                    ? "text-[#ff3d03] border-[#ff3d03] bg-white"
-                                    : "text-gray-500 border-transparent hover:text-gray-700 hover:bg-gray-100"
+                                    ? "text-[#ff3d03] border-[#ff3d03] bg-white dark:bg-premium-dark"
+                                    : "text-gray-500 dark:text-gray-400 border-transparent hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10"
                             )}
                         >
                             {tab === 'info' ? 'Meus Dados' : tab === 'addresses' ? 'Endereços' : tab === 'orders' ? 'Pedidos' : 'Indique e Ganhe'}
@@ -296,12 +296,12 @@ export default function CustomerAreaModal({ isOpen, onClose, customer, onLogout,
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-6 bg-gray-50/30">
+                <div className="flex-1 overflow-y-auto p-6 bg-gray-50/30 dark:bg-black/20 transition-colors duration-300">
                     {activeTab === 'info' && (
                         <div className="space-y-6">
-                            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                                <h4 className="font-bold text-gray-900 mb-1">{customer.name}</h4>
-                                <p className="text-gray-500">{customer.phone}</p>
+                            <div className="bg-white dark:bg-premium-card p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm transition-colors duration-300">
+                                <h4 className="font-bold text-gray-900 dark:text-white mb-1 transition-colors duration-300">{customer.name}</h4>
+                                <p className="text-gray-500 dark:text-gray-400 transition-colors duration-300">{customer.phone}</p>
                             </div>
 
                             {/* Loyalty Banner */}
@@ -333,7 +333,7 @@ export default function CustomerAreaModal({ isOpen, onClose, customer, onLogout,
 
                             <button
                                 onClick={onLogout}
-                                className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 font-bold py-4 rounded-xl hover:bg-red-100 transition-colors"
+                                className="w-full flex items-center justify-center gap-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-bold py-4 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
                             >
                                 <LogOut className="h-5 w-5" />
                                 Sair da Conta
@@ -348,7 +348,7 @@ export default function CustomerAreaModal({ isOpen, onClose, customer, onLogout,
                                     {addresses.length < 3 && (
                                         <button
                                             onClick={() => setShowAddressForm(true)}
-                                            className="w-full flex items-center justify-center gap-2 bg-white border-2 border-dashed border-gray-300 text-gray-600 font-bold py-4 rounded-xl hover:border-[#ff3d03] hover:text-[#ff3d03] hover:bg-orange-50 transition-all"
+                                            className="w-full flex items-center justify-center gap-2 bg-white dark:bg-premium-card border-2 border-dashed border-gray-300 dark:border-white/10 text-gray-600 dark:text-gray-400 font-bold py-4 rounded-xl hover:border-[#ff3d03] hover:text-[#ff3d03] hover:bg-orange-50 dark:hover:bg-white/5 transition-all"
                                         >
                                             <Plus className="h-5 w-5" />
                                             Adicionar Novo Endereço
@@ -356,36 +356,36 @@ export default function CustomerAreaModal({ isOpen, onClose, customer, onLogout,
                                     )}
 
                                     {addresses.map(address => (
-                                        <div key={address.id} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                                        <div key={address.id} className="bg-white dark:bg-premium-card border border-gray-200 dark:border-white/5 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-300">
                                             <div className="flex justify-between items-start mb-3">
                                                 <div className="flex items-start gap-3">
-                                                    <div className="p-2 bg-gray-50 rounded-lg">
+                                                    <div className="p-2 bg-gray-50 dark:bg-white/5 rounded-lg transition-colors duration-300">
                                                         <Home className="h-5 w-5 text-gray-400" />
                                                     </div>
                                                     <div>
-                                                        <p className="font-bold text-gray-900">
+                                                        <p className="font-bold text-gray-900 dark:text-white transition-colors duration-300">
                                                             {address.street}, {address.number}
                                                         </p>
                                                         {address.complement && (
-                                                            <p className="text-sm text-gray-600">{address.complement}</p>
+                                                            <p className="text-sm text-gray-600 dark:text-gray-300 transition-colors duration-300">{address.complement}</p>
                                                         )}
-                                                        <p className="text-sm text-gray-500 mt-1">
+                                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 transition-colors duration-300">
                                                             {address.neighborhood} • {address.city}/{address.state}
                                                         </p>
                                                         <p className="text-xs text-gray-400 mt-1">CEP: {address.zip_code}</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-1">
-                                                    <button onClick={() => openEditAddress(address)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors">
+                                                    <button onClick={() => openEditAddress(address)} className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
                                                         <Edit2 className="h-4 w-4" />
                                                     </button>
-                                                    <button onClick={() => handleDeleteAddress(address.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                                                    <button onClick={() => handleDeleteAddress(address.id)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
                                                         <Trash2 className="h-4 w-4" />
                                                     </button>
                                                 </div>
                                             </div>
                                             {address.is_default ? (
-                                                <div className="inline-flex items-center gap-1.5 text-xs font-bold text-green-700 bg-green-50 px-3 py-1.5 rounded-full">
+                                                <div className="inline-flex items-center gap-1.5 text-xs font-bold text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-3 py-1.5 rounded-full transition-colors duration-300">
                                                     <Check className="h-3 w-3" /> Padrão
                                                 </div>
                                             ) : (
@@ -397,76 +397,76 @@ export default function CustomerAreaModal({ isOpen, onClose, customer, onLogout,
                                     ))}
                                 </>
                             ) : (
-                                <form onSubmit={handleAddressSubmit} className="bg-white p-6 rounded-2xl border border-gray-200">
-                                    <h4 className="font-bold text-gray-900 mb-4">{editingAddress ? 'Editar Endereço' : 'Novo Endereço'}</h4>
+                                <form onSubmit={handleAddressSubmit} className="bg-white dark:bg-premium-card p-6 rounded-2xl border border-gray-200 dark:border-white/5 transition-colors duration-300">
+                                    <h4 className="font-bold text-gray-900 dark:text-white mb-4 transition-colors duration-300">{editingAddress ? 'Editar Endereço' : 'Novo Endereço'}</h4>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="col-span-2">
-                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">CEP</label>
+                                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 transition-colors duration-300">CEP</label>
                                             <input
                                                 type="text"
                                                 value={addressForm.zip_code}
                                                 onChange={e => setAddressForm({ ...addressForm, zip_code: e.target.value })}
-                                                className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-[#ff3d03]"
+                                                className="w-full p-3 bg-gray-50 dark:bg-white/5 rounded-xl border-none focus:ring-2 focus:ring-[#ff3d03] text-gray-900 dark:text-white transition-colors duration-300"
                                                 required
                                             />
                                         </div>
                                         <div className="col-span-2">
-                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Rua</label>
+                                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 transition-colors duration-300">Rua</label>
                                             <input
                                                 type="text"
                                                 value={addressForm.street}
                                                 onChange={e => setAddressForm({ ...addressForm, street: e.target.value })}
-                                                className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-[#ff3d03]"
+                                                className="w-full p-3 bg-gray-50 dark:bg-white/5 rounded-xl border-none focus:ring-2 focus:ring-[#ff3d03] text-gray-900 dark:text-white transition-colors duration-300"
                                                 required
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Número</label>
+                                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 transition-colors duration-300">Número</label>
                                             <input
                                                 type="text"
                                                 value={addressForm.number}
                                                 onChange={e => setAddressForm({ ...addressForm, number: e.target.value })}
-                                                className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-[#ff3d03]"
+                                                className="w-full p-3 bg-gray-50 dark:bg-white/5 rounded-xl border-none focus:ring-2 focus:ring-[#ff3d03] text-gray-900 dark:text-white transition-colors duration-300"
                                                 required
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Comp.</label>
+                                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 transition-colors duration-300">Comp.</label>
                                             <input
                                                 type="text"
                                                 value={addressForm.complement}
                                                 onChange={e => setAddressForm({ ...addressForm, complement: e.target.value })}
-                                                className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-[#ff3d03]"
+                                                className="w-full p-3 bg-gray-50 dark:bg-white/5 rounded-xl border-none focus:ring-2 focus:ring-[#ff3d03] text-gray-900 dark:text-white transition-colors duration-300"
                                             />
                                         </div>
                                         <div className="col-span-2">
-                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Bairro</label>
+                                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 transition-colors duration-300">Bairro</label>
                                             <input
                                                 type="text"
                                                 value={addressForm.neighborhood}
                                                 onChange={e => setAddressForm({ ...addressForm, neighborhood: e.target.value })}
-                                                className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-[#ff3d03]"
+                                                className="w-full p-3 bg-gray-50 dark:bg-white/5 rounded-xl border-none focus:ring-2 focus:ring-[#ff3d03] text-gray-900 dark:text-white transition-colors duration-300"
                                                 required
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Cidade</label>
+                                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 transition-colors duration-300">Cidade</label>
                                             <input
                                                 type="text"
                                                 value={addressForm.city}
                                                 onChange={e => setAddressForm({ ...addressForm, city: e.target.value })}
-                                                className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-[#ff3d03]"
+                                                className="w-full p-3 bg-gray-50 dark:bg-white/5 rounded-xl border-none focus:ring-2 focus:ring-[#ff3d03] text-gray-900 dark:text-white transition-colors duration-300"
                                                 required
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">UF</label>
+                                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 transition-colors duration-300">UF</label>
                                             <input
                                                 type="text"
                                                 maxLength={2}
                                                 value={addressForm.state}
                                                 onChange={e => setAddressForm({ ...addressForm, state: e.target.value })}
-                                                className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-[#ff3d03]"
+                                                className="w-full p-3 bg-gray-50 dark:bg-white/5 rounded-xl border-none focus:ring-2 focus:ring-[#ff3d03] text-gray-900 dark:text-white transition-colors duration-300"
                                                 required
                                             />
                                         </div>
@@ -475,7 +475,7 @@ export default function CustomerAreaModal({ isOpen, onClose, customer, onLogout,
                                         <button
                                             type="button"
                                             onClick={() => { setShowAddressForm(false); resetAddressForm(); setEditingAddress(null); }}
-                                            className="flex-1 py-3 font-bold text-gray-500 hover:bg-gray-100 rounded-xl transition-colors"
+                                            className="flex-1 py-3 font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl transition-colors"
                                         >
                                             Cancelar
                                         </button>
@@ -501,26 +501,26 @@ export default function CustomerAreaModal({ isOpen, onClose, customer, onLogout,
                                 </div>
                             ) : (
                                 orders.map(order => (
-                                    <div key={order.id} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
+                                    <div key={order.id} className="bg-white dark:bg-premium-card border border-gray-100 dark:border-white/5 rounded-xl p-4 shadow-sm transition-colors duration-300">
                                         <div className="flex justify-between items-start mb-2">
-                                            <span className="font-black text-gray-900">#{order.order_number}</span>
-                                            <span className="px-2 py-1 bg-gray-100 rounded-lg text-xs font-bold text-gray-600 uppercase">
+                                            <span className="font-black text-gray-900 dark:text-white transition-colors duration-300">#{order.order_number}</span>
+                                            <span className="px-2 py-1 bg-gray-100 dark:bg-white/10 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-300 uppercase transition-colors duration-300">
                                                 {order.status}
                                             </span>
                                         </div>
-                                        <div className="text-sm text-gray-500 mb-3">
+                                        <div className="text-sm text-gray-500 dark:text-gray-400 mb-3 transition-colors duration-300">
                                             {new Date(order.created_at).toLocaleDateString('pt-BR', {
                                                 day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
                                             })}
                                         </div>
-                                        <div className="flex justify-between items-end border-t border-gray-50 pt-3">
+                                        <div className="flex justify-between items-end border-t border-gray-50 dark:border-white/5 pt-3 transition-colors duration-300">
                                             {order.loyalty_points_earned > 0 && (
                                                 <div className="flex items-center gap-1 text-orange-500 font-bold text-xs">
                                                     <Gift className="h-3 w-3" />
                                                     +{order.loyalty_points_earned} pts
                                                 </div>
                                             )}
-                                            <div className="font-black text-gray-900 ml-auto">
+                                            <div className="font-black text-gray-900 dark:text-white ml-auto transition-colors duration-300">
                                                 R$ {Number(order.total).toFixed(2).replace('.', ',')}
                                             </div>
                                         </div>
@@ -531,7 +531,7 @@ export default function CustomerAreaModal({ isOpen, onClose, customer, onLogout,
                             {/* Simple Pagination */}
                             <div className="flex justify-center gap-2 pt-4">
                                 {ordersPage > 1 && (
-                                    <button onClick={() => loadOrders(ordersPage - 1)} className="px-4 py-2 bg-gray-100 rounded-lg font-bold text-gray-600">Anterior</button>
+                                    <button onClick={() => loadOrders(ordersPage - 1)} className="px-4 py-2 bg-gray-100 dark:bg-white/10 rounded-lg font-bold text-gray-600 dark:text-gray-300 transition-colors duration-300">Anterior</button>
                                 )}
                                 {hasMoreOrders && (
                                     <button onClick={() => loadOrders(ordersPage + 1)} className="px-4 py-2 bg-[#ff3d03] rounded-lg font-bold text-white">Próximos</button>
@@ -543,8 +543,8 @@ export default function CustomerAreaModal({ isOpen, onClose, customer, onLogout,
                     {activeTab === 'referral' && (
                         <div className="space-y-6">
                             <div className="text-center">
-                                <h4 className="text-2xl font-black text-gray-900 mb-2">Indique e Ganhe! 🚀</h4>
-                                <p className="text-gray-500">
+                                <h4 className="text-2xl font-black text-gray-900 dark:text-white mb-2 transition-colors duration-300">Indique e Ganhe! 🚀</h4>
+                                <p className="text-gray-500 dark:text-gray-400 transition-colors duration-300">
                                     Convide amigos para o {store.name} e ganhem pontos juntos.
                                 </p>
                             </div>
@@ -557,7 +557,7 @@ export default function CustomerAreaModal({ isOpen, onClose, customer, onLogout,
                                     </span>
                                     <button
                                         onClick={() => copyToClipboard(customer.referral_code || '')}
-                                        className="p-3 bg-white text-[#ff3d03] rounded-xl hover:bg-orange-50 transition-colors shadow-sm"
+                                        className="p-3 bg-white dark:bg-white/10 text-[#ff3d03] rounded-xl hover:bg-orange-50 dark:hover:bg-white/20 transition-colors shadow-sm"
                                         title="Copiar código"
                                     >
                                         <Copy className="h-6 w-6" />
@@ -568,12 +568,12 @@ export default function CustomerAreaModal({ isOpen, onClose, customer, onLogout,
                                 </p>
                             </div>
 
-                            <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
-                                <h5 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                            <div className="bg-white dark:bg-premium-card border border-gray-100 dark:border-white/5 rounded-xl p-5 shadow-sm transition-colors duration-300">
+                                <h5 className="font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2 transition-colors duration-300">
                                     <Gift className="h-4 w-4 text-[#ff3d03]" />
                                     Como funciona:
                                 </h5>
-                                <ul className="space-y-3 text-sm text-gray-600">
+                                <ul className="space-y-3 text-sm text-gray-600 dark:text-gray-300 transition-colors duration-300">
                                     <li className="flex gap-3">
                                         <div className="h-6 w-6 bg-orange-100 text-[#ff3d03] rounded-full flex items-center justify-center font-bold text-xs shrink-0">1</div>
                                         <p>Envie seu código ou link para um amigo.</p>
@@ -584,7 +584,7 @@ export default function CustomerAreaModal({ isOpen, onClose, customer, onLogout,
                                     </li>
                                     <li className="flex gap-3">
                                         <div className="h-6 w-6 bg-orange-100 text-[#ff3d03] rounded-full flex items-center justify-center font-bold text-xs shrink-0">3</div>
-                                        <p>Você ganha <strong className="text-gray-900">{store.settings.referral_bonus_points || 0} pontos</strong> automaticamente!</p>
+                                        <p>Você ganha <strong className="text-gray-900 dark:text-white transition-colors duration-300">{store.settings.referral_bonus_points || 0} pontos</strong> automaticamente!</p>
                                     </li>
                                 </ul>
                             </div>

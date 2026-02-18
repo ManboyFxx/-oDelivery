@@ -99,6 +99,25 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
         localStorage.setItem('cart', JSON.stringify(cart));
     }, [cart]);
 
+    // Theme Logic
+    useEffect(() => {
+        const root = window.document.documentElement;
+        const theme = store.theme_mode || 'auto'; // 'light', 'dark', 'auto'
+
+        if (theme === 'dark') {
+            root.classList.add('dark');
+        } else if (theme === 'light') {
+            root.classList.remove('dark');
+        } else {
+            // System preference
+            if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                root.classList.add('dark');
+            } else {
+                root.classList.remove('dark');
+            }
+        }
+    }, [store.theme_mode]);
+
     // Scroll Spy for Category Nav
     useEffect(() => {
         const handleScroll = () => {
@@ -210,7 +229,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 text-gray-900 font-sans selection:bg-orange-100 selection:text-orange-900 pb-24 md:pb-0">
+        <div className="min-h-screen bg-gray-50 dark:bg-premium-dark text-gray-900 dark:text-gray-100 font-sans selection:bg-orange-100 selection:text-orange-900 pb-24 md:pb-0 transition-colors duration-300">
             <Head title={store.name} />
 
             {/* Hero Section */}
@@ -225,7 +244,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
             />
 
             {/* Sticky Search Header */}
-            <header className="sticky top-0 z-40 bg-white shadow-sm border-b border-gray-100">
+            <header className="sticky top-0 z-40 bg-white/80 dark:bg-premium-dark/80 backdrop-blur-md shadow-sm border-b border-gray-100 dark:border-white/5 transition-colors duration-300">
                 <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 flex items-center justify-center gap-6">
                     <div className="flex-1 max-w-2xl">
                         <div className="relative group">
@@ -235,7 +254,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                                 placeholder="O que vamos pedir agora?"
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
-                                className="w-full bg-gray-50/50 border border-transparent rounded-xl py-2.5 pl-11 pr-4 focus:ring-0 focus:border-gray-200 focus:bg-white transition-all outline-none font-medium text-sm text-gray-900 placeholder:text-gray-950"
+                                className="w-full bg-gray-50/50 dark:bg-white/5 border border-transparent rounded-xl py-2.5 pl-11 pr-4 focus:ring-0 focus:border-gray-200 dark:focus:border-white/10 focus:bg-white dark:focus:bg-white/10 transition-all outline-none font-medium text-sm text-gray-900 dark:text-white placeholder:text-gray-950 dark:placeholder:text-gray-400"
                             />
                         </div>
                     </div>

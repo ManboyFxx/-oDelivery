@@ -180,6 +180,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
                 { name: 'Dashboard', href: route('admin.dashboard'), route: 'admin.dashboard', icon: LayoutDashboard, current: isCurrent('/admin/dashboard') },
                 { name: 'Tenants', href: route('admin.tenants.index'), route: 'admin.tenants.index', icon: Store, current: isCurrent('/admin/tenants') },
                 { name: 'Finanças', href: route('admin.financial.index'), route: 'admin.financial.index', icon: DollarSign, current: isCurrent('/admin/financial') },
+                { name: 'Cupons de Plano', href: route('admin.plan-coupons.index'), route: 'admin.plan-coupons.index', icon: Ticket, current: isCurrent('/admin/plan-coupons') },
             ]
         },
         {

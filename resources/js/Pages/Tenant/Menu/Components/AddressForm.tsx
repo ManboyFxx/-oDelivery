@@ -76,8 +76,8 @@ export default function AddressForm({ onCancel, onSuccess, tenantId, customerId 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex justify-between items-center mb-4">
-                <h3 className="font-bold text-gray-900">Novo Endereço</h3>
-                <button type="button" onClick={onCancel} className="text-sm text-gray-500 hover:text-gray-700">
+                <h3 className="font-bold text-gray-900 dark:text-white transition-colors">Novo Endereço</h3>
+                <button type="button" onClick={onCancel} className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
                     Cancelar
                 </button>
             </div>
@@ -94,7 +94,7 @@ export default function AddressForm({ onCancel, onSuccess, tenantId, customerId 
                         placeholder="00000-000"
                         required
                     />
-                    <div className="absolute left-3 top-2.5 text-gray-400">
+                    <div className="absolute left-3 top-2.5 text-gray-400 dark:text-gray-500">
                         {cepLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
                     </div>
                 </div>
@@ -151,7 +151,7 @@ export default function AddressForm({ onCancel, onSuccess, tenantId, customerId 
                         id="city"
                         value={`${form.city} - ${form.state}`}
                         readOnly
-                        className="w-full bg-gray-50"
+                        className="w-full bg-gray-50 dark:bg-white/5 dark:text-gray-400"
                     />
                 </div>
             </div>

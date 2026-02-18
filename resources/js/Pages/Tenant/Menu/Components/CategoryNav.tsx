@@ -36,7 +36,7 @@ export default function CategoryNav({ categories, activeCategory, onSelectCatego
     }, [activeCategory]);
 
     return (
-        <div className="sticky top-[72px] z-30 bg-white/95 backdrop-blur-xl border-b border-gray-100/80 shadow-sm py-3 transition-all">
+        <div className="sticky top-[72px] z-30 bg-white/95 dark:bg-premium-dark/95 backdrop-blur-xl border-b border-gray-100/80 dark:border-white/5 shadow-sm py-3 transition-colors duration-300">
             <div className="max-w-7xl mx-auto px-4">
                 <div
                     ref={navRef}
@@ -49,7 +49,7 @@ export default function CategoryNav({ categories, activeCategory, onSelectCatego
                             "group relative px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap overflow-hidden shadow-md",
                             activeCategory === 'all'
                                 ? "text-white shadow-lg shadow-[#ff3d03]/30 scale-105"
-                                : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                                : "bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10 dark:hover:text-gray-200"
                         )}
                         style={activeCategory === 'all' ? { background: 'linear-gradient(135deg, #ff3d03 0%, #ff6b35 100%)' } : {}}
                     >
@@ -65,7 +65,7 @@ export default function CategoryNav({ categories, activeCategory, onSelectCatego
                                 "group relative px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap overflow-hidden shadow-md",
                                 activeCategory === category.id
                                     ? "text-white shadow-lg shadow-[#ff3d03]/30 scale-105"
-                                    : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                                    : "bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10 dark:hover:text-gray-200"
                             )}
                             style={activeCategory === category.id ? { background: 'linear-gradient(135deg, #ff3d03 0%, #ff6b35 100%)' } : {}}
                         >

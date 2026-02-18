@@ -64,10 +64,10 @@ export default function OrderTracking({ orderId, slug }: OrderTrackingProps) {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="min-h-screen bg-gray-50 dark:bg-premium-dark flex items-center justify-center transition-colors duration-300">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#ff3d03] mx-auto mb-4"></div>
-                    <p className="text-gray-600">Carregando pedido...</p>
+                    <p className="text-gray-600 dark:text-gray-400">Carregando pedido...</p>
                 </div>
             </div>
         );
@@ -75,16 +75,16 @@ export default function OrderTracking({ orderId, slug }: OrderTrackingProps) {
 
     if (error || !orderData) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-                <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-lg">
-                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <X className="h-8 w-8 text-red-600" />
+            <div className="min-h-screen bg-gray-50 dark:bg-premium-dark flex items-center justify-center p-4 transition-colors duration-300">
+                <div className="bg-white dark:bg-premium-card rounded-2xl p-8 max-w-md w-full text-center shadow-lg transition-colors duration-300">
+                    <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors duration-300">
+                        <X className="h-8 w-8 text-red-600 dark:text-red-400" />
                     </div>
-                    <h2 className="text-xl font-bold text-gray-900 mb-2">Pedido não encontrado</h2>
-                    <p className="text-gray-600 mb-6">{error}</p>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2 transition-colors duration-300">Pedido não encontrado</h2>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6 transition-colors duration-300">{error}</p>
                     <a
                         href={`/${slug}`}
-                        className="inline-block px-6 py-3 bg-[#ff3d03] text-white rounded-xl font-bold hover:bg-[#e63700] transition-colors"
+                        className="inline-block px-6 py-3 bg-[#ff3d03] text-white rounded-xl font-bold hover:bg-[#e63700] transition-colors duration-300"
                     >
                         Voltar ao Menu
                     </a>
@@ -99,16 +99,16 @@ export default function OrderTracking({ orderId, slug }: OrderTrackingProps) {
         <>
             <Head title={`Pedido #${order.order_number}`} />
 
-            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-8 px-4 transition-colors duration-300">
                 <div className="max-w-3xl mx-auto">
                     {/* Header */}
-                    <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                    <div className="bg-white dark:bg-premium-card rounded-2xl shadow-lg p-6 mb-6 transition-colors duration-300">
                         <div className="flex items-center justify-between mb-4">
                             <div>
-                                <h1 className="text-2xl font-black text-gray-900">
+                                <h1 className="text-2xl font-black text-gray-900 dark:text-white transition-colors duration-300">
                                     Pedido #{order.order_number}
                                 </h1>
-                                <p className="text-sm text-gray-500">{order.created_at}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">{order.created_at}</p>
                             </div>
                             {estimated_time > 0 && (
                                 <div className="bg-[#ff3d03] text-white px-4 py-2 rounded-xl">
@@ -125,16 +125,16 @@ export default function OrderTracking({ orderId, slug }: OrderTrackingProps) {
 
                         {/* Timeline */}
                         <div className="relative">
-                            <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+                            <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700 transition-colors duration-300"></div>
 
                             <div className="space-y-4">
                                 {timeline.map((step, index) => (
                                     <div key={index} className="relative flex items-start gap-4">
                                         <div className={clsx(
-                                            "relative z-10 w-12 h-12 rounded-full flex items-center justify-center text-xl transition-all",
+                                            "relative z-10 w-12 h-12 rounded-full flex items-center justify-center text-xl transition-all duration-300",
                                             step.completed
                                                 ? "bg-green-500 text-white shadow-lg shadow-green-500/30"
-                                                : "bg-gray-200 text-gray-400"
+                                                : "bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500"
                                         )}>
                                             {step.completed ? '✓' : step.icon}
                                         </div>
@@ -142,13 +142,13 @@ export default function OrderTracking({ orderId, slug }: OrderTrackingProps) {
                                         <div className="flex-1 pt-2">
                                             <div className="flex items-center justify-between">
                                                 <h3 className={clsx(
-                                                    "font-bold",
-                                                    step.completed ? "text-gray-900" : "text-gray-400"
+                                                    "font-bold transition-colors duration-300",
+                                                    step.completed ? "text-gray-900 dark:text-white" : "text-gray-400 dark:text-gray-500"
                                                 )}>
                                                     {step.label}
                                                 </h3>
                                                 {step.timestamp && (
-                                                    <span className="text-sm text-gray-500">{step.timestamp}</span>
+                                                    <span className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">{step.timestamp}</span>
                                                 )}
                                             </div>
                                             {step.current && (
@@ -164,49 +164,49 @@ export default function OrderTracking({ orderId, slug }: OrderTrackingProps) {
                     </div>
 
                     {/* Order Details */}
-                    <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-                        <h2 className="text-lg font-bold text-gray-900 mb-4">Detalhes do Pedido</h2>
+                    <div className="bg-white dark:bg-premium-card rounded-2xl shadow-lg p-6 mb-6 transition-colors duration-300">
+                        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 transition-colors duration-300">Detalhes do Pedido</h2>
 
                         <div className="space-y-3 mb-6">
                             {order.items.map((item, index) => (
-                                <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
+                                <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-white/5 last:border-0 transition-colors duration-300">
                                     <div>
-                                        <p className="font-medium text-gray-900">{item.quantity}x {item.name}</p>
+                                        <p className="font-medium text-gray-900 dark:text-white transition-colors duration-300">{item.quantity}x {item.name}</p>
                                     </div>
-                                    <p className="font-bold text-gray-900">
+                                    <p className="font-bold text-gray-900 dark:text-white transition-colors duration-300">
                                         R$ {item.price.toFixed(2).replace('.', ',')}
                                     </p>
                                 </div>
                             ))}
                         </div>
 
-                        <div className="space-y-2 pt-4 border-t border-gray-200">
+                        <div className="space-y-2 pt-4 border-t border-gray-200 dark:border-white/5 transition-colors duration-300">
                             <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Subtotal</span>
-                                <span className="font-medium">R$ {(order.total - order.delivery_fee).toFixed(2).replace('.', ',')}</span>
+                                <span className="text-gray-600 dark:text-gray-400 transition-colors duration-300">Subtotal</span>
+                                <span className="font-medium dark:text-gray-200 transition-colors duration-300">R$ {(order.total - order.delivery_fee).toFixed(2).replace('.', ',')}</span>
                             </div>
                             <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Taxa de Entrega</span>
-                                <span className="font-medium">R$ {order.delivery_fee.toFixed(2).replace('.', ',')}</span>
+                                <span className="text-gray-600 dark:text-gray-400 transition-colors duration-300">Taxa de Entrega</span>
+                                <span className="font-medium dark:text-gray-200 transition-colors duration-300">R$ {order.delivery_fee.toFixed(2).replace('.', ',')}</span>
                             </div>
-                            <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-200">
-                                <span>Total</span>
+                            <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-200 dark:border-white/5 transition-colors duration-300">
+                                <span className="dark:text-white transition-colors duration-300">Total</span>
                                 <span className="text-[#ff3d03]">R$ {order.total.toFixed(2).replace('.', ',')}</span>
                             </div>
                         </div>
                     </div>
 
                     {/* Delivery Address */}
-                    <div className="bg-white rounded-2xl shadow-lg p-6">
-                        <h2 className="text-lg font-bold text-gray-900 mb-2">Endereço de Entrega</h2>
-                        <p className="text-gray-600">{order.delivery_address}</p>
+                    <div className="bg-white dark:bg-premium-card rounded-2xl shadow-lg p-6 transition-colors duration-300">
+                        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2 transition-colors duration-300">Endereço de Entrega</h2>
+                        <p className="text-gray-600 dark:text-gray-400 transition-colors duration-300">{order.delivery_address}</p>
                     </div>
 
                     {/* Back Button */}
                     <div className="mt-6 text-center">
                         <a
                             href={`/${slug}`}
-                            className="inline-block px-6 py-3 bg-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-300 transition-colors"
+                            className="inline-block px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-300"
                         >
                             Voltar ao Menu
                         </a>
