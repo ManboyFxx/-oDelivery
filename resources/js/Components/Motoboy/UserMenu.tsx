@@ -63,20 +63,6 @@ export default function UserMenu({ user }: UserMenuProps) {
                             )}
                         </Menu.Item>
 
-                        <Menu.Item>
-                            {({ active }) => (
-                                <a
-                                    href="#"
-                                    className={`
-                                        flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm
-                                        ${active ? 'bg-orange-50 text-[#ff3d03]' : 'text-gray-700 hover:bg-gray-50'}
-                                    `}
-                                >
-                                    <Settings className="w-4 h-4" />
-                                    Configurações
-                                </a>
-                            )}
-                        </Menu.Item>
                     </div>
 
                     <div className="px-2 py-2">

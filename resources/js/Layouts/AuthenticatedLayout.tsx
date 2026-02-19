@@ -19,22 +19,12 @@ export default function Authenticated({ user, header, children, tenant: propTena
     const [hasUnread, setHasUnread] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-    // Global Audio & Toast Logic
-    const { success, error, info } = useToast();
-    const { play, initializeAudio } = useAudio();
+    const { success, error, info, soundEnabled } = useToast();
+    const { play } = useAudio();
     const { flash, toast } = usePage<any>().props;
     const prevFlashRef = useRef<any>(null);
 
-    // 1. Initialize Audio on Interaction (Global)
-    useEffect(() => {
-        const enableAudio = () => initializeAudio();
-        window.addEventListener('click', enableAudio, { once: true });
-        window.addEventListener('touchstart', enableAudio, { once: true });
-        return () => {
-            window.removeEventListener('click', enableAudio);
-            window.removeEventListener('touchstart', enableAudio);
-        };
-    }, [initializeAudio]);
+    // Flash message handling is global via this layout
 
     // 2. Handle Flash Messages & Backend Toasts Globally
     useEffect(() => {
@@ -95,19 +85,19 @@ export default function Authenticated({ user, header, children, tenant: propTena
                 // For now, rely on backend window.
 
                 if (data.hasNewOrders) {
-                    play('new-order');
+                    if (soundEnabled) play('new-order');
                     success('Novo Pedido!', 'Chegou um novo pedido!');
                     setHasUnread(true);
                 }
 
                 if (data.hasReadyOrders) {
-                    play('ready');
+                    if (soundEnabled) play('ready');
                     info('Pedido Pronto!', 'Um pedido está pronto.');
                     setHasUnread(true);
                 }
 
                 if (data.hasCanceledOrders) {
-                    play('error');
+                    if (soundEnabled) play('error');
                     error('Pedido Cancelado', 'Um pedido foi cancelado.');
                     setHasUnread(true);
                 }

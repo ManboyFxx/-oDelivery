@@ -164,7 +164,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
     const supportGroup: Group = {
         title: 'Ajuda',
         items: [
-            { name: 'Suporte', href: route('support.index'), route: 'support.index', icon: LifeBuoy, current: isCurrent('/suporte') },
+            { name: 'Suporte', href: route('support.index'), route: 'support.index', icon: LifeBuoy, current: isCurrent('/painel/suporte') },
         ]
     };
 
@@ -302,7 +302,6 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
                     </nav>
                 </div>
 
-                {/* Plan Limits Widget */}
                 {/* Plan Limits Widget */}
                 {limits && limits.products && limits.orders && (
                     <div className="mx-4 mb-2 p-4 rounded-2xl bg-white/5 border border-white/5">

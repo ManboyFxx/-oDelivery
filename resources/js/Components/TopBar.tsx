@@ -91,6 +91,9 @@ export default function TopBar({ user, onMenuClick, hasUnread = false, onRead }:
                     </Dropdown.Trigger>
 
                     <Dropdown.Content>
+                        <Dropdown.Link href={route('profile.edit')}>
+                            Meu Perfil
+                        </Dropdown.Link>
                         <Dropdown.Link href={route('logout')} method="post" as="button">
                             Sair
                         </Dropdown.Link>

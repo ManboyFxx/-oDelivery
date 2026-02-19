@@ -220,7 +220,7 @@ export default function Settings({ auth, settings, deliveryZones: initialZones, 
         e.preventDefault();
 
         if (editingZone) {
-            putZone(route('settings.zones.update', editingZone.id), {
+            putZone(route('delivery-zones.update', editingZone.id), {
                 onSuccess: () => {
                     setShowZoneModal(false);
                     resetZone();
@@ -230,7 +230,7 @@ export default function Settings({ auth, settings, deliveryZones: initialZones, 
                 }
             });
         } else {
-            postZone(route('settings.zones.store'), {
+            postZone(route('delivery-zones.store'), {
                 onSuccess: () => {
                     setShowZoneModal(false);
                     resetZone();
@@ -241,14 +241,14 @@ export default function Settings({ auth, settings, deliveryZones: initialZones, 
 
     const handleDeleteZone = (id: string) => {
         if (confirm('Tem certeza que deseja excluir esta zona de entrega?')) {
-            router.delete(route('settings.zones.destroy', id), {
+            router.delete(route('delivery-zones.destroy', id), {
                 preserveScroll: true,
             });
         }
     };
 
     const toggleZoneActive = (zone: any) => {
-        router.put(route('settings.zones.update', zone.id), {
+        router.put(route('delivery-zones.update', zone.id), {
             ...zone,
             is_active: !zone.is_active
         }, {

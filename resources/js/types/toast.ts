@@ -16,4 +16,5 @@ export interface ToastContextType {
     removeToast: (id: string) => void;
     clearAll: () => void;
     updateSettings?: (settings: any) => void;
+    soundEnabled: boolean;
 }

@@ -1,5 +1,5 @@
 import { Head, Link, usePage, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import MotoboyLayout from '@/Layouts/MotoboyLayout';
 import StatusToggle from '@/Components/Motoboy/StatusToggle';
 import DashboardCard from '@/Components/Motoboy/DashboardCard';
@@ -34,11 +34,33 @@ export default function Dashboard({
 }: DashboardProps) {
     const [isOnline, setIsOnline] = useState(summary.is_online);
     const [loadingOrders, setLoadingOrders] = useState<string | null>(null);
+    const [toggleError, setToggleError] = useState<string | null>(null);
 
-    const handleStatusToggle = async (newStatus: boolean) => {
-        setIsOnline(newStatus);
-        // TODO: POST para atualizar no backend
-    };
+    const handleStatusToggle = useCallback(async (newStatus: boolean) => {
+        setIsOnline(newStatus); // optimistic update
+        setToggleError(null);
+
+        try {
+            const response = await fetch(route('motoboy.availability.toggle'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
+                    'Accept': 'application/json',
+                },
+            });
+
+            if (!response.ok) throw new Error('Falha ao atualizar status');
+
+            const data = await response.json();
+            // Sync with server truth in case of race condition
+            setIsOnline(data.is_online);
+        } catch (err) {
+            // Rollback on failure
+            setIsOnline(!newStatus);
+            setToggleError('Não foi possível atualizar o status. Tente novamente.');
+        }
+    }, []);
 
     const handleAcceptOrder = async (orderId: string) => {
         setLoadingOrders(orderId);
@@ -63,6 +85,14 @@ export default function Dashboard({
     return (
         <MotoboyLayout title="Dashboard" subtitle="Bem-vindo ao seu painel">
             <Head title="Dashboard - ÓoDelivery Motoboy" />
+
+            {/* Toggle error toast */}
+            {toggleError && (
+                <div className="mb-4 bg-red-50 border border-red-200 text-red-700 text-sm font-semibold rounded-xl px-4 py-3 flex items-center justify-between">
+                    <span>{toggleError}</span>
+                    <button onClick={() => setToggleError(null)} className="ml-3 text-red-400 hover:text-red-600">✕</button>
+                </div>
+            )}
 
             {/* Location Tracker em background */}
             <LocationTracker

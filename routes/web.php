@@ -35,35 +35,21 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/planos', function () {
-    $planController = new \App\Http\Controllers\Api\PlanController();
-    $plans = \App\Models\PlanLimit::getActivePlans()->map(function ($plan) {
-        return [
-            'id' => $plan->plan,
-            'name' => $plan->display_name,
-            'price' => $plan->price_monthly,
-            'interval' => 'mês',
-            'features' => $plan->formatted_features,
-        ];
-    });
-
-    return Inertia::render('Welcome/Plans', [
-        'plans' => $plans,
-        'comparisonData' => $planController->comparison()->getData()->features
-    ]);
-})->name('plans');
-
-Route::get('/oomotoboy', function () {
-    return Inertia::render('Welcome/OoMotoboy');
-})->name('oomotoboy');
+Route::get('/oobot', function () {
+    return Inertia::render('OoBot');
+})->name('oobot');
 
 Route::get('/ooprint', function () {
-    return Inertia::render('Welcome/OoPrint');
+    return Inertia::render('OoPrint');
 })->name('ooprint');
 
 Route::get('/termos', function () {
     return Inertia::render('Terms');
 })->name('terms');
+
+Route::get('/suporte', function () {
+    return Inertia::render('Support');
+})->name('support');
 
 // Customer Auth Routes (Public - Phone Only) - ✅ COM RATE LIMITING
 Route::post('/check-slug', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'checkSlug'])->name('check-slug');
@@ -73,23 +59,17 @@ Route::middleware('throttle:20,1')->group(function () {
     Route::post('/customer/complete-registration', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'completeRegistration']);
     Route::post('/customer/quick-login', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'quickLoginSecure']);
     Route::post('/customer/apply-referral', [\App\Http\Controllers\Tenant\ReferralController::class, 'applyReferral']); // Pública - cliente ainda não logado
+    Route::post('/customer/verify-otp', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'verifyOTP']);
+    Route::post('/customer/login-password', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'loginWithPassword']);
+    Route::post('/customer/send-setup-otp', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'sendSetupOtp']);
+    Route::post('/customer/setup-password', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'setupPassword']);
+    Route::post('/customer/register', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'register']);
 });
 
-// Customer Actions - ✅ COM RATE LIMITING E TENANT SCOPE
-Route::middleware(['throttle:10,1', 'tenant.scope'])->group(function () {
+// Customer Authenticated Actions - ✅ COM RATE LIMITING E TENANT SCOPE
+Route::middleware(['throttle:60,1', 'tenant.scope'])->group(function () {
     Route::post('/customer/logout', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'logout']);
     Route::get('/customer/me', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'me']);
-
-    // Customer Auth (Phone-based)
-    Route::post('/customer/check-phone', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'checkPhone']);
-    Route::post('/customer/complete-registration', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'completeRegistration']);
-    Route::post('/customer/verify-otp', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'verifyOTP']);
-    Route::post('/customer/login-password', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'loginWithPassword']); // Nova rota senha
-    Route::post('/customer/send-setup-otp', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'sendSetupOtp']); // Nova rota setup
-    Route::post('/customer/setup-password', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'setupPassword']); // Nova rota setup
-    Route::post('/customer/quick-login', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'quickLoginSecure']); // Nova rota checkout security
-    Route::post('/customer/register', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'register']);
-    Route::post('/customer/logout', [\App\Http\Controllers\Tenant\CustomerAuthController::class, 'logout']);
 
     // Customer Address Routes
     Route::get('/customer/addresses', [\App\Http\Controllers\Tenant\CustomerAddressController::class, 'index']);
@@ -102,7 +82,7 @@ Route::middleware(['throttle:10,1', 'tenant.scope'])->group(function () {
     Route::post('/customer/checkout', [\App\Http\Controllers\Tenant\CustomerOrderController::class, 'store'])->middleware('plan.limit:orders');
     Route::post('/customer/redeem-product', [CustomerRedemptionController::class, 'redeemProduct']);
     Route::post('/customer/validate-coupon', [\App\Http\Controllers\CouponValidationController::class, 'validate']);
-    Route::get('/customer/referral-code', [\App\Http\Controllers\Tenant\ReferralController::class, 'generateCode']); // Gera/retorna código de indicação
+    Route::get('/customer/referral-code', [\App\Http\Controllers\Tenant\ReferralController::class, 'generateCode']);
 
     // Customer Notifications
     Route::get('/customer/notifications', [\App\Http\Controllers\Tenant\CustomerNotificationController::class, 'index']);
@@ -214,16 +194,12 @@ Route::middleware('auth')->prefix('subscription')->name('subscription.')->group(
     Route::get('/status', [\App\Http\Controllers\SubscriptionController::class, 'status'])->name('status');
 });
 
-// Support Area
-Route::middleware(['auth'])->get('/suporte', [\App\Http\Controllers\SupportController::class, 'index'])->name('support.index');
+// Support Area (authenticated panel - different from public /suporte landing page)
+Route::middleware(['auth', 'subscription'])->get('/painel/suporte', [\App\Http\Controllers\SupportController::class, 'index'])->name('support.index');
 
 // Account Routes (authenticated but no subscription check)
 Route::middleware('auth')->prefix('account')->name('account.')->group(function () {
     Route::get('/suspended', [AccountController::class, 'suspended'])->name('suspended');
-});
-
-Route::middleware('auth')->group(function () {
-    // Account specific routes if any
 });
 
 
@@ -435,8 +411,10 @@ Route::middleware(['auth', 'is_motoboy', 'check_subscription', 'feature:motoboy_
     Route::get('/location/history', [\App\Http\Controllers\Motoboy\LocationController::class, 'history'])->name('location.history');
     Route::get('/location/delivery/{orderId}', [\App\Http\Controllers\Motoboy\LocationController::class, 'delivery'])->name('location.delivery');
 
-    // Será expandido nas próximas fases com:
-    // - Ações de pedidos (POST - aceitar, recusar, entregar)
+    // Ações de pedidos
+    Route::post('/pedidos/{orderId}/accept', [\App\Http\Controllers\Motoboy\MotoboysController::class, 'acceptOrder'])->name('orders.accept');
+    Route::post('/pedidos/{orderId}/start-delivery', [\App\Http\Controllers\Motoboy\MotoboysController::class, 'startDelivery'])->name('orders.start-delivery');
+    Route::post('/pedidos/{orderId}/deliver', [\App\Http\Controllers\Motoboy\MotoboysController::class, 'deliverOrder'])->name('orders.deliver');
 });
 
 // API Routes for Motoboy Geolocation and Notifications
@@ -474,3 +452,9 @@ Route::post('/webhooks/stripe', [\App\Http\Controllers\StripeWebhookController::
     ->name('webhooks.stripe');
 
 require __DIR__ . '/auth.php';
+
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    // Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});

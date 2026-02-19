@@ -140,60 +140,93 @@ export default function Register() {
         }
     };
 
+    const [step, setStep] = useState(1);
+
+    const nextStep = () => {
+        if (step === 1) {
+            if (!data.store_name || !data.slug) {
+                // Simple validation trigger (browsers 'required' won't work on hidden/unmounted inputs easily if we split)
+                // Actually, since we are using controlled inputs, we can check 'data'.
+                // Ideally we should alert or focus.
+                // For simplicity/UX, let's just let HTML5 validation handle it by keeping the button type="button" and manually checking, 
+                // OR we can rely on standard form behavior if we conditionally render.
+                // Let's manually check mostly to give feedback if needed, but simply preventing progress is fine for now.
+                if(!data.store_name) {
+                     // trigger browser validation if possible, or just focus
+                     document.getElementById('store_name')?.focus();
+                     return;
+                }
+                 if(!data.slug) {
+                     document.getElementById('slug')?.focus();
+                     return;
+                }
+            }
+            setStep(2);
+        }
+    };
+
+    const prevStep = () => {
+        setStep(1);
+    };
+
     return (
-        <div className="min-h-screen bg-gray-100 flex flex-col justify-center py-8 sm:px-6 lg:px-8 font-sans selection:bg-[#ff3d03] selection:text-white antialiased">
+        <div className="flex h-screen w-full font-sans selection:bg-[#ff3d03] selection:text-white antialiased overflow-hidden">
             <Head title="Criar Conta Empresarial - ÓoDelivery" />
 
-            {/* Main Card Container */}
-            <div className="w-full max-w-6xl mx-auto bg-white rounded-[2rem] shadow-2xl overflow-hidden flex min-h-[600px] lg:min-h-[700px]">
+            {/* Left Side - Image */}
+            <div className="hidden lg:flex lg:w-1/2 relative bg-gray-50 items-center justify-center p-12 overflow-hidden">
+                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white to-gray-100 -z-0"></div>
+                 <img 
+                    src="/images/register-hero-v2.png" 
+                    alt="Register Illustration" 
+                    className="relative z-10 w-full max-w-2xl object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-700"
+                />
+            </div>
 
-                <div className="hidden lg:flex lg:w-1/2 bg-black relative items-center justify-center p-12 overflow-hidden">
-                    {/* Large Central Logo */}
-                    <div className="relative z-10 flex flex-col items-center justify-center transform transition-transform hover:scale-105 duration-500">
-                        <img
-                            src="/images/logo-hq.png"
-                            alt="ÓoDelivery"
-                            className="w-96 h-96 object-contain drop-shadow-2xl"
-                        />
-                    </div>
-                    {/* Subtle Texture */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
+            {/* Right Side - Form */}
+            <div className="w-full lg:w-1/2 bg-white flex flex-col justify-center px-6 py-12 sm:px-12 lg:px-16 xl:px-24 overflow-y-auto relative h-full">
+                {/* Back to Home Button */}
+                <div className="absolute top-8 right-8 lg:left-8">
+                    <Link href="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-[#ff3d03] transition-colors font-medium">
+                        <ArrowLeft className="w-5 h-5" />
+                        <span className="hidden sm:inline">Voltar</span>
+                    </Link>
                 </div>
 
-                {/* Right Side - Form */}
-                <div className="w-full lg:w-1/2 p-8 sm:p-12 lg:p-16 flex flex-col justify-center relative bg-white h-full lg:overflow-y-auto lg:max-h-full text-center">
+                <div className="w-full max-w-lg mx-auto">
+                    <div className="space-y-4 mb-6">
+                        {/* Logo Centered */}
+                        <div className="flex justify-center items-center gap-2 mb-4">
+                            <img src="/images/logo-icon.png" alt="ÓoDelivery" className="h-10 w-auto" />
+                            <span className="text-2xl font-bold text-gray-900 tracking-tight">ÓoDelivery.</span>
+                        </div>
+                        {/* Main Title */}
+                        <h1 className="text-3xl font-black text-gray-900 tracking-tight leading-tight text-center">Comece grátis.</h1>
+                        
+                        {/* Progress Steps */}
+                        <div className="flex justify-center gap-2 mt-2">
+                            <div className={`h-1.5 w-8 rounded-full transition-colors ${step >= 1 ? 'bg-[#ff3d03]' : 'bg-gray-200'}`}></div>
+                            <div className={`h-1.5 w-8 rounded-full transition-colors ${step >= 2 ? 'bg-[#ff3d03]' : 'bg-gray-200'}`}></div>
+                        </div>
+                        <p className="text-gray-500 font-medium text-sm text-center uppercase tracking-wider">
+                            Etapa {step} de 2: {step === 1 ? 'Dados do Estabelecimento' : 'Dados de Acesso'}
+                        </p>
 
-                    {/* Back to Home Button */}
-                    <div className="absolute top-6 left-6 sm:top-10 sm:left-10 z-20">
-                        <Link href="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-[#ff3d03] transition-colors font-medium">
-                            <ArrowLeft className="w-5 h-5" />
-                            <span className="hidden sm:inline">Voltar</span>
-                        </Link>
+                        {step === 1 && (
+                            <div className="bg-gradient-to-r from-[#ff3d03]/10 to-orange-50 border-2 border-[#ff3d03] rounded-2xl p-4 text-center mt-6">
+                                <div className="flex items-center justify-center gap-2 mb-1">
+                                    <Sparkles className="h-5 w-5 text-[#ff3d03] fill-[#ff3d03]" />
+                                    <h3 className="text-lg font-black text-gray-900">Plano Único - Tudo Liberado</h3>
+                                </div>
+                                <p className="text-sm text-gray-700 font-medium">Recursos ilimitados por R$ 129,90/mês</p>
+                            </div>
+                        )}
                     </div>
 
-                    <div className="max-w-md w-full mx-auto">
-                        <div className="space-y-4 mb-8">
-                            {/* Logo Centered */}
-                            <div className="flex justify-center items-center gap-2 mb-4">
-                                <img src="/images/logo-icon.png" alt="ÓoDelivery" className="h-10 w-auto" />
-                                <span className="text-2xl font-bold text-gray-900 tracking-tight">ÓoDelivery.</span>
-                            </div>
-                            {/* Main Title - KEPT BOLD/BLACK */}
-                            <h1 className="text-3xl font-black text-gray-900 tracking-tight leading-tight">Comece grátis.</h1>
-                            <p className="text-gray-600 font-medium text-lg">Crie sua loja digital completa em segundos.</p>
-
-                                <div className="bg-gradient-to-r from-[#ff3d03]/10 to-orange-50 border-2 border-[#ff3d03] rounded-2xl p-4 text-center">
-                                    <div className="flex items-center justify-center gap-2 mb-1">
-                                        <Sparkles className="h-5 w-5 text-[#ff3d03] fill-[#ff3d03]" />
-                                        <h3 className="text-lg font-black text-gray-900">Plano Único - Tudo Liberado</h3>
-                                    </div>
-                                    <p className="text-sm text-gray-700 font-medium">Recursos ilimitados por R$ 129,90/mês</p>
-                                </div>
-                        </div>
-
-                        <form onSubmit={submit} className="space-y-5 text-left">
-                            {/* Step 1: Store Info */}
-                            <div className="space-y-4">
+                    <form onSubmit={submit} className="space-y-5 text-left">
+                        {/* Step 1: Store Info */}
+                        {step === 1 && (
+                            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                                 <div>
                                     <InputLabel htmlFor="store_name" value="Nome do Estabelecimento" className="text-xs font-bold uppercase tracking-widest text-gray-700 mb-1.5" />
                                     <div className="relative group">
@@ -208,6 +241,7 @@ export default function Register() {
                                             className="block w-full pl-12 pr-4 py-4 bg-white border-2 border-gray-200 focus:border-[#ff3d03] focus:ring-0 rounded-xl text-gray-900 font-normal placeholder-gray-500 transition-colors shadow-sm"
                                             placeholder="Ex: Pizzaria do João"
                                             required
+                                            autoFocus
                                         />
                                     </div>
                                     <InputError message={errors.store_name} className="mt-1" />
@@ -217,7 +251,7 @@ export default function Register() {
                                     <InputLabel htmlFor="slug" value="Link do Cardápio" className="text-xs font-bold uppercase tracking-widest text-gray-700 mb-1.5" />
                                     <div className="relative group">
                                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 font-medium group-focus-within:text-[#ff3d03] transition-colors text-sm">
-                                            app.oodelivery.com/
+                                            oodelivery.online/
                                         </div>
                                         <input
                                             id="slug"
@@ -264,16 +298,25 @@ export default function Register() {
                                     </div>
                                     <InputError message={errors.slug} className="mt-1" />
                                 </div>
+                                
+                                <button
+                                    type="button"
+                                    onClick={nextStep}
+                                    className="w-full flex items-center justify-center py-4 bg-[#ff3d03] hover:bg-[#e63700] text-white font-medium text-lg rounded-xl shadow-lg shadow-[#ff3d03]/30 transition-colors mt-6"
+                                >
+                                    Continuar
+                                    <ArrowRight className="w-5 h-5 ml-2" />
+                                </button>
                             </div>
+                        )}
 
-                            <div className="relative flex items-center gap-4 py-2">
-                                <div className="h-px bg-gray-200 flex-1"></div>
-                                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Dados de Acesso</span>
-                                <div className="h-px bg-gray-200 flex-1"></div>
-                            </div>
+                        <div className="relative flex items-center gap-4 py-2 opacity-0 h-0 overflow-hidden">
+                            {/* Hidden divider to keep structure or just remove */}
+                        </div>
 
-                            {/* Step 2: Personal Info */}
-                            <div className="space-y-4">
+                        {/* Step 2: Personal Info */}
+                        {step === 2 && (
+                            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <InputLabel htmlFor="name" value="Seu Nome" className="text-xs font-bold uppercase tracking-widest text-gray-700 mb-1.5" />
@@ -289,6 +332,7 @@ export default function Register() {
                                                 className="block w-full pl-12 pr-4 py-4 bg-white border-2 border-gray-200 focus:border-[#ff3d03] focus:ring-0 rounded-xl text-gray-900 font-normal placeholder-gray-500 transition-colors shadow-sm"
                                                 placeholder="Nome Completo"
                                                 required
+                                                autoFocus
                                             />
                                         </div>
                                         <InputError message={errors.name} className="mt-1" />
@@ -385,25 +429,36 @@ export default function Register() {
                                         <InputError message={errors.password_confirmation} className="mt-1" />
                                     </div>
                                 </div>
+                                
+                                <div className="flex gap-3 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={prevStep}
+                                        className="flex-1 flex items-center justify-center py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-lg rounded-xl transition-colors"
+                                    >
+                                        <ArrowLeft className="w-5 h-5 mr-2" />
+                                        Voltar
+                                    </button>
+                                    <PrimaryButton
+                                        className="flex-[2] flex items-center justify-center py-4 bg-[#ff3d03] hover:bg-[#e63700] text-white font-medium text-lg rounded-xl shadow-lg shadow-[#ff3d03]/30 transition-colors"
+                                        disabled={processing}
+                                    >
+                                        {processing ? (
+                                            <>
+                                                <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                                                Criando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                Concluir Cadastro
+                                                <ArrowRight className="w-5 h-5 ml-2" />
+                                            </>
+                                        )}
+                                    </PrimaryButton>
+                                </div>
                             </div>
-
-                            <PrimaryButton
-                                className="w-full flex items-center justify-center py-4 bg-[#ff3d03] hover:bg-[#e63700] text-white font-medium text-lg rounded-xl shadow-lg shadow-[#ff3d03]/30 transition-colors mt-6"
-                                disabled={processing}
-                            >
-                                {processing ? (
-                                    <>
-                                        <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                                        Criando Loja...
-                                    </>
-                                ) : (
-                                    <>
-                                        Criar Minha Loja e Iniciar
-                                        <ArrowRight className="w-5 h-5 ml-2" />
-                                    </>
-                                )}
-                            </PrimaryButton>
-                        </form>
+                        )}
+                    </form>
 
                         <div className="mt-8 text-center border-t border-gray-100 pt-6">
                             <div className="text-sm font-medium text-gray-500">
@@ -424,6 +479,5 @@ export default function Register() {
                     </div>
                 </div>
             </div>
-        </div>
     );
 }

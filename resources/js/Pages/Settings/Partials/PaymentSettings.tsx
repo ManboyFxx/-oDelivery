@@ -27,12 +27,17 @@ const FIXED_PAYMENT_METHODS = [
 ];
 
 export default function PaymentSettings({ paymentMethods }: PaymentSettingsProps) {
-    const [methods, setMethods] = useState(() => {
+    // Sync with props when they change (e.g. after save)
+    const [methods, setMethods] = useState(() => mergeMethods(paymentMethods));
+
+    // Helper to merge fixed + backend methods
+    function mergeMethods(backendMethods: PaymentMethod[]) {
         return FIXED_PAYMENT_METHODS.map(fixed => {
-            const current = paymentMethods.find(m => m.type === fixed.type);
+            const current = backendMethods.find(m => m.type === fixed.type);
             return {
                 ...fixed,
                 ...current,
+                id: current?.id, // Ensure ID is preserved if it exists
                 is_active: !!current?.is_active,
                 fee_percentage: current?.fee_percentage || '',
                 fee_fixed: current?.fee_fixed || '',
@@ -40,7 +45,12 @@ export default function PaymentSettings({ paymentMethods }: PaymentSettingsProps
                 pix_key_type: current?.pix_key_type || 'random'
             };
         });
-    });
+    }
+
+    // Effect to update local state when props change (Inertia reload)
+    React.useEffect(() => {
+        setMethods(mergeMethods(paymentMethods));
+    }, [paymentMethods]);
 
     const handlePaymentToggle = (method: any) => {
         const newStatus = !method.is_active;
@@ -50,17 +60,39 @@ export default function PaymentSettings({ paymentMethods }: PaymentSettingsProps
             m.type === method.type ? { ...m, is_active: newStatus } : m
         ));
 
-        router.put(route('settings.payment.toggle', method.id), {
-            is_active: newStatus
-        }, {
-            preserveScroll: true,
-            onError: () => {
-                // Revert on error
-                setMethods(prev => prev.map(m =>
-                    m.type === method.type ? { ...m, is_active: !newStatus } : m
-                ));
-            }
-        });
+        const commonData = {
+            name: method.name,
+            type: method.type,
+            fee_percentage: method.fee_percentage || 0,
+            fee_fixed: method.fee_fixed || 0,
+            is_active: newStatus,
+            pix_key: method.pix_key,
+            pix_key_type: method.pix_key_type
+        };
+
+        if (method.id) {
+            // Update existing
+            router.put(route('payment-methods.update', method.id), commonData, {
+                preserveScroll: true,
+                onError: () => {
+                   // Rollback
+                   setMethods(prev => prev.map(m =>
+                        m.type === method.type ? { ...m, is_active: !newStatus } : m
+                    ));
+                }
+            });
+        } else if (newStatus) {
+            // Create new (only if turning ON)
+            router.post(route('payment-methods.store'), commonData, {
+                preserveScroll: true,
+                onError: () => {
+                    // Rollback
+                    setMethods(prev => prev.map(m =>
+                        m.type === method.type ? { ...m, is_active: false } : m
+                    ));
+                }
+            });
+        }
     };
 
     const handlePaymentUpdate = (method: any, field: string, value: any) => {
@@ -72,9 +104,12 @@ export default function PaymentSettings({ paymentMethods }: PaymentSettingsProps
     const savePaymentMethod = (method: any) => {
         if (!method.id) return;
 
-        router.put(route('settings.payment.update', method.id), {
-            fee_percentage: method.fee_percentage,
-            fee_fixed: method.fee_fixed,
+        router.put(route('payment-methods.update', method.id), {
+            name: method.name,
+            type: method.type,
+            is_active: method.is_active,
+            fee_percentage: method.fee_percentage || 0,
+            fee_fixed: method.fee_fixed || 0,
             pix_key: method.pix_key,
             pix_key_type: method.pix_key_type
         }, {

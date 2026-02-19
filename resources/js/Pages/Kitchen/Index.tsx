@@ -6,7 +6,8 @@ import { Clock, ChefHat, CheckCircle2, Timer, UtensilsCrossed, Volume2, Maximize
 import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import DraggableKitchenCard from './DraggableKitchenCard';
-import { useNotificationSound } from '@/Hooks/useNotificationSound';
+import { useAudio } from '@/Hooks/useAudio';
+import { useToast } from '@/Hooks/useToast';
 import { clsx } from 'clsx';
 
 interface Order {
@@ -37,7 +38,8 @@ export default function KitchenIndex({ orders }: { orders: Order[] }) {
     const [previousOrderCount, setPreviousOrderCount] = useState(orders.filter(o => o.status === 'new').length);
     const [soundEnabled, setSoundEnabled] = useState(true);
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const { play: playNotification } = useNotificationSound(soundEnabled);
+    const { play: playAudio } = useAudio();
+    const { soundEnabled: globalSoundEnabled } = useToast();
 
     // Fullscreen Toggle Logic
     const toggleFullscreen = () => {
@@ -66,8 +68,8 @@ export default function KitchenIndex({ orders }: { orders: Order[] }) {
     useEffect(() => {
         const newOrderCount = orders.filter(o => o.status === 'new').length;
 
-        if (newOrderCount > previousOrderCount && soundEnabled) {
-            playNotification();
+        if (newOrderCount > previousOrderCount && soundEnabled && globalSoundEnabled) {
+            playAudio('new-order');
         }
 
         setPreviousOrderCount(newOrderCount);

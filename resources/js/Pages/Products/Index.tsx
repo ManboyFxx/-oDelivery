@@ -6,7 +6,6 @@ import ProductsTab from './Tabs/ProductsTab';
 import CategoriesTab from './Tabs/CategoriesTab';
 import ComplementsTab from './Tabs/ComplementsTab';
 import IngredientsTab from './Tabs/IngredientsTab';
-import { useFlashToast } from '@/Hooks/useFlashToast';
 
 interface Props {
     products: any;
@@ -17,8 +16,6 @@ interface Props {
 }
 
 export default function ProductsIndex({ products, categories, complement_groups, ingredients, usage }: Props) {
-    // Auto-display flash toast messages
-    useFlashToast();
 
     // Get active tab from URL query param or default to 'products'
     const queryParams = new URLSearchParams(window.location.search);

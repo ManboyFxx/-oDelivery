@@ -6,7 +6,7 @@
 /storage/pail
 .env
 .env.backup
-# .env.production
+.env.production
 .phpunit.result.cache
 Homestead.json
 Homestead.yaml
@@ -47,6 +47,8 @@ logs/
 
 # Security Tools
 _dev_tools/
+_dev_scripts/
+_dev_docs/
 
 # Electron Build
 óoprint/dist-electron/

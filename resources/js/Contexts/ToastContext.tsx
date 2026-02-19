@@ -1,6 +1,5 @@
 import React, { createContext, useState, useCallback, useEffect } from 'react';
 import type { Toast, ToastContextType } from '@/types/toast';
-import { useAudio } from '@/Hooks/useAudio';
 
 export const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
@@ -11,20 +10,6 @@ interface ToastProviderProps {
 export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     const [toasts, setToasts] = useState<Toast[]>([]);
     const [settings, setSettings] = useState<any>({});
-    const { play, initializeAudio } = useAudio();
-
-    // Initialize audio on first click anywhere on the page
-    useEffect(() => {
-        const handleFirstInteraction = () => {
-            initializeAudio();
-        };
-        window.addEventListener('click', handleFirstInteraction, { once: true });
-        window.addEventListener('touchstart', handleFirstInteraction, { once: true });
-        return () => {
-            window.removeEventListener('click', handleFirstInteraction);
-            window.removeEventListener('touchstart', handleFirstInteraction);
-        };
-    }, [initializeAudio]);
 
     const updateSettings = useCallback((newSettings: any) => {
         setSettings(newSettings);
@@ -53,11 +38,8 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
                 removeToast(id);
             }, duration);
         }
-        // Sound logic removed from here to separate concerns. 
-        // Sounds should be triggered explicitly by the caller (e.g. useAudio().play('new-order'))
-        // or passed as a specific flag if really needed, but keeping toast purely visual is better for standard CRUD.
 
-    }, [settings, play]);
+    }, [settings]);
 
     const removeToast = useCallback((id: string) => {
         setToasts((prev) => prev.filter((toast) => toast.id !== id));
@@ -80,12 +62,16 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
         };
     }, [addToast]);
 
+    // Compute sound setting from persisted settings (defaults to true)
+    const soundEnabled = settings?.sound_enabled !== false;
+
     const value: ToastContextType = {
         toasts,
         addToast,
         removeToast,
         clearAll,
         updateSettings,
+        soundEnabled,
     };
 
     return (
