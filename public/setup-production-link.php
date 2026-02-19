@@ -1,114 +1,139 @@
 <?php
+// Enable error reporting to see the 500 cause
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
-echo "<h1>Diagnóstico de Storage e Permissões</h1>";
+echo "<h1>Diagnóstico de Storage e Permissões (v2)</h1>";
 echo "<a href='/'>Voltar para a Home</a><br><br>";
 
-$publicStorage = __DIR__ . '/storage';
-$targetStorage = realpath(__DIR__ . '/../storage/app/public');
-
-echo "<h2>1. Verificando Caminhos</h2>";
-echo "<strong>Public Storage Link:</strong> " . $publicStorage . "<br>";
-echo "<strong>Target Storage Realpath:</strong> " . ($targetStorage ?: 'NÃO ENCONTRADO') . "<br>";
-
-if (!$targetStorage) {
-    echo "<h3 style='color:red'>Erro Crítico: Pasta de origem 'storage/app/public' não encontrada!</h3>";
-    // Tenta criar se não existir
-    if (!file_exists(__DIR__ . '/../storage/app/public')) {
-        echo "Tentando criar storage/app/public... ";
-        if (mkdir(__DIR__ . '/../storage/app/public', 0755, true)) {
-            echo "Criada com sucesso!<br>";
-            $targetStorage = realpath(__DIR__ . '/../storage/app/public');
-        } else {
-            echo "Falha ao criar.<br>";
-        }
-    }
+// Helper to safely get path
+function safePath($path)
+{
+    return file_exists($path) ? realpath($path) : $path . " (Não existe)";
 }
 
-echo "<h2>2. Estado Atual do Link</h2>";
-if (file_exists($publicStorage)) {
-    if (is_link($publicStorage)) {
-        $linkTarget = readlink($publicStorage);
-        echo "É um link simbólico? SIM<br>";
-        echo "Aponta para: " . $linkTarget . "<br>";
-        echo "O alvo existe? " . (file_exists($linkTarget) ? 'SIM' : '<span style="color:red">NÃO (Link Quebrado)</span>') . "<br>";
-    } elseif (is_dir($publicStorage)) {
-        echo "É um diretório normal? SIM (Isso pode ser o problema se não tiver os arquivos)<br>";
+$publicLink = __DIR__ . '/storage';
+$targetDirRelative = __DIR__ . '/../storage/app/public';
+$targetDirReal = safePath($targetDirRelative);
+
+echo "<h2>1. Verificação de Caminhos</h2>";
+echo "<strong>Link Público (onde devia estar):</strong> " . $publicLink . "<br>";
+echo "<strong>Alvo (onde os arquivos estão):</strong> " . $targetDirReal . "<br>";
+
+echo "<h2>2. Análise do Alvo</h2>";
+if (!file_exists(__DIR__ . '/../storage/app/public')) {
+    echo "<span style='color:red'>ERRO: A pasta 'storage/app/public' não existe!</span><br>";
+    echo "Tentando criar... ";
+    try {
+        if (!is_dir(__DIR__ . '/../storage/app')) {
+            @mkdir(__DIR__ . '/../storage/app', 0755, true);
+        }
+        if (@mkdir(__DIR__ . '/../storage/app/public', 0755, true)) {
+            echo "<span style='color:green'>Sucesso ao criar pasta!</span><br>";
+        } else {
+            echo "<span style='color:red'>Falha ao criar pasta. Verifique permissões da pasta 'storage'.</span><br>";
+            $lastError = error_get_last();
+            if ($lastError)
+                echo "Erro PHP: " . $lastError['message'] . "<br>";
+        }
+    } catch (Exception $e) {
+        echo "Exceção: " . $e->getMessage() . "<br>";
     }
 } else {
-    echo "O arquivo/link 'public/storage' NÃO existe.<br>";
+    echo "<span style='color:green'>Pasta alvo existe.</span><br>";
 }
 
-echo "<h2>3. Tentando Corrigir (Recriar Link)</h2>";
+echo "<h2>3. Análise do Link Atual</h2>";
+if (file_exists($publicLink)) {
+    if (is_link($publicLink)) {
+        echo "Tipo: Link Simbólico<br>";
+        echo "Aponta para: " . readlink($publicLink) . "<br>";
+        echo "Status: " . (file_exists(readlink($publicLink)) ? "<span style='color:green'>Válido</span>" : "<span style='color:red'>Quebrado</span>") . "<br>";
 
-try {
-    // Remove existing
-    if (file_exists($publicStorage)) {
-        if (is_link($publicStorage)) {
-            unlink($publicStorage);
-            echo "Link antigo removido.<br>";
-        } elseif (is_dir($publicStorage)) {
-            // Recursive delete directory check
+        // Remove link if broken
+        if (!file_exists(readlink($publicLink))) {
+            echo "Removendo link quebrado... ";
+            @unlink($publicLink);
+            echo "Feito.<br>";
+        }
+    } elseif (is_dir($publicLink)) {
+        echo "Tipo: <span style='color:orange'>Diretório Real (Incorreto)</span><br>";
+        echo "Tentando remover diretório incorreto... ";
+        // Safe remove
+        try {
             $files = new RecursiveIteratorIterator(
-                new RecursiveDirectoryIterator($publicStorage, RecursiveDirectoryIterator::SKIP_DOTS),
+                new RecursiveDirectoryIterator($publicLink, RecursiveDirectoryIterator::SKIP_DOTS),
                 RecursiveIteratorIterator::CHILD_FIRST
             );
             foreach ($files as $fileinfo) {
                 $todo = ($fileinfo->isDir() ? 'rmdir' : 'unlink');
-                $todo($fileinfo->getRealPath());
+                @$todo($fileinfo->getRealPath());
             }
-            rmdir($publicStorage);
-            echo "Diretório antigo removido.<br>";
+            if (@rmdir($publicLink)) {
+                echo "Removido com sucesso.<br>";
+            } else {
+                echo "<span style='color:red'>Falha ao remover.</span><br>";
+            }
+        } catch (Exception $e) {
+            echo "Erro ao remover: " . $e->getMessage() . "<br>";
         }
     }
-
-    // Create new link
-    if ($targetStorage) {
-        if (symlink($targetStorage, $publicStorage)) {
-            echo "<span style='color:green'>Novo link criado com sucesso!</span><br>";
-        } else {
-            echo "<span style='color:red'>Falha ao criar link com PHP symlink(). Tentando comando artisan...</span><br>";
-            $output = shell_exec('cd .. && php artisan storage:link 2>&1');
-            echo "<pre>$output</pre>";
-        }
-    }
-} catch (Exception $e) {
-    echo "Erro: " . $e->getMessage() . "<br>";
+} else {
+    echo "Nada existe em public/storage (Correto para criar novo).<br>";
 }
 
-echo "<h2>4. Verificando Permissões e Conteúdo</h2>";
+echo "<h2>4. Tentativa de Linkar</h2>";
+if (!file_exists($publicLink)) {
+    // Try PHP check relative path vs absolute
+    // Some shared hosts fail with absolute paths in symlink()
 
-if ($targetStorage && file_exists($targetStorage)) {
-    echo "Permissões da pasta alvo: " . substr(sprintf('%o', fileperms($targetStorage)), -4) . "<br>";
+    // Attempt 1: Relative Path
+    $relativeTarget = '../storage/app/public';
+    echo "Tentativa 1 (Caminho Relativo: $relativeTarget)... ";
+    if (@symlink($relativeTarget, $publicLink)) {
+        echo "<span style='color:green'>Sucesso!</span><br>";
+    } else {
+        echo "Falha.<br>";
 
-    // Attempt fix permissions
-    echo "Tentando ajustar permissões (chmod 775)... ";
-    @chmod($targetStorage, 0775);
-    echo "Feito.<br>";
+        // Attempt 2: Absolute Path
+        $absoluteTarget = realpath(__DIR__ . '/../storage/app/public');
+        if ($absoluteTarget) {
+            echo "Tentativa 2 (Caminho Absoluto: $absoluteTarget)... ";
+            if (@symlink($absoluteTarget, $publicLink)) {
+                echo "<span style='color:green'>Sucesso!</span><br>";
+            } else {
+                echo "Falha.<br>";
 
-    // Check products folder
-    $productsPath = $targetStorage . '/products';
-    if (file_exists($productsPath)) {
-        echo "Pasta 'products' encontrada.<br>";
-        echo "Arquivos na pasta 'products':<ul>";
-        $files = scandir($productsPath);
-        $count = 0;
-        foreach ($files as $file) {
-            if ($file != '.' && $file != '..') {
-                echo "<li>$file (" . substr(sprintf('%o', fileperms($productsPath . '/' . $file)), -4) . ")</li>";
-                $count++;
-                if ($count > 10) {
-                    echo "<li>... e mais arquivos</li>";
-                    break;
+                // Attempt 3: Artisan
+                echo "Tentativa 3 (Artisan command)... ";
+                try {
+                    $output = shell_exec('cd .. && php artisan storage:link 2>&1');
+                    echo "Output: <pre>$output</pre>";
+                    if (file_exists($publicLink))
+                        echo "<span style='color:green'>Sucesso via Artisan!</span>";
+                } catch (Exception $e) {
+                    echo "Erro ao executar artisan.<br>";
                 }
             }
         }
-        echo "</ul>";
-        if ($count == 0)
-            echo "Pasta vazia.<br>";
-    } else {
-        echo "<span style='color:orange'>Pasta 'products' não encontrada dentro de storage/app/public. (Normal se nenhum produto foi criado ainda)</span><br>";
     }
-
 } else {
-    echo "Não foi possível verificar conteúdo pois o alvo não existe.<br>";
+    echo "Link já existe (ou não foi possível remover o anterior).<br>";
 }
+
+echo "<h2>5. Listagem de Arquivos (Teste Final)</h2>";
+if (file_exists($publicLink)) {
+    $productsPath = $publicLink . "/products";
+    if (file_exists($productsPath)) {
+        echo "Pasta products encontrada via link publico!<br>";
+        $files = scandir($productsPath);
+        echo "Arquivos: " . count($files) . "<br>";
+    } else {
+        echo "<span style='color:orange'>Pasta products não visível via link. (Permissões?)</span><br>";
+    }
+} else {
+    echo "<span style='color:red'>FALHA: Não foi possível recriar o link.</span><br>";
+}
+
+echo "<hr><br>Fim do diagnóstico.";
