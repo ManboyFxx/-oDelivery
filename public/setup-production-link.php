@@ -4,10 +4,10 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-echo "<h1>Diagnóstico de Storage (v3 - Safe Mode)</h1>";
+echo "<h1>Diagnóstico de Storage (v4 - Force Mode)</h1>";
 echo "<a href='/'>Voltar para a Home</a><br><br>";
 
-// Helper for paths
+// Helper to safely get path
 function safePath($path)
 {
     return file_exists($path) ? realpath($path) : $path . " (Não existe)";
@@ -17,94 +17,81 @@ $publicLink = __DIR__ . '/storage';
 $targetDirRelative = __DIR__ . '/../storage/app/public';
 $targetDirReal = safePath($targetDirRelative);
 
-echo "<h2>1. Verificação de Caminhos</h2>";
-echo "<strong>Link Público:</strong> " . $publicLink . "<br>";
-echo "<strong>Alvo:</strong> " . $targetDirReal . "<br>";
-
-// Check target existence
-if (!file_exists(__DIR__ . '/../storage/app/public')) {
-    echo "<span style='color:red'>ERRO: Pasta alvo não existe. Tentando criar...</span><br>";
-    @mkdir(__DIR__ . '/../storage/app/public', 0755, true);
-}
-
-echo "<h2>2. Capacidades do Servidor</h2>";
-$canSymlink = function_exists('symlink');
-$canShell = function_exists('shell_exec');
-$canExec = function_exists('exec');
-
-echo "Função symlink(): " . ($canSymlink ? "<span style='color:green'>Habilitada</span>" : "<span style='color:red'>DESABILITADA pelo Host</span>") . "<br>";
-echo "Função shell_exec(): " . ($canShell ? "<span style='color:green'>Habilitada</span>" : "<span style='color:red'>Desabilitada</span>") . "<br>";
-echo "Função exec(): " . ($canExec ? "<span style='color:green'>Habilitada</span>" : "<span style='color:red'>Desabilitada</span>") . "<br>";
-
-echo "<h2>3. Tentativa de Criar o Link</h2>";
-
-// Remove old if exists
+echo "<h2>1. Verificação preliminar</h2>";
 if (file_exists($publicLink)) {
-    if (is_link($publicLink)) {
-        @unlink($publicLink);
-        echo "Link antigo/quebrado removido.<br>";
-    } elseif (is_dir($publicLink)) {
-        // Safe remove dir
-        // ... (simplified for brevity, assuming standard hosting structure)
-        echo "Aviso: Existe uma pasta real em public/storage. Tente renomeá-la via FTP se o script falhar.<br>";
+    if (is_dir($publicLink) && !is_link($publicLink)) {
+        echo "<h3 style='color:red'>⚠️ ALERTA: 'public/storage' é uma PASTA REAL, não um link!</h3>";
+        echo "Isso impede que as imagens apareçam. O servidor está tentando ler dessa pasta vazia em vez da pasta correta.<br>";
+
+        echo "<br><strong>Tentando remover a pasta 'impostora'...</strong><br>";
+
+        // Force delete directory
+        try {
+            $files = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($publicLink, RecursiveDirectoryIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::CHILD_FIRST
+            );
+            foreach ($files as $fileinfo) {
+                $todo = ($fileinfo->isDir() ? 'rmdir' : 'unlink');
+                @$todo($fileinfo->getRealPath());
+            }
+            if (@rmdir($publicLink)) {
+                echo "<span style='color:green'>Sucesso! Pasta removida. Agora podemos tentar criar o link.</span><br>";
+            } else {
+                echo "<span style='color:red'>Falha ao remover a pasta. Verifique permissões FTP.</span><br>";
+            }
+        } catch (Exception $e) {
+            echo "Erro ao tentar remover: " . $e->getMessage() . "<br>";
+        }
+    } else {
+        echo "O arquivo 'public/storage' existe e parece ser um link ou arquivo (Correto).<br>";
     }
 }
 
-$success = false;
+echo "<h2>2. Tentativa de Linkar (Novamente)</h2>";
 
-// METHOD 1: PHP symlink()
-if ($canSymlink && !$success) {
+if (!file_exists($publicLink)) {
+    // METHOD 1: PHP symlink()
     echo "Tentativa 1 (PHP symlink)... ";
-    if (@symlink('../storage/app/public', $publicLink)) {
-        echo "<span style='color:green'>Sucesso!</span><br>";
-        $success = true;
+    if (function_exists('symlink')) {
+        if (@symlink('../storage/app/public', $publicLink)) {
+            echo "<span style='color:green'>Sucesso!</span><br>";
+        } else {
+            echo "Falha (Erro ao criar).<br>";
+        }
     } else {
-        echo "Falha.<br>";
+        echo "Pula (Função desabilitada).<br>";
     }
-}
 
-// METHOD 2: shell_exec (ln -s)
-if ($canShell && !$success) {
-    echo "Tentativa 2 (Comando Linux via shell_exec)... ";
-    // Use full paths for shell command
-    $cmd = "ln -s " . escapeshellarg($targetDirReal) . " " . escapeshellarg($publicLink) . " 2>&1";
-    echo "Comando: <code>$cmd</code>... ";
-    $output = shell_exec($cmd);
-
-    if (file_exists($publicLink) && is_link($publicLink)) {
-        echo "<span style='color:green'>Sucesso!</span><br>";
-        $success = true;
-    } else {
-        echo "Falha. Output: <pre>$output</pre><br>";
-    }
-}
-
-// METHOD 3: Artisan Storage Link
-if ($canShell && !$success) {
-    echo "Tentativa 3 (Artisan storage:link)... ";
-    $output = shell_exec('cd .. && php artisan storage:link 2>&1');
-    echo "<pre>$output</pre>";
-    if (file_exists($publicLink)) {
-        echo "<span style='color:green'>Sucesso via Artisan!</span><br>";
-        $success = true;
-    }
-}
-
-echo "<h2>4. Resultado Final</h2>";
-
-if (file_exists($publicLink)) {
-    echo "<h3>✅ Link Verificado!</h3>";
-    $files = scandir($publicLink);
-    echo "Arquivos na pasta pública: " . count($files) . "<br>";
-    if (count($files) > 2) {
-        echo "<span style='color:green'>Parece estar funcionando corretamente. Limpe o cache do navegador e teste as imagens.</span>";
-    } else {
-        echo "<span style='color:orange'>Pasta parece vazia (ou só tem . e ..). Verifique se há produtos cadastrados.</span>";
+    // METHOD 2: shell_exec (ln -s)
+    if (!file_exists($publicLink) && function_exists('shell_exec')) {
+        echo "Tentativa 2 (Comando Linux)... ";
+        $cmd = "ln -s " . escapeshellarg($targetDirReal) . " " . escapeshellarg($publicLink) . " 2>&1";
+        $output = shell_exec($cmd);
+        if (file_exists($publicLink)) {
+            echo "<span style='color:green'>Sucesso!</span><br>";
+        } else {
+            echo "Falha. Output: <pre>$output</pre><br>";
+        }
     }
 } else {
-    echo "<h3>❌ Falha Crítica</h3>";
-    echo "Não foi possível criar o link simbólico.<br>";
-    echo "<strong>Solução Alternativa (Cron Job):</strong><br>";
-    echo "Acesse o painel da hospedagem (cPanel/Hostinger), vá em 'Cron Jobs' e adicione o seguinte comando para rodar uma vez:<br>";
+    echo "O link/pasta já existe. (Se for um link, ótimo. Se for pasta vazia, recarregue a página para tentar apagar de novo).<br>";
+}
+
+echo "<h2>3. Verificação Final</h2>";
+
+if (file_exists($publicLink)) {
+    if (is_link($publicLink)) {
+        echo "<h3>✅ EXCELENTE! É um link simbólico.</h3>";
+        echo "Pode testar as imagens agora.";
+    } elseif (is_dir($publicLink)) {
+        echo "<h3>❌ AINDA É UMA PASTA REAL.</h3>";
+        echo "O script não conseguiu apagar a pasta. Você precisará acessar o FTP/Gerenciador de Arquivos e apagar a pasta `public_html/public/storage` manualmente.";
+    }
+} else {
+    echo "<h3>⚠️ Link não criado</h3>";
+    echo "A pasta 'impostora' foi removida, mas o link não pôde ser criado automaticamente (funções bloqueadas).<br>";
+    echo "<strong>SOLUÇÃO MANUAL (CRON JOB):</strong><br>";
+    echo "Agora que a pasta 'public/storage' não existe mais, vá no painel da hospedagem > Cron Jobs e rode:<br>";
     echo "<code style='background:#eee;padding:10px;display:block;margin:10px'>ln -s " . $targetDirReal . " " . $publicLink . "</code>";
 }
