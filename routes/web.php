@@ -260,6 +260,7 @@ Route::middleware(['auth', 'subscription', 'role:admin,employee'])->group(functi
     Route::get('/cardapio', [MenuController::class, 'index'])->name('menu.index');
     Route::post('/cardapio/reorder', [MenuController::class, 'reorder'])->name('menu.reorder');
     Route::post('/cardapio/categories/{category}/toggle', [MenuController::class, 'toggleVisibility'])->name('menu.toggle');
+    Route::post('/cardapio/settings', [MenuController::class, 'updateSettings'])->name('menu.update-settings');
 });
 
 // ============================================================================

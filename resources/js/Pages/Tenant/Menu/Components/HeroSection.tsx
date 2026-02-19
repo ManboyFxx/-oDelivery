@@ -25,8 +25,6 @@ interface HeroSectionProps {
 }
 
 export default function HeroSection({ store, customer, onOpenAuth, onOpenProfile, onOpenCart, onOpenInfo, cartCount }: HeroSectionProps) {
-    const themeColor = '#ff3d03';
-
     return (
         <div className="relative bg-gray-50 dark:bg-premium-dark pb-8 transition-colors duration-300">
             {/* --- STORE BANNER & BRANDING --- */}
@@ -68,7 +66,7 @@ export default function HeroSection({ store, customer, onOpenAuth, onOpenProfile
                             initial={{ scale: 0.5, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             className="h-28 w-28 md:h-36 md:w-36 rounded-[40px] shadow-2xl flex items-center justify-center text-white text-5xl md:text-6xl font-black mb-6 border-[6px] border-white relative z-10"
-                            style={{ backgroundColor: '#ff3d03', marginTop: '-80px' }}
+                            style={{ backgroundColor: 'var(--primary-color)', marginTop: '-80px' }}
                         >
                             {store?.logo_url ? (
                                 <img src={store.logo_url} className="h-full w-full object-cover rounded-[34px]" alt={store.name} />
@@ -109,8 +107,8 @@ export default function HeroSection({ store, customer, onOpenAuth, onOpenProfile
                                 {/* Account Button */}
                                 <button 
                                     onClick={customer ? onOpenProfile : onOpenAuth}
-                                    className="h-12 px-6 rounded-2xl text-white font-black uppercase text-[10px] tracking-widest shadow-lg shadow-[#ff3d03]/20 transition-all hover:scale-105 active:scale-95 flex items-center gap-2 group"
-                                    style={{ background: 'linear-gradient(135deg, #ff3d03 0%, #ff6b35 100%)' }}
+                                    className="h-12 px-6 rounded-2xl text-white font-black uppercase text-[10px] tracking-widest shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 flex items-center gap-2 group"
+                                    style={{ background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)' }}
                                 >
                                     {customer ? (
                                         <>

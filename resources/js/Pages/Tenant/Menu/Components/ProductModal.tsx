@@ -170,8 +170,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
                     <div className="mb-4">
                         <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white leading-tight mb-2 transition-colors duration-300">{product.name}</h2>
                         <p className="text-gray-600 dark:text-gray-400 leading-relaxed transition-colors duration-300">{product.description}</p>
-                        <div className="mt-4">
-                            <span className="text-2xl font-black text-[#ff3d03]">
+                            <span className="text-2xl font-black text-primary">
                                 R$ {Number(product.promotional_price || product.price).toFixed(2).replace('.', ',')}
                             </span>
                             {product.promotional_price && (
@@ -179,7 +178,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
                                     R$ {Number(product.price).toFixed(2).replace('.', ',')}
                                 </span>
                             )}
-                        </div>
+
                     </div>
 
                     {/* Complements */}
@@ -193,7 +192,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
                                     <div>
                                         <h3 className="font-bold text-gray-900 dark:text-white text-lg flex items-center gap-2 transition-colors duration-300">
                                             {group.name}
-                                            {group.is_required && <span className="text-[#ff3d03] text-xs font-black uppercase bg-[#ff3d03]/10 px-2 py-0.5 rounded-full">Obrigatório</span>}
+                                            {group.is_required && <span className="text-primary text-xs font-black uppercase bg-primary/10 px-2 py-0.5 rounded-full">Obrigatório</span>}
                                         </h3>
                                         <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors duration-300">
                                             {group.min_selections > 0 ? `Mín: ${group.min_selections}` : ''}
@@ -217,7 +216,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
                                         return (
                                             <div key={option.id} className={clsx(
                                                 "flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer duration-300",
-                                                qty > 0 ? "border-[#ff3d03] bg-[#ff3d03]/5" : "border-gray-100 dark:border-white/5 hover:border-gray-200 dark:hover:border-white/10"
+                                                qty > 0 ? "border-primary bg-primary/5" : "border-gray-100 dark:border-white/5 hover:border-gray-200 dark:hover:border-white/10"
                                             )}>
                                                 <div className="flex-1" onClick={() => canAdd && updateComplementQuantity(group.id, option.id, 1, maxQty, group.max_selections)}>
                                                     <div className="font-medium text-gray-900 dark:text-white transition-colors duration-300">{option.name}</div>
@@ -242,7 +241,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
                                                         <button
                                                             onClick={() => updateComplementQuantity(group.id, option.id, 1, maxQty, group.max_selections)}
                                                             disabled={!canAdd}
-                                                            className="p-1 hover:bg-gray-100 dark:hover:bg-white/10 rounded text-[#ff3d03] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                                            className="p-1 hover:bg-gray-100 dark:hover:bg-white/10 rounded text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                                                         >
                                                             <Plus className="h-4 w-4" />
                                                         </button>
@@ -267,7 +266,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                             placeholder="Ex: Sem cebola, capricha no molho..."
-                            className="w-full p-4 bg-gray-50 dark:bg-white/5 border-none rounded-xl focus:ring-2 focus:ring-[#ff3d03] resize-none text-sm text-gray-900 dark:text-white placeholder:text-gray-400 transition-colors duration-300"
+                            className="w-full p-4 bg-gray-50 dark:bg-white/5 border-none rounded-xl focus:ring-2 focus:ring-primary resize-none text-sm text-gray-900 dark:text-white placeholder:text-gray-400 transition-colors duration-300"
                             rows={3}
                         />
                     </div>
@@ -293,7 +292,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
                         </div>
                         <button
                             onClick={handleAddToCart}
-                            className="flex-1 bg-[#ff3d03] text-white font-bold py-4 rounded-xl shadow-lg shadow-[#ff3d03]/30 hover:bg-[#e63700] hover:shadow-[#ff3d03]/50 transition-all active:scale-[0.98] flex items-center justify-between px-6"
+                            className="flex-1 bg-primary text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/30 hover:bg-primary-600 hover:shadow-primary/50 transition-all active:scale-[0.98] flex items-center justify-between px-6"
                         >
                             <span>{initialValues ? 'Atualizar Pedido' : 'Adicionar'}</span>
                             <span>R$ {calculateTotal().toFixed(2).replace('.', ',')}</span>

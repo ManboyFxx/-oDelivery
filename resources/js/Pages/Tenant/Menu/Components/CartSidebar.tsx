@@ -96,14 +96,14 @@ export default function CartSidebar({ isOpen, onClose, cart, onUpdateQuantity, o
                                                 <button 
                                                     onClick={() => onUpdateQuantity && onUpdateQuantity(index, item.quantity - 1)}
                                                     disabled={item.quantity <= 1}
-                                                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-[#ff3d03] disabled:opacity-30 disabled:hover:text-gray-400 transition-colors"
+                                                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-primary disabled:opacity-30 disabled:hover:text-gray-400 transition-colors"
                                                 >
                                                     <Minus className="h-3 w-3" />
                                                 </button>
                                                 <span className="w-6 text-center text-sm font-bold text-gray-900 dark:text-white transition-colors duration-300">{item.quantity}</span>
                                                 <button 
                                                     onClick={() => onUpdateQuantity && onUpdateQuantity(index, item.quantity + 1)}
-                                                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-[#ff3d03] transition-colors"
+                                                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-primary transition-colors"
                                                 >
                                                     <Plus className="h-3 w-3" />
                                                 </button>
@@ -124,7 +124,7 @@ export default function CartSidebar({ isOpen, onClose, cart, onUpdateQuantity, o
                                 <button 
                                     onClick={onCheckout}
                                     className="w-full py-5 rounded-[24px] text-white font-black text-lg shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
-                                    style={{ backgroundColor: themeColor, boxShadow: `0 20px 50px -15px ${themeColor}40` }}
+                                    style={{ backgroundColor: 'var(--primary-color)', boxShadow: `0 20px 50px -15px var(--primary-color)` }} // Simplified shadow
                                 >
                                     Finalizar Pedido
                                 </button>

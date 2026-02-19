@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAudio } from '@/Hooks/useAudio';
 import { toast } from 'sonner';
 import axios from 'axios';
-import { Loader2, Search, Sun, Moon } from 'lucide-react';
+import { Loader2, Search, Sun, Moon, LayoutGrid, List } from 'lucide-react';
 import clsx from 'clsx';
 
 import { Category, Product, Customer } from './Components/types';
@@ -32,6 +32,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
     const [activeCategory, setActiveCategory] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [cart, setCart] = useState<any[]>([]);
+    // const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid'); // Replaced by store setting
 
     // Modals
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -280,6 +281,14 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                             />
                         </div>
                     </div>
+                    
+                    {/* View Mode Toggle Removed - Controlled by Admin */ }
+                    {/*
+                    <div className="hidden md:flex bg-gray-100 dark:bg-white/10 rounded-xl p-1 gap-1">
+                       ...
+                    </div>
+                    */}
+
                     <button
                         onClick={toggleTheme}
                         aria-label={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
@@ -311,6 +320,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                                 )
                             })).filter(cat => cat.products.length > 0)}
                             onAdd={handleProductAdd}
+                            viewMode={store.menu_view_mode || 'grid'}
                         />
                     </div>
                 </div>
@@ -393,7 +403,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                         onClick={() => setIsCustomerModalOpen(true)}
                         className="bg-white px-4 py-2 rounded-full shadow-lg border border-gray-100 flex items-center gap-2 hover:bg-gray-50 transition-colors"
                     >
-                        <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-[#ff3d03] font-bold text-xs uppercase">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs uppercase">
                             {customer.name.substring(0, 2)}
                         </div>
                         <span className="font-bold text-gray-700 text-sm">{customer.name.split(' ')[0]}</span>

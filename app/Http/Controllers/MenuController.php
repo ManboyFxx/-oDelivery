@@ -33,6 +33,7 @@ class MenuController extends Controller
         return Inertia::render('Menu/Index', [
             'categories' => $categories,
             'tenantSlug' => $tenant->slug,
+            'menuViewMode' => $tenant->menu_view_mode ?? 'grid',
             'stats' => [
                 'totalCategories' => $categories->count(),
                 'totalProducts' => $totalProducts,
@@ -68,5 +69,19 @@ class MenuController extends Controller
         \Illuminate\Support\Facades\Cache::forget("tenant_menu_{$category->tenant_id}");
 
         return back();
+    }
+    public function updateSettings(Request $request)
+    {
+        $validated = $request->validate([
+            'menu_view_mode' => 'required|in:grid,list',
+        ]);
+
+        $tenant = auth()->user()->tenant;
+        $tenant->update(['menu_view_mode' => $validated['menu_view_mode']]);
+
+        // Invalidate cache
+        \Illuminate\Support\Facades\Cache::forget("tenant_menu_{$tenant->id}");
+
+        return back()->with('success', 'Configuração de visualização atualizada!');
     }
 }

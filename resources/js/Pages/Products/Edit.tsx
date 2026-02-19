@@ -53,7 +53,9 @@ export default function Edit({ product, categories, complement_groups = [], ingr
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         // Inertia doesn't support file uploads with PUT/PATCH directly, so we use POST with _method
-        post(route('products.update', product.id));
+        post(route('products.update', product.id), {
+            forceFormData: true,
+        });
     };
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -256,6 +258,7 @@ export default function Edit({ product, categories, complement_groups = [], ingr
                                             <input type="file" className="hidden" onChange={handleImageChange} accept="image/*" />
                                         </label>
                                     </div>
+                                    {errors.image && <p className="mt-2 text-sm text-red-600 font-bold text-center">{errors.image}</p>}
                                 </div>
                             </div>
                         </div>

@@ -266,7 +266,7 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                     <div key={s.id} className="flex flex-col items-center relative z-10">
                         <div className={clsx(
                             "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 border-2",
-                            isActive ? "bg-[#ff3d03] border-[#ff3d03] text-white shadow-lg scale-110" :
+                            isActive ? "bg-primary border-primary text-white shadow-lg scale-110" :
                                 isCompleted ? "bg-green-500 border-green-500 text-white" :
                                     "bg-white dark:bg-premium-card border-gray-300 dark:border-gray-700 text-gray-400 dark:text-gray-500"
                         )}>
@@ -274,7 +274,7 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                         </div>
                         <span className={clsx(
                             "text-xs font-semibold mt-2 transition-colors duration-300",
-                            isActive ? "text-[#ff3d03]" : isCompleted ? "text-green-600 dark:text-green-400" : "text-gray-400 dark:text-gray-500"
+                            isActive ? "text-primary" : isCompleted ? "text-green-600 dark:text-green-400" : "text-gray-400 dark:text-gray-500"
                         )}>{s.label}</span>
                     </div>
                 );
@@ -336,13 +336,13 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                                 value={verificationDigits}
                                 onChange={(e) => setVerificationDigits(e.target.value.replace(/\D/g, '').slice(0, 4))}
                                  placeholder="0000"
-                                 className="w-full text-center text-2xl font-bold tracking-widest py-3 border-2 border-gray-200 dark:border-gray-700 dark:bg-white/5 dark:text-white rounded-xl focus:border-[#ff3d03] dark:focus:border-[#ff3d03] focus:ring-0 outline-none transition-all duration-300"
+                                 className="w-full text-center text-2xl font-bold tracking-widest py-3 border-2 border-gray-200 dark:border-gray-700 dark:bg-white/5 dark:text-white rounded-xl focus:border-primary dark:focus:border-primary focus:ring-0 outline-none transition-all duration-300"
                                  autoFocus
                               />
                              <button
                                 type="submit"
                                 disabled={loading || verificationDigits.length < 4}
-                                className="w-full bg-[#ff3d03] hover:bg-[#e63700] text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-50"
+                                className="w-full bg-primary hover:bg-primary-600 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-50"
                              >
                                  {loading ? 'Verificando...' : 'Confirmar'}
                              </button>
@@ -382,24 +382,24 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                                     <div className="grid grid-cols-2 gap-3">
                                         <button
                                             onClick={() => setMode('delivery')}
-                                            className={clsx(
-                                                "p-4 rounded-xl border-2 font-bold transition-all flex flex-col items-center gap-2 duration-300",
-                                                mode === 'delivery'
-                                                    ? "border-[#ff3d03] bg-orange-50 dark:bg-[#ff3d03]/10 text-[#ff3d03]"
-                                                    : "border-gray-200 dark:border-gray-700 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
-                                            )}
-                                        >
-                                            <MapPin className="w-6 h-6" />
-                                            Entrega
-                                        </button>
-                                        <button
-                                            onClick={() => setMode('pickup')}
-                                            className={clsx(
-                                                "p-4 rounded-xl border-2 font-bold transition-all flex flex-col items-center gap-2 duration-300",
-                                                mode === 'pickup'
-                                                    ? "border-[#ff3d03] bg-orange-50 dark:bg-[#ff3d03]/10 text-[#ff3d03]"
-                                                    : "border-gray-200 dark:border-gray-700 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
-                                            )}
+                                        className={clsx(
+                                            "p-4 rounded-xl border-2 font-bold transition-all flex flex-col items-center gap-2 duration-300",
+                                            mode === 'delivery'
+                                                ? "border-primary bg-orange-50 dark:bg-primary/10 text-primary"
+                                                : "border-gray-200 dark:border-gray-700 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
+                                        )}
+                                    >
+                                        <MapPin className="w-6 h-6" />
+                                        Entrega
+                                    </button>
+                                    <button
+                                        onClick={() => setMode('pickup')}
+                                        className={clsx(
+                                            "p-4 rounded-xl border-2 font-bold transition-all flex flex-col items-center gap-2 duration-300",
+                                            mode === 'pickup'
+                                                ? "border-primary bg-orange-50 dark:bg-primary/10 text-primary"
+                                                : "border-gray-200 dark:border-gray-700 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
+                                        )}
                                         >
                                             <div className="w-6 h-6 relative">
                                                 <Wallet className="absolute w-full h-full" />
@@ -437,17 +437,17 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                                                         key={addr.id}
                                                         onClick={() => setSelectedAddressId(addr.id)}
                                                         className={clsx(
-                                                            "p-4 rounded-xl border-2 cursor-pointer transition-all flex items-start justify-between group duration-300",
-                                                            selectedAddressId === addr.id
-                                                                ? "border-[#ff3d03] bg-orange-50/50 dark:bg-[#ff3d03]/10"
-                                                                : "border-gray-100 dark:border-gray-700 bg-white dark:bg-white/5 hover:border-gray-200 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-white/10"
-                                                        )}
-                                                    >
-                                                        <div className="flex gap-3">
-                                                            <div className={clsx(
-                                                                "mt-1 w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors duration-300",
-                                                                selectedAddressId === addr.id ? "border-[#ff3d03] bg-[#ff3d03]" : "border-gray-300 dark:border-gray-600"
-                                                            )}>
+                                            "p-4 rounded-xl border-2 cursor-pointer transition-all flex items-start justify-between group duration-300",
+                                            selectedAddressId === addr.id
+                                                ? "border-primary bg-orange-50/50 dark:bg-primary/10"
+                                                : "border-gray-100 dark:border-gray-700 bg-white dark:bg-white/5 hover:border-gray-200 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-white/10"
+                                        )}
+                                    >
+                                        <div className="flex gap-3">
+                                            <div className={clsx(
+                                                "mt-1 w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors duration-300",
+                                                selectedAddressId === addr.id ? "border-primary bg-primary" : "border-gray-300 dark:border-gray-600"
+                                            )}>
                                                                 {selectedAddressId === addr.id && <div className="w-2 h-2 bg-white rounded-full"></div>}
                                                             </div>
                                                             <div>
@@ -470,7 +470,7 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                                     {/* Coupon */}
                                     <div className="bg-gray-50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5 transition-colors duration-300">
                                         <h3 className="font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2 text-sm transition-colors duration-300">
-                                            <Ticket className="h-4 w-4 text-[#ff3d03]" />
+                                            <Ticket className="h-4 w-4 text-primary" />
                                             Cupom de Desconto
                                         </h3>
                                         {appliedCoupon ? (
@@ -492,7 +492,7 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                                                     value={couponCode}
                                                     onChange={(e) => { setCouponCode(e.target.value); setCouponError(''); }}
                                                     placeholder="Código do cupom"
-                                                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-white/5 dark:text-white rounded-lg text-sm focus:ring-[#ff3d03] focus:border-[#ff3d03] transition-colors duration-300"
+                                                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-white/5 dark:text-white rounded-lg text-sm focus:ring-primary focus:border-primary transition-colors duration-300"
                                                 />
                                                 <button
                                                     onClick={applyCoupon}
@@ -533,7 +533,7 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                                                     }}
                                                     className={clsx(
                                                         "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none",
-                                                        usePoints ? "bg-[#ff3d03]" : "bg-gray-200"
+                                                        usePoints ? "bg-primary" : "bg-gray-200"
                                                     )}
                                                 >
                                                     <span className={clsx(
@@ -570,13 +570,13 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                                                     className={clsx(
                                                         "p-3 rounded-xl border-2 cursor-pointer transition-all flex flex-col items-center text-center gap-2 hover:shadow-md duration-300",
                                                         paymentMethod === m.id
-                                                            ? "border-[#ff3d03] bg-orange-50 dark:bg-[#ff3d03]/10 shadow-sm"
+                                                            ? "border-primary bg-orange-50 dark:bg-primary/10 shadow-sm"
                                                             : "border-gray-100 dark:border-gray-700 bg-white dark:bg-white/5 hover:border-gray-200 dark:hover:border-gray-600"
                                                     )}
                                                 >
-                                                    <m.icon className={clsx("w-6 h-6 transition-colors duration-300", paymentMethod === m.id ? "text-[#ff3d03]" : "text-gray-400 dark:text-gray-500")} />
+                                                    <m.icon className={clsx("w-6 h-6 transition-colors duration-300", paymentMethod === m.id ? "text-primary" : "text-gray-400 dark:text-gray-500")} />
                                                     <div>
-                                                        <p className={clsx("font-bold text-sm transition-colors duration-300", paymentMethod === m.id ? "text-[#ff3d03]" : "text-gray-700 dark:text-gray-200")}>{m.label}</p>
+                                                        <p className={clsx("font-bold text-sm transition-colors duration-300", paymentMethod === m.id ? "text-primary" : "text-gray-700 dark:text-gray-200")}>{m.label}</p>
                                                         <p className="text-[10px] text-gray-400 dark:text-gray-500 transition-colors duration-300">{m.sub}</p>
                                                     </div>
                                                 </div>
@@ -676,7 +676,7 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                                         )}
                                         <div className="flex justify-between items-end pt-2 mt-2 border-t border-gray-100 dark:border-white/5 transition-colors duration-300">
                                             <span className="text-gray-900 dark:text-white font-bold transition-colors duration-300">Total Final</span>
-                                            <span className="text-2xl font-black text-[#ff3d03]">{formatPrice(finalTotal)}</span>
+                                            <span className="text-2xl font-black text-primary">{formatPrice(finalTotal)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -708,14 +708,14 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                             <button
                                 onClick={handleSubmit}
                                 disabled={loading}
-                                className="flex-[2] bg-[#ff3d03] hover:bg-[#e63700] text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-orange-200 disabled:opacity-70"
+                                className="flex-[2] bg-primary hover:bg-primary-600 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-orange-200 disabled:opacity-70"
                             >
                                 {loading ? <Loader2 className="animate-spin" /> : 'Confirmar Pedido'}
                             </button>
                         ) : (
                             <button
                                 onClick={handleNextStep}
-                                className="flex-[2] bg-[#ff3d03] hover:bg-[#e63700] text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-orange-200"
+                                className="flex-[2] bg-primary hover:bg-primary-600 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-orange-200"
                             >
                                 Continuar <ChevronRight className="w-5 h-5" />
                             </button>

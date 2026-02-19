@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, usePage } from '@inertiajs/react';
-import { BookOpen, Eye, EyeOff, Star, ChevronUp, ChevronDown, Check, X, Search, Sparkles, ExternalLink, Plus, Package, Zap, Gift, Flame } from 'lucide-react';
+import { BookOpen, Eye, EyeOff, Star, ChevronUp, ChevronDown, Check, X, Search, Sparkles, ExternalLink, Plus, Package, Zap, Gift, Flame, LayoutGrid, List } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '@/Hooks/useToast';
 import { clsx } from 'clsx';
@@ -27,6 +27,7 @@ interface Category {
 interface Props {
     categories: Category[];
     tenantSlug: string;
+    menuViewMode: 'grid' | 'list';
     stats: {
         totalCategories: number;
         totalProducts: number;
@@ -86,7 +87,7 @@ const BADGES: Record<BadgeType, BadgeConfig> = {
     }
 };
 
-export default function MenuIndex({ categories: initialCategories, tenantSlug, stats }: Props) {
+export default function MenuIndex({ categories: initialCategories, tenantSlug, menuViewMode, stats }: Props) {
     const [categories, setCategories] = useState(initialCategories);
     const [activeCategory, setActiveCategory] = useState<string | null>(initialCategories.length > 0 ? initialCategories[0].id : null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -244,6 +245,41 @@ export default function MenuIndex({ categories: initialCategories, tenantSlug, s
                             <ExternalLink className="h-5 w-5" />
                             Ver Menu Público
                         </a>
+                    </div>
+                    
+                    {/* View Mode Configuration */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                        <div>
+                            <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <LayoutGrid className="w-4 h-4 text-orange-500" />
+                                Layout do Cardápio
+                            </h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Escolha como seus clientes visualizarão os produtos</p>
+                        </div>
+                        <div className="flex bg-gray-100 dark:bg-gray-700/50 p-1 rounded-lg">
+                            <button
+                                onClick={() => router.post(route('menu.update-settings'), { menu_view_mode: 'grid' }, { preserveScroll: true })}
+                                className={clsx(
+                                    "px-4 py-2 rounded-md text-sm font-bold flex items-center gap-2 transition-all",
+                                    menuViewMode === 'grid'
+                                        ? "bg-white dark:bg-gray-600 text-orange-600 dark:text-white shadow-sm"
+                                        : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                                )}
+                            >
+                                <LayoutGrid className="w-4 h-4" /> Grade
+                            </button>
+                            <button
+                                onClick={() => router.post(route('menu.update-settings'), { menu_view_mode: 'list' }, { preserveScroll: true })}
+                                className={clsx(
+                                    "px-4 py-2 rounded-md text-sm font-bold flex items-center gap-2 transition-all",
+                                    menuViewMode === 'list'
+                                        ? "bg-white dark:bg-gray-600 text-orange-600 dark:text-white shadow-sm"
+                                        : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                                )}
+                            >
+                                <List className="w-4 h-4" /> Lista
+                            </button>
+                        </div>
                     </div>
 
                     {/* Tab Navigation */}

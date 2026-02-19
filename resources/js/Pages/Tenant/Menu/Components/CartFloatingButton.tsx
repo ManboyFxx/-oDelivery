@@ -23,7 +23,7 @@ export default function CartFloatingButton({ itemCount, total, onClick }: CartFl
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={onClick}
-                        className="flex items-center gap-6 bg-[#ff3d03] text-white px-8 py-5 rounded-full shadow-[0_20px_50px_-15px_rgba(255,61,3,0.5)] pointer-events-auto border-[3px] border-white dark:border-premium-dark ring-4 ring-[#ff3d03]/10 transition-colors duration-300"
+                        className="flex items-center gap-6 bg-primary text-white px-8 py-5 rounded-full shadow-2xl shadow-primary/40 pointer-events-auto border-[3px] border-white dark:border-premium-dark ring-4 ring-primary/10 transition-colors duration-300"
                     >
                         <div className="relative">
                             <ShoppingCart className="h-6 w-6 stroke-[3]" />

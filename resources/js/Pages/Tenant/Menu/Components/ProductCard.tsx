@@ -5,9 +5,10 @@ import clsx from 'clsx';
 interface ProductCardProps {
     product: Product;
     onAdd: (product: Product) => void;
+    viewMode?: 'grid' | 'list';
 }
 
-export default function ProductCard({ product, onAdd }: ProductCardProps) {
+export default function ProductCard({ product, onAdd, viewMode = 'grid' }: ProductCardProps) {
     const hasDiscount = product.promotional_price && Number(product.promotional_price) > 0;
     const currentPrice = hasDiscount ? Number(product.promotional_price) : Number(product.price);
     const originalPrice = Number(product.price);
@@ -15,7 +16,12 @@ export default function ProductCard({ product, onAdd }: ProductCardProps) {
     return (
         <div
             onClick={() => onAdd(product)}
-            className="group bg-white dark:bg-premium-card rounded-[32px] p-3 md:p-4 border border-gray-100 dark:border-white/5 shadow-sm hover:shadow-xl hover:border-orange-100 dark:hover:border-orange-500/30 transition-all duration-300 cursor-pointer flex md:flex-col gap-4 md:gap-0 h-full relative overflow-hidden"
+            className={clsx(
+                "group bg-gray-100 dark:bg-white/5 rounded-[24px] border border-gray-200 dark:border-white/5 shadow-sm hover:shadow-xl hover:border-primary/30 dark:hover:border-primary/30 transition-all duration-300 cursor-pointer relative overflow-hidden",
+                viewMode === 'grid' 
+                    ? "flex flex-col h-full p-3 md:p-4 gap-4" 
+                    : "flex flex-row items-center p-3 gap-4 h-32 md:h-40"
+            )}
         >
             {/* Discount/Status Badges */}
             <div className="absolute top-3 right-3 md:top-4 md:right-4 z-10 flex flex-col gap-1 items-end">
@@ -37,59 +43,81 @@ export default function ProductCard({ product, onAdd }: ProductCardProps) {
             </div>
 
             {/* Image */}
-            <div className="shrink-0 md:mb-4 relative">
-                <div className="h-24 w-24 md:h-48 md:w-full rounded-[24px] overflow-hidden bg-gray-50 dark:bg-white/5 relative transition-colors duration-300">
+            <div className={clsx(
+                "shrink-0 relative transition-colors duration-300",
+                viewMode === 'grid' 
+                    ? "w-full aspect-square md:mb-2" 
+                    : "h-full aspect-square"
+            )}>
+                <div className={clsx(
+                    "w-full h-full overflow-hidden bg-gray-50 dark:bg-white/5 relative",
+                    viewMode === 'grid' ? "rounded-[20px]" : "rounded-[16px]"
+                )}>
                     {product.image_url ? (
                         <img
                             src={product.image_url}
                             alt={product.name}
-                            className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700"
                         />
                     ) : (
                         <div className="h-full w-full flex items-center justify-center text-gray-300">
-                            <span className="text-2xl">🍽️</span>
+                            <span className={viewMode === 'grid' ? "text-4xl" : "text-2xl"}>🍽️</span>
                         </div>
                     )}
 
-                    {/* Desktop Overlay Add Button */}
-                    <div className="hidden md:flex absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center">
-                        <button 
-                            className="text-white rounded-full p-3 shadow-xl shadow-[#ff3d03]/40 transform translate-y-4 group-hover:translate-y-0 transition-transform"
-                            style={{ background: 'linear-gradient(135deg, #ff3d03 0%, #ff6b35 100%)' }}
-                        >
-                            <Plus className="h-6 w-6" />
-                        </button>
-                    </div>
+                    {/* Desktop Overlay Add Button (Grid Only) */}
+                    {viewMode === 'grid' && (
+                        <div className="hidden md:flex absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center">
+                            <button 
+                                className="text-white rounded-full p-3 shadow-xl shadow-primary/40 transform translate-y-4 group-hover:translate-y-0 transition-transform"
+                                style={{ background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)' }}
+                            >
+                                <Plus className="h-6 w-6" />
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
             {/* Content */}
-            <div className="flex flex-col flex-1 justify-between md:space-y-2">
+            <div className="flex flex-col flex-1 justify-between h-full">
                 <div>
-                    <h3 className="font-bold text-gray-900 dark:text-white leading-tight mb-1 line-clamp-2 md:text-lg transition-colors duration-300">
+                    <h3 className={clsx(
+                        "font-bold text-gray-900 dark:text-white leading-tight mb-1 transition-colors duration-300",
+                        viewMode === 'grid' ? "text-base md:text-lg line-clamp-2" : "text-sm md:text-base line-clamp-1"
+                    )}>
                         {product.name}
                     </h3>
-                    <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 line-clamp-2 md:line-clamp-3 mb-2 transition-colors duration-300">
+                    <p className={clsx(
+                        "text-xs text-gray-500 dark:text-gray-400 mb-2 transition-colors duration-300 leading-relaxed",
+                        viewMode === 'grid' ? "line-clamp-2 md:line-clamp-3" : "line-clamp-2 hidden md:block" // Hide desc on mobile list for space
+                    )}>
                         {product.description}
                     </p>
                 </div>
 
-                <div className="flex items-end justify-between mt-auto">
+                <div className="flex items-center justify-between mt-auto">
                     <div className="flex flex-col">
                         {hasDiscount && (
-                            <span className="text-xs text-gray-400 dark:text-gray-500 line-through transition-colors duration-300">
+                            <span className="text-[10px] md:text-xs text-gray-400 dark:text-gray-500 line-through transition-colors duration-300 font-medium">
                                 R$ {originalPrice.toFixed(2).replace('.', ',')}
                             </span>
                         )}
-                        <span className="text-base md:text-xl font-black text-[#ff3d03]">
+                        <span className={clsx(
+                            "font-black text-primary",
+                            viewMode === 'grid' ? "text-base md:text-xl" : "text-sm md:text-lg"
+                        )}>
                             R$ {currentPrice.toFixed(2).replace('.', ',')}
                         </span>
                     </div>
 
-                    {/* Mobile Add Button */}
+                    {/* Mobile/List Add Button */}
                     <button 
-                        className="md:hidden h-8 w-8 text-white rounded-lg flex items-center justify-center shadow-md transition-all"
-                        style={{ background: 'linear-gradient(135deg, #ff3d03 0%, #ff6b35 100%)' }}
+                        className={clsx(
+                            "h-8 w-8 text-white rounded-lg flex items-center justify-center shadow-md transition-all active:scale-95",
+                            viewMode === 'grid' && "md:hidden" // Hide on desktop grid (uses overlay)
+                        )}
+                        style={{ background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)' }}
                     >
                         <Plus className="h-5 w-5" />
                     </button>

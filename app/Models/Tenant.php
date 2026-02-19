@@ -49,6 +49,7 @@ class Tenant extends Model
         'suspension_reason',
         'printer_token',
         'printer_token_raw',
+        'menu_view_mode',
     ];
 
     protected $casts = [

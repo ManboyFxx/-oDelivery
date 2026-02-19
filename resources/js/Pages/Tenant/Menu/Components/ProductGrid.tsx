@@ -1,13 +1,14 @@
 import { Category, Product } from './types';
 import ProductCard from './ProductCard';
 import { ShoppingBag } from 'lucide-react';
+import clsx from 'clsx';
 
 interface ProductGridProps {
     categories: Category[];
     onAdd: (product: Product) => void;
 }
 
-export default function ProductGrid({ categories, onAdd }: ProductGridProps) {
+export default function ProductGrid({ categories, onAdd, viewMode = 'grid' }: ProductGridProps & { viewMode?: 'grid' | 'list' }) {
     return (
         <div className="max-w-7xl mx-auto px-4 py-8 space-y-12">
             {categories.map((category) => {
@@ -31,12 +32,17 @@ export default function ProductGrid({ categories, onAdd }: ProductGridProps) {
                             - Tablet: 2 columns
                             - Desktop: 3 or 4 columns depending on screen size
                         */}
-                        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-6">
+                        <div className={clsx(
+                            viewMode === 'grid' 
+                                ? "grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-6"
+                                : "flex flex-col gap-4"
+                        )}>
                             {category.products.map((product) => (
                                 <ProductCard
                                     key={product.id}
                                     product={product}
                                     onAdd={onAdd}
+                                    viewMode={viewMode}
                                 />
                             ))}
                         </div>

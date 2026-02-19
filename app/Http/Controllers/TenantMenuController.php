@@ -204,7 +204,7 @@ class TenantMenuController extends Controller
                 'instagram' => $settings->instagram,
                 'facebook' => $settings->facebook,
                 'website' => $settings->website,
-                'theme_color' => $settings->pwa_theme_color ?? '#ff3d03',
+                'theme_color' => $settings->theme_color ?? '#ff3d03',
                 'theme_mode' => $settings->menu_theme ?? 'modern-clean',
                 'loyalty_enabled' => $settings->loyalty_enabled ?? true,
                 'operating_hours_formatted' => $this->settingsService->formatOperatingHours($settings->business_hours),
@@ -214,6 +214,7 @@ class TenantMenuController extends Controller
                 'estimated_delivery_time' => $settings->estimated_delivery_time ?? 30,
                 'delivery_zones' => $deliveryZones,
                 'payment_methods' => $paymentMethods,
+                'menu_view_mode' => $tenant->menu_view_mode ?? 'grid',
                 'settings' => $sanitizedSettings,
             ]
         ]);

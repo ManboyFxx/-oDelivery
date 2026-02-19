@@ -21,10 +21,10 @@ export default {
                 700: '#cc3102', // Active
             },
             primary: {
-                DEFAULT: '#ff3d03',
-                500: '#ff3d03',
-                600: '#e53703',
-                700: '#cc3102',
+                DEFAULT: 'var(--primary-color)',
+                500: 'var(--primary-color)',
+                600: 'var(--primary-hover)', // We can calculate this or use a filter
+                700: 'var(--primary-active)',
             },
             colors: {
                 'premium-dark': '#0f1012',
