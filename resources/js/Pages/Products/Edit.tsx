@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm, Link, router } from '@inertiajs/react'; // Add router
-import { FormEventHandler, useState } from 'react'; // Add useState
+import { useState } from 'react';
 import RecipeTab from './Tabs/RecipeTab';
 import { Package, List, Beaker, Save, ChevronLeft } from 'lucide-react';
 
@@ -29,6 +29,7 @@ interface Group {
 
 export default function Edit({ product, categories, complement_groups = [], ingredients = [] }: { product: any, categories: Category[], complement_groups: Group[], ingredients: any[] }) {
     const [activeTab, setActiveTab] = useState<'general' | 'complements' | 'recipe'>('general');
+    const [imageError, setImageError] = useState(false);
 
     const { data, setData, post, processing, errors } = useForm({
         _method: 'PATCH', // Spoof PATCH for file upload support in Laravel
@@ -50,9 +51,8 @@ export default function Edit({ product, categories, complement_groups = [], ingr
 
     const [imagePreview, setImagePreview] = useState<string | null>(product.image_url || null);
 
-    const submit: FormEventHandler = (e) => {
+    const submit = (e: React.FormEvent | React.MouseEvent) => {
         e.preventDefault();
-        // Inertia doesn't support file uploads with PUT/PATCH directly, so we use POST with _method
         post(route('products.update', product.id), {
             forceFormData: true,
         });
@@ -63,6 +63,7 @@ export default function Edit({ product, categories, complement_groups = [], ingr
         if (file) {
             setData('image', file);
             setImagePreview(URL.createObjectURL(file));
+            setImageError(false);
         }
     };
 
@@ -115,13 +116,7 @@ export default function Edit({ product, categories, complement_groups = [], ingr
                         <List className="w-5 h-5" />
                         Complementos
                     </button>
-                    <button
-                        onClick={() => setActiveTab('recipe')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-black uppercase tracking-widest transition-all ${activeTab === 'recipe' ? 'bg-[#ff3d03] text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5'}`}
-                    >
-                        <Beaker className="w-5 h-5" />
-                        Ficha Técnica
-                    </button>
+                    {/* Aba Ficha Técnica removida a pedido do usuário */}
                 </div>
 
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -246,11 +241,19 @@ export default function Edit({ product, categories, complement_groups = [], ingr
                                 <div className="bg-white dark:bg-[#1a1b1e] p-6 rounded-[32px] border border-gray-100 dark:border-white/5 shadow-xl shadow-gray-200/50 dark:shadow-none">
                                     <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-4 text-center">Imagem em Destaque</label>
                                     <div className="relative group">
-                                        <div className="aspect-square rounded-2xl overflow-hidden bg-gray-50 dark:bg-white/5 border-2 border-dashed border-gray-200 dark:border-white/10 flex items-center justify-center transition-all group-hover:border-[#ff3d03]">
-                                            {imagePreview ? (
-                                                <img src={imagePreview} className="w-full h-full object-cover" alt="Preview" />
+                                    <div className="aspect-square rounded-2xl overflow-hidden bg-gray-50 dark:bg-white/5 border-2 border-dashed border-gray-200 dark:border-white/10 flex items-center justify-center transition-all group-hover:border-[#ff3d03]">
+                                            {imagePreview && !imageError ? (
+                                                <img
+                                                    src={imagePreview}
+                                                    className="w-full h-full object-cover"
+                                                    alt="Preview"
+                                                    onError={() => setImageError(true)}
+                                                />
                                             ) : (
-                                                <Package className="w-12 h-12 text-gray-200" />
+                                                <div className="flex flex-col items-center gap-3">
+                                                    <Package className="w-12 h-12 text-gray-300" />
+                                                    <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Clique para adicionar</span>
+                                                </div>
                                             )}
                                         </div>
                                         <label className="absolute inset-0 cursor-pointer flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl backdrop-blur-sm">
@@ -298,13 +301,7 @@ export default function Edit({ product, categories, complement_groups = [], ingr
                         </div>
                     )}
 
-                    {activeTab === 'recipe' && (
-                        <RecipeTab
-                            availableIngredients={ingredients}
-                            currentRecipe={data.ingredients}
-                            onChange={(recipe) => setData('ingredients', recipe)}
-                        />
-                    )}
+                    {/* Componente RecipeTab removido */}
                 </div>
             </div>
         </AuthenticatedLayout>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Truck, Plus, Trash2, Edit, MapPin } from 'lucide-react';
+import { Truck, Plus, Trash2, Edit, MapPin, Search, Loader2 } from 'lucide-react';
 import Modal from '@/Components/Modal';
 import SecondaryButton from '@/Components/SecondaryButton';
 import { Switch } from '@headlessui/react';
@@ -23,7 +23,7 @@ interface DeliverySettingsProps {
     setZoneData: (field: string, value: any) => void; // Or setData type
     zoneProcessing: boolean;
     zoneErrors: any;
-    submitZone: (e: React.FormEvent) => void;
+    submitZone: () => void;
 
     // Zone Actions
     handleDeleteZone: (id: string) => void;
@@ -58,6 +58,28 @@ export default function DeliverySettings({
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+    };
+
+    const [cepLoading, setCepLoading] = React.useState(false);
+    const [cepToCheck, setCepToCheck] = React.useState('');
+
+    const handleCepSearch = async () => {
+        const cleanCep = cepToCheck.replace(/\D/g, '');
+        if (cleanCep.length !== 8) return;
+
+        setCepLoading(true);
+        try {
+            const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+            const data = await response.json();
+            
+            if (!data.erro && data.bairro) {
+                setZoneData('neighborhood', data.bairro);
+            }
+        } catch (error) {
+            console.error('Error fetching CEP:', error);
+        } finally {
+            setCepLoading(false);
+        }
     };
 
     return (
@@ -230,7 +252,36 @@ export default function DeliverySettings({
                         {editingZone ? 'Editar Zona de Entrega' : 'Nova Zona de Entrega'}
                     </h2>
 
-                    <form onSubmit={submitZone} className="space-y-4">
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Pesquisar por CEP (Opcional)
+                            </label>
+                            <div className="flex gap-2 mb-4">
+                                <div className="relative flex-1">
+                                    <input
+                                        type="text"
+                                        value={cepToCheck}
+                                        onChange={(e) => setCepToCheck(e.target.value)}
+                                        className="w-full pl-4 pr-10 py-3 border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent bg-white dark:bg-premium-dark text-gray-900 dark:text-white"
+                                        placeholder="00000-000"
+                                        maxLength={9}
+                                    />
+                                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                                        <Search className="h-4 w-4" />
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleCepSearch}
+                                    disabled={cepLoading || cepToCheck.length < 8}
+                                    className="px-4 py-2 bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-200 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-white/20 transition-colors disabled:opacity-50 flex items-center gap-2"
+                                >
+                                    {cepLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Buscar'}
+                                </button>
+                            </div>
+                        </div>
+
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Bairro ou Região
@@ -287,14 +338,15 @@ export default function DeliverySettings({
                                 Cancelar
                             </SecondaryButton>
                             <button
-                                type="submit"
+                                type="button"
+                                onClick={submitZone}
                                 disabled={zoneProcessing}
                                 className="px-6 py-2.5 bg-[#ff3d03] text-white rounded-xl font-bold hover:bg-[#e63600] transition-colors disabled:opacity-50"
                             >
                                 Salvar
                             </button>
                         </div>
-                    </form>
+                    </div>
                 </div>
             </Modal>
         </div>

@@ -145,7 +145,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
             />
 
             {/* Modal Content */}
-            <div className="bg-white dark:bg-premium-dark w-full md:max-w-2xl max-h-[90vh] md:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden flex flex-col pointer-events-auto animate-in slide-in-from-bottom md:slide-in-from-bottom-10 duration-300 transition-colors duration-300">
+            <div className="bg-white dark:bg-premium-dark w-full md:max-w-2xl h-full md:h-auto md:max-h-[90vh] md:rounded-3xl shadow-2xl overflow-hidden flex flex-col pointer-events-auto animate-in slide-in-from-bottom md:slide-in-from-bottom-10 duration-300 transition-colors duration-300">
                 {/* Image Header */}
                 <div className="h-48 md:h-64 relative shrink-0">
                     {product.image_url ? (
@@ -211,15 +211,25 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
                                     {group.options.map(option => {
                                         const qty = selectedComplements[group.id]?.[option.id] || 0;
                                         const maxQty = option.max_quantity || 1;
-                                        const canAdd = qty < maxQty && totalSelected < group.max_selections;
+                                        const isOutOfStock = option.stock !== null && option.stock !== undefined && option.stock <= 0;
+                                        const canAdd = !isOutOfStock && qty < maxQty && totalSelected < group.max_selections;
 
                                         return (
                                             <div key={option.id} className={clsx(
-                                                "flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer duration-300",
-                                                qty > 0 ? "border-primary bg-primary/5" : "border-gray-100 dark:border-white/5 hover:border-gray-200 dark:hover:border-white/10"
+                                                "flex items-center justify-between p-3 rounded-xl border transition-all duration-300",
+                                                qty > 0 ? "border-primary bg-primary/5" : "border-gray-100 dark:border-white/5",
+                                                !isOutOfStock && "cursor-pointer hover:border-gray-200 dark:hover:border-white/10",
+                                                isOutOfStock && "opacity-60 bg-gray-50 dark:bg-white/5 grayscale pointer-events-none"
                                             )}>
                                                 <div className="flex-1" onClick={() => canAdd && updateComplementQuantity(group.id, option.id, 1, maxQty, group.max_selections)}>
-                                                    <div className="font-medium text-gray-900 dark:text-white transition-colors duration-300">{option.name}</div>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="font-medium text-gray-900 dark:text-white transition-colors duration-300">{option.name}</div>
+                                                        {isOutOfStock && (
+                                                            <span className="text-[10px] font-black uppercase bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full">
+                                                                Esgotado
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                     {option.price > 0 && (
                                                         <div className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">
                                                             + R$ {option.price.toFixed(2).replace('.', ',')}
@@ -292,7 +302,8 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart, in
                         </div>
                         <button
                             onClick={handleAddToCart}
-                            className="flex-1 bg-primary text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/30 hover:bg-primary-600 hover:shadow-primary/50 transition-all active:scale-[0.98] flex items-center justify-between px-6"
+                            style={{ backgroundColor: 'var(--primary-color)' }}
+                            className="flex-1 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/30 hover:brightness-90 transition-all active:scale-[0.98] flex items-center justify-between px-6"
                         >
                             <span>{initialValues ? 'Atualizar Pedido' : 'Adicionar'}</span>
                             <span>R$ {calculateTotal().toFixed(2).replace('.', ',')}</span>

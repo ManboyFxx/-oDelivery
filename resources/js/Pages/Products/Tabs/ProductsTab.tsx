@@ -275,8 +275,8 @@ export default function ProductsTab({ products: initialProducts, categories, com
                 _method: 'put',
                 ...data,
             }, {
+                forceFormData: true,
                 onSuccess: () => {
-                    success('Produto Atualizado', 'Produto atualizado com sucesso.');
                     setShowModal(false);
                 },
                 onError: () => showError('Erro', 'Erro ao atualizar produto.')
@@ -284,7 +284,6 @@ export default function ProductsTab({ products: initialProducts, categories, com
         } else {
             post(route('products.store'), {
                 onSuccess: () => {
-                    success('Produto Criado', 'Produto cadastrado com sucesso.');
                     setShowModal(false);
                 },
                 onError: () => showError('Erro', 'Erro ao criar produto.')
@@ -348,12 +347,7 @@ export default function ProductsTab({ products: initialProducts, categories, com
                             }`}>
                             {usage.products}/{usage.limit} produtos
                         </span>
-                    ) : (
-                        <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-[#ff3d03] to-[#e63700] text-white">
-                            <Zap className="h-3 w-3 inline mr-1" />
-                            Ilimitado
-                        </span>
-                    )}
+                    ) : null}
                 </div>
 
                 <div className="flex gap-4 w-full md:w-auto">
@@ -464,7 +458,7 @@ export default function ProductsTab({ products: initialProducts, categories, com
                                     type="file"
                                     id="image"
                                     onChange={handleImageChange}
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                     accept="image/*"
                                 />
                                 {imagePreview ? (

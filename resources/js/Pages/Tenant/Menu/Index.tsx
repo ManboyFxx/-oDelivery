@@ -7,6 +7,7 @@ import { Loader2, Search, Sun, Moon, LayoutGrid, List } from 'lucide-react';
 import clsx from 'clsx';
 
 import { Category, Product, Customer } from './Components/types';
+import { adjustColor } from '@/Utils/colors';
 import HeroSection from './Components/HeroSection';
 import CategoryNav from './Components/CategoryNav';
 import ProductGrid from './Components/ProductGrid';
@@ -17,6 +18,7 @@ import ProductModal from './Components/ProductModal';
 import AuthModal from './Components/AuthModal';
 import CustomerAreaModal from './Components/CustomerAreaModal';
 import CheckoutModal from './CheckoutModal';
+import MenuNavbar from './Components/MenuNavbar';
 
 interface PageProps {
     store: any;
@@ -252,8 +254,16 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-premium-dark text-gray-900 dark:text-gray-100 font-sans selection:bg-orange-100 selection:text-orange-900 pb-24 md:pb-0 transition-colors duration-300">
-            <Head title={store.name} />
+        <div className="min-h-screen bg-gray-50 dark:bg-premium-dark text-gray-900 dark:text-gray-100 font-sans selection:bg-orange-100 selection:text-orange-900 pb-40 md:pb-40 transition-colors duration-300">
+            <Head title={store.name}>
+                <style>{`
+                    :root {
+                        --primary-color: ${store.theme_color || '#ff3d03'};
+                        --primary-hover: ${adjustColor(store.theme_color || '#ff3d03', -10)};
+                        --primary-active: ${adjustColor(store.theme_color || '#ff3d03', -20)};
+                    }
+                `}</style>
+            </Head>
 
             {/* Hero Section */}
             <HeroSection
@@ -327,11 +337,12 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
             </main>
 
             {/* Cart Elements */}
-            <CartFloatingButton
+            {/* CartFloatingButton agora integrado no MenuNavbar */}
+            {/* <CartFloatingButton
                 itemCount={cartCount}
                 total={cartTotal}
                 onClick={() => setIsCartOpen(true)}
-            />
+            /> */}
 
             <CartSidebar
                 isOpen={isCartOpen}
@@ -396,25 +407,36 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                 />
             )}
 
-            {/* Customer Floating Button (if logged in and not in cart) */}
-            {customer && !isCartOpen && !isCustomerModalOpen && (
-                <div className="fixed top-4 right-4 z-40 hidden md:block">
-                    <button
-                        onClick={() => setIsCustomerModalOpen(true)}
-                        className="bg-white px-4 py-2 rounded-full shadow-lg border border-gray-100 flex items-center gap-2 hover:bg-gray-50 transition-colors"
-                    >
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs uppercase">
-                            {customer.name.substring(0, 2)}
-                        </div>
-                        <span className="font-bold text-gray-700 text-sm">{customer.name.split(' ')[0]}</span>
-                    </button>
-                </div>
-            )}
-            {/* Mobile Customer Button in Hero is handled, or distinct button? 
-                 Hero has "Loyalty Card" which opens customer area.
-             */}
-        </div>
-    );
-}
+             {/* Customer Floating Button (if logged in and not in cart) */}
+             {customer && !isCartOpen && !isCustomerModalOpen && (
+                 <div className="fixed top-4 right-4 z-40 hidden md:block">
+                     <button
+                         onClick={() => setIsCustomerModalOpen(true)}
+                         className="bg-white px-4 py-2 rounded-full shadow-lg border border-gray-100 flex items-center gap-2 hover:bg-gray-50 transition-colors"
+                     >
+                         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs uppercase">
+                             {customer.name.substring(0, 2)}
+                         </div>
+                         <span className="font-bold text-gray-700 text-sm">{customer.name.split(' ')[0]}</span>
+                     </button>
+                 </div>
+             )}
+
+             {/* Bottom Navigation Navbar */}
+             <MenuNavbar 
+                 customer={customer}
+                 cartCount={cartCount}
+                 onHome={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                 onAccount={() => {
+                     if (customer) setIsCustomerModalOpen(true);
+                     else setIsAuthModalOpen(true);
+                 }}
+                 onStore={() => setShowStoreInfo(true)}
+                 onCart={() => setIsCartOpen(true)}
+                 activeTab={isCartOpen ? 'cart' : isCustomerModalOpen || isAuthModalOpen ? 'account' : showStoreInfo ? 'store' : 'home'}
+             />
+         </div>
+     );
+ }
 
 

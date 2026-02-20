@@ -50,29 +50,59 @@ class CustomerAddressController extends Controller
             'longitude' => 'nullable|numeric',
         ]);
 
+        // Validate that the neighborhood belongs to the tenant's delivery zones
+        $customer = Customer::findOrFail($customerId);
+        $tenantId = $customer->tenant_id;
+        $tenantHasZones = \App\Models\DeliveryZone::where('tenant_id', $tenantId)->exists();
+
+        if ($tenantHasZones) {
+            $zoneExists = \App\Models\DeliveryZone::where('tenant_id', $tenantId)
+                ->where('neighborhood', $validated['neighborhood'])
+                ->where('is_active', true)
+                ->exists();
+
+            if (!$zoneExists) {
+                return response()->json([
+                    'message' => 'Não realizamos entregas no bairro informado. Por favor, selecione um bairro atendido.'
+                ], 422);
+            }
+        }
+
         // If this is the first address, make it default
         $isFirst = $addressCount === 0;
 
-        $address = CustomerAddress::create([
-            'customer_id' => $customerId,
-            'tenant_id' => \App\Models\Customer::find($customerId)->tenant_id,
-            'street' => $validated['street'],
-            'number' => $validated['number'],
-            'complement' => $validated['complement'] ?? null,
-            'neighborhood' => $validated['neighborhood'],
-            'city' => $validated['city'],
-            'state' => $validated['state'],
-            'zip_code' => $validated['zip_code'],
-            'latitude' => $validated['latitude'] ?? null,
-            'longitude' => $validated['longitude'] ?? null,
-            'is_default' => $isFirst,
-        ]);
+        try {
+            $address = CustomerAddress::create([
+                'customer_id' => $customerId,
+                'tenant_id' => $tenantId,
+                'street' => $validated['street'],
+                'number' => $validated['number'],
+                'complement' => $validated['complement'] ?? null,
+                'neighborhood' => $validated['neighborhood'],
+                'city' => $validated['city'],
+                'state' => $validated['state'],
+                'zip_code' => $validated['zip_code'],
+                'latitude' => $validated['latitude'] ?? null,
+                'longitude' => $validated['longitude'] ?? null,
+                'is_default' => $isFirst,
+            ]);
 
-        return response()->json([
-            'message' => 'Endereço cadastrado com sucesso!',
-            'address' => $address
-        ]);
+            return response()->json([
+                'message' => 'Endereço cadastrado com sucesso!',
+                'address' => $address
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error creating customer address: ' . $e->getMessage(), [
+                'customer_id' => $customerId,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'message' => 'Erro interno ao salvar endereço. Por favor, contate o suporte.'
+            ], 500);
+        }
     }
+
 
     public function update(Request $request, $id)
     {

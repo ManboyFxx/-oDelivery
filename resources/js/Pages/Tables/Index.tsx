@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm, router } from '@inertiajs/react';
-import { Plus, LayoutGrid, Map as MapIcon, RotateCw, DollarSign, Clock } from 'lucide-react';
+import { Plus, LayoutGrid, Map as MapIcon, RotateCw, DollarSign, Clock, RefreshCw } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Modal from '@/Components/Modal';
 import InputLabel from '@/Components/InputLabel';
@@ -29,12 +29,14 @@ interface Table {
     height: number;
     shape: 'square' | 'round';
     rotation: number;
+    can_reopen?: boolean; // New field
 }
 
 export default function TablesIndex({ tables }: { tables: Table[] }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTable, setEditingTable] = useState<Table | null>(null);
     const [confirmModal, setConfirmModal] = useState<{ show: boolean; id: string | null }>({ show: false, id: null });
+    const [reopenModal, setReopenModal] = useState<{ show: boolean; id: string | null; number: number | null }>({ show: false, id: null, number: null });
     const [transferModal, setTransferModal] = useState<{ show: boolean; table: { id: string; number: number } | null }>({ show: false, table: null });
     const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
     const [now, setNow] = useState(new Date());
@@ -111,6 +113,19 @@ export default function TablesIndex({ tables }: { tables: Table[] }) {
     const handleTransfer = (table: Table) => {
         if (table.status === 'occupied') {
             setTransferModal({ show: true, table: { id: table.id, number: table.number } });
+        }
+    };
+
+    const handleReopen = (table: Table) => {
+        setReopenModal({ show: true, id: table.id, number: table.number });
+    };
+
+    const confirmReopen = () => {
+        if (reopenModal.id) {
+            post(route('tables.reopen', reopenModal.id), {
+                onSuccess: () => setReopenModal({ show: false, id: null, number: null }),
+                onFinish: () => setReopenModal({ show: false, id: null, number: null })
+            });
         }
     };
 
@@ -237,9 +252,19 @@ export default function TablesIndex({ tables }: { tables: Table[] }) {
                                                 {table.status === 'free' && (
                                                     <div className="mt-8 text-center opacity-50 text-xs">
                                                         Disponível
+                                                        {table.can_reopen && (
+                                                            <div className="mt-2">
+                                                                <button
+                                                                    onClick={() => handleReopen(table)}
+                                                                    className="text-orange-600 hover:text-orange-800 flex items-center justify-center gap-1 mx-auto bg-orange-50 px-2 py-1 rounded transition-colors"
+                                                                    title="Reabrir última conta (estornar pagamento)"
+                                                                >
+                                                                    <RefreshCw size={12} /> Reabrir
+                                                                </button>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
-                                            </div>
                                         </div>
                                     );
                                 })}
@@ -305,6 +330,16 @@ export default function TablesIndex({ tables }: { tables: Table[] }) {
                 onConfirm={confirmDelete}
                 title="Excluir Mesa"
                 message="Tem certeza que deseja excluir esta mesa? Esta ação não pode ser desfeita."
+            />
+
+            <ConfirmationModal
+                show={reopenModal.show}
+                onClose={() => setReopenModal({ show: false, id: null, number: null })}
+                onConfirm={confirmReopen}
+                title="Reabrir Mesa"
+                message={`Deseja reabrir a Mesa ${reopenModal.number}? Isso irá estornar o pagamento e deixar a mesa ocupada novamente com o último pedido.`}
+                confirmLabel="Sim, Reabrir"
+                cancelLabel="Cancelar"
             />
 
             <TableTransferModal

@@ -27,7 +27,7 @@ interface ComplementGroup {
     min_selections: number;
     max_selections: number;
     options: ComplementOption[];
-    options_count?: number; // count might be from backend or calculated
+    options_count?: number;
 }
 
 export default function ComplementsTab({ groups, ingredients }: { groups: ComplementGroup[], ingredients: Ingredient[] }) {
@@ -140,7 +140,7 @@ export default function ComplementsTab({ groups, ingredients }: { groups: Comple
     const toggleOptionAvailability = async (groupId: string, optionId: string, currentStatus: boolean) => {
         try {
             await axios.post(route('complements.toggle-option', { groupId, optionId }));
-            router.reload({ only: ['complement_groups'] }); // Reload only complement groups prop
+            router.reload({ only: ['complement_groups'] });
         } catch (error) {
             console.error('Error toggling option:', error);
         }
@@ -268,11 +268,6 @@ export default function ComplementsTab({ groups, ingredients }: { groups: Comple
 
                                             <div className="flex-1">
                                                 <p className="font-bold text-gray-700 dark:text-gray-300">{option.name}</p>
-                                                {option.ingredient && (
-                                                    <p className="text-xs text-blue-500 font-bold bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-md inline-block mt-1">
-                                                        Vinculado: {option.ingredient.name}
-                                                    </p>
-                                                )}
                                             </div>
 
                                             <div className="text-sm">
@@ -413,39 +408,41 @@ export default function ComplementsTab({ groups, ingredients }: { groups: Comple
                                 <div className="space-y-3">
                                     {formData.options.map((option, index) => (
                                         <div key={index} className="flex gap-3 items-start p-4 bg-white dark:bg-[#1a1b1e] rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm transition-all hover:border-[#ff3d03] dark:hover:border-[#ff3d03] group">
-                                            <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-3">
-                                                <div className="md:col-span-6">
-                                                    <span className="text-xs font-bold text-gray-400 uppercase mb-1 block">Nome</span>
-                                                    <input
-                                                        type="text"
-                                                        value={option.name}
-                                                        onChange={(e) => updateOption(index, 'name', e.target.value)}
-                                                        placeholder="Ex: Bacon Extra"
-                                                        className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent text-sm dark:bg-gray-800 dark:text-white"
-                                                        required
-                                                    />
-                                                </div>
-                                                <div className="md:col-span-3">
-                                                    <span className="text-xs font-bold text-gray-400 uppercase mb-1 block">Preço</span>
-                                                    <input
-                                                        type="number"
-                                                        step="0.01"
-                                                        min="0"
-                                                        value={option.price}
-                                                        onChange={(e) => updateOption(index, 'price', parseFloat(e.target.value))}
-                                                        className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent text-sm font-bold text-[#ff3d03] dark:bg-gray-800"
-                                                    />
-                                                </div>
-                                                <div className="md:col-span-3">
-                                                    <span className="text-xs font-bold text-gray-400 uppercase mb-1 block">Qtd. Máx</span>
-                                                    <input
-                                                        type="number"
-                                                        min="1"
-                                                        value={option.max_quantity || ''}
-                                                        onChange={(e) => updateOption(index, 'max_quantity', e.target.value ? parseInt(e.target.value) : null)}
-                                                        placeholder="∞"
-                                                        className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent text-sm font-bold text-center dark:bg-gray-800 dark:text-white"
-                                                    />
+                                            <div className="flex-1 space-y-4">
+                                                <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                                                    <div className="md:col-span-6">
+                                                        <span className="text-xs font-bold text-gray-400 uppercase mb-1 block">Nome</span>
+                                                        <input
+                                                            type="text"
+                                                            value={option.name}
+                                                            onChange={(e) => updateOption(index, 'name', e.target.value)}
+                                                            placeholder="Ex: Bacon Extra"
+                                                            className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent text-sm dark:bg-gray-800 dark:text-white"
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div className="md:col-span-3">
+                                                        <span className="text-xs font-bold text-gray-400 uppercase mb-1 block">Preço</span>
+                                                        <input
+                                                            type="number"
+                                                            step="0.01"
+                                                            min="0"
+                                                            value={option.price}
+                                                            onChange={(e) => updateOption(index, 'price', parseFloat(e.target.value))}
+                                                            className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent text-sm font-bold text-[#ff3d03] dark:bg-gray-800"
+                                                        />
+                                                    </div>
+                                                    <div className="md:col-span-3">
+                                                        <span className="text-xs font-bold text-gray-400 uppercase mb-1 block">Qtd. Máx</span>
+                                                        <input
+                                                            type="number"
+                                                            min="1"
+                                                            value={option.max_quantity || ''}
+                                                            onChange={(e) => updateOption(index, 'max_quantity', e.target.value ? parseInt(e.target.value) : null)}
+                                                            placeholder="∞"
+                                                            className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent text-sm font-bold text-center dark:bg-gray-800 dark:text-white"
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
                                             {formData.options.length > 1 && (

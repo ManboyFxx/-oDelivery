@@ -68,6 +68,14 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
     const [isVerifyingIdentity, setIsVerifyingIdentity] = useState(false);
     const [verificationDigits, setVerificationDigits] = useState('');
 
+    // Delivery Zone Validation
+    const [isValidZone, setIsValidZone] = useState<boolean | null>(null);
+    const [validatingAddress, setValidatingAddress] = useState(false);
+    const [deliveryFeeOverride, setDeliveryFeeOverride] = useState<number | null>(null);
+    const [zoneMessage, setZoneMessage] = useState('');
+    const [availableZones, setAvailableZones] = useState<any[]>([]);
+    const [neighborhoodOverride, setNeighborhoodOverride] = useState('');
+
     const { success: showSuccess } = useToast();
 
     useEffect(() => {
@@ -80,10 +88,70 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
             if (defaultAddr) setSelectedAddressId(defaultAddr.id);
             else setSelectedAddressId(addresses[0].id);
         }
-    }, [show, addresses, selectedAddressId]);
+        
+        // Auto-open address form if delivery and no addresses
+        if (show && mode === 'delivery' && addresses.length === 0 && !isAddingAddress) {
+            setIsAddingAddress(true);
+        }
+    }, [show, addresses, mode, isAddingAddress]);
+
+    // Fetch available delivery zones once
+    useEffect(() => {
+        const tenantId = store?.settings?.tenant_id;
+        if (!tenantId) return;
+        axios.get(`/api/delivery-zones?tenant_id=${tenantId}`)
+            .then(res => setAvailableZones(res.data))
+            .catch(() => {});
+    }, [store?.settings?.tenant_id]);
+
+    // Validate Zone when address changes
+    useEffect(() => {
+        if (mode !== 'delivery' || !selectedAddressId) {
+            setIsValidZone(true);
+            setDeliveryFeeOverride(null);
+            setZoneMessage('');
+            return;
+        }
+
+        const addr = addresses.find(a => a.id === selectedAddressId);
+        if (!addr) return;
+
+        // Reset override when switching address
+        setNeighborhoodOverride('');
+
+        // If no zones configured, allow any neighborhood
+        if (availableZones.length === 0) {
+            setIsValidZone(true);
+            setDeliveryFeeOverride(null);
+            setZoneMessage('');
+            return;
+        }
+
+        const neighborhood = addr.neighborhood;
+        const zone = availableZones.find(
+            z => z.neighborhood.toLowerCase() === neighborhood.toLowerCase()
+        );
+
+        if (zone) {
+            setIsValidZone(true);
+            setDeliveryFeeOverride(Number(zone.delivery_fee));
+            setZoneMessage('');
+        } else {
+            setIsValidZone(false);
+            setDeliveryFeeOverride(null);
+            setZoneMessage('Não entregamos neste bairro. Selecione um bairro atendido abaixo.');
+        }
+    }, [selectedAddressId, mode, addresses, availableZones]);
+
+    const deliveryNeighborhood = (() => {
+        if (mode !== 'delivery') return null;
+        if (neighborhoodOverride) return neighborhoodOverride;
+        const addr = addresses.find(a => a.id === selectedAddressId);
+        return addr?.neighborhood || null;
+    })();
 
     // Calculate details
-    const deliveryFee = mode === 'delivery' ? (store.settings?.delivery_fee || 5.00) : 0;
+    const deliveryFee = (mode === 'delivery' && isValidZone !== false) ? (deliveryFeeOverride !== null ? deliveryFeeOverride : (store.settings?.delivery_fee || 5.00)) : 0;
 
     const calculateDiscount = () => {
         if (!appliedCoupon) return 0;
@@ -101,10 +169,45 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
 
     const formatPrice = (val: number) => `R$ ${val.toFixed(2).replace('.', ',')}`;
 
-    const handleNextStep = () => {
+    const handleNextStep = async () => {
         if (step === 'delivery') {
             if (mode === 'delivery' && !selectedAddressId) {
                 setError('Selecione um endereço para entrega.');
+                return;
+            }
+
+            // If neighborhood was overridden because of invalid zone, update the address
+            if (mode === 'delivery' && neighborhoodOverride) {
+                const currentAddr = addresses.find(a => a.id === selectedAddressId);
+                if (currentAddr) {
+                    try {
+                        setLoading(true);
+                        const response = await axios.put(`/customer/addresses/${selectedAddressId}`, {
+                            ...currentAddr,
+                            neighborhood: neighborhoodOverride
+                        });
+
+                        // Update local state with new address details
+                        setAddresses(prev => prev.map(a => 
+                            a.id === selectedAddressId ? response.data.address : a
+                        ));
+                        
+                        // Clear override as the address is now correct
+                        setNeighborhoodOverride('');
+                        setIsValidZone(true); // Should be valid now
+                    } catch (err) {
+                        console.error("Error updating address neighborhood:", err);
+                        toast.error("Erro ao atualizar bairro do endereço. Tente novamente.");
+                        setLoading(false);
+                        return; // Stop here
+                    } finally {
+                        setLoading(false);
+                    }
+                }
+            }
+
+            if (mode === 'delivery' && isValidZone === false) {
+                setError('Selecione um bairro atendido para continuar.');
                 return;
             }
             setError('');
@@ -373,6 +476,7 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                             onSuccess={handleAddressSuccess}
                             tenantId={store.settings.tenant_id}
                             customerId={customer.id}
+                            preloadedZones={availableZones}
                         />
                     ) : (
                         <>
@@ -385,8 +489,8 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                                         className={clsx(
                                             "p-4 rounded-xl border-2 font-bold transition-all flex flex-col items-center gap-2 duration-300",
                                             mode === 'delivery'
-                                                ? "border-primary bg-orange-50 dark:bg-primary/10 text-primary"
-                                                : "border-gray-200 dark:border-gray-700 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
+                                                ? "border-[#ff3d03] bg-[#ff3d03]/5 text-[#ff3d03] shadow-md shadow-orange-500/10"
+                                                : "border-gray-200 dark:border-gray-700 dark:bg-white/5 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 bg-white"
                                         )}
                                     >
                                         <MapPin className="w-6 h-6" />
@@ -397,8 +501,8 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                                         className={clsx(
                                             "p-4 rounded-xl border-2 font-bold transition-all flex flex-col items-center gap-2 duration-300",
                                             mode === 'pickup'
-                                                ? "border-primary bg-orange-50 dark:bg-primary/10 text-primary"
-                                                : "border-gray-200 dark:border-gray-700 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
+                                                ? "border-[#ff3d03] bg-[#ff3d03]/5 text-[#ff3d03] shadow-md shadow-orange-500/10"
+                                                : "border-gray-200 dark:border-gray-700 dark:bg-white/5 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 bg-white"
                                         )}
                                         >
                                             <div className="w-6 h-6 relative">
@@ -414,11 +518,57 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                                                 <h3 className="font-bold text-gray-800 dark:text-gray-200 transition-colors duration-300">Selecione o Endereço</h3>
                                                 <button
                                                     onClick={() => setIsAddingAddress(true)}
-                                                    className="text-sm font-bold text-[#ff3d03] hover:underline"
+                                                    className="px-3 py-1.5 rounded-lg bg-[#ff3d03]/10 text-[#ff3d03] text-sm font-bold hover:bg-[#ff3d03]/20 transition-colors"
                                                 >
                                                     + Novo Endereço
                                                 </button>
                                             </div>
+
+                                            {validatingAddress && (
+                                                <div className="flex items-center gap-2 text-xs text-gray-400 py-1 transition-colors duration-300">
+                                                    <Loader2 className="w-3 h-3 animate-spin text-primary" /> Validando entrega...
+                                                </div>
+                                            )}
+
+                                            {!validatingAddress && isValidZone === false && zoneMessage && (
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-xs font-bold transition-colors duration-300">
+                                                        <X className="w-4 h-4" /> {zoneMessage}
+                                                    </div>
+                                                    {availableZones.length > 0 && (
+                                                        <div>
+                                                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">
+                                                                Selecione um bairro atendido:
+                                                            </label>
+                                                            <select
+                                                                value={neighborhoodOverride}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                onChange={(e) => {
+                                                                    const val = e.target.value;
+                                                                    setNeighborhoodOverride(val);
+                                                                    const zone = availableZones.find(z => z.neighborhood === val);
+                                                                    if (zone) {
+                                                                        setIsValidZone(true);
+                                                                        setDeliveryFeeOverride(Number(zone.delivery_fee));
+                                                                        setZoneMessage('');
+                                                                    }
+                                                                }}
+                                                                className="w-full text-sm p-3 rounded-xl border-2 border-orange-200 dark:border-orange-800/50 dark:bg-white/5 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                                                            >
+                                                                <option value="">Selecione o bairro...</option>
+                                                                {availableZones.map(zone => (
+                                                                    <option key={zone.id} value={zone.neighborhood}>
+                                                                        {zone.neighborhood} — R$ {Number(zone.delivery_fee).toFixed(2).replace('.', ',')}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                            <div className="mt-1 text-[10px] text-gray-500 text-right">
+                                                                * Seleção obrigatória para cálculo do frete
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
 
                                             {addresses.length === 0 ? (
                                                 <div className="text-center py-6 bg-gray-50 dark:bg-white/5 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 transition-colors duration-300">
@@ -432,32 +582,46 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                                                     </button>
                                                 </div>
                                             ) : (
-                                                addresses.map(addr => (
-                                                    <div
-                                                        key={addr.id}
-                                                        onClick={() => setSelectedAddressId(addr.id)}
-                                                        className={clsx(
-                                            "p-4 rounded-xl border-2 cursor-pointer transition-all flex items-start justify-between group duration-300",
-                                            selectedAddressId === addr.id
-                                                ? "border-primary bg-orange-50/50 dark:bg-primary/10"
-                                                : "border-gray-100 dark:border-gray-700 bg-white dark:bg-white/5 hover:border-gray-200 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-white/10"
-                                        )}
-                                    >
-                                        <div className="flex gap-3">
-                                            <div className={clsx(
-                                                "mt-1 w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors duration-300",
-                                                selectedAddressId === addr.id ? "border-primary bg-primary" : "border-gray-300 dark:border-gray-600"
-                                            )}>
-                                                                {selectedAddressId === addr.id && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                                                addresses.map(addr => {
+                                                    const isSelected = selectedAddressId === addr.id;
+                                                    return (
+                                                        <div
+                                                            key={addr.id}
+                                                            onClick={() => setSelectedAddressId(addr.id)}
+                                                            className={clsx(
+                                                                "p-4 rounded-xl border-2 cursor-pointer transition-all flex items-start justify-between group duration-300",
+                                                                isSelected
+                                                                    ? (isValidZone === false 
+                                                                        ? "border-red-400 bg-red-50 dark:bg-red-900/10 ring-1 ring-red-400" 
+                                                                        : "border-[#ff3d03] bg-[#ff3d03]/5 dark:bg-[#ff3d03]/10 ring-1 ring-[#ff3d03]")
+                                                                    : "border-gray-200 dark:border-gray-700 bg-white dark:bg-white/5 hover:border-orange-200 hover:bg-orange-50/30"
+                                                            )}
+                                                        >
+                                                            <div className="flex gap-3">
+                                                                <div className={clsx(
+                                                                    "mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-300",
+                                                                    isSelected 
+                                                                        ? (isValidZone === false 
+                                                                            ? "border-red-500 bg-red-500 text-white shadow-sm shadow-red-500/20" 
+                                                                            : "border-[#ff3d03] bg-[#ff3d03] text-white shadow-sm shadow-orange-500/20") 
+                                                                        : "border-gray-300 dark:border-gray-600 bg-white dark:bg-white/5"
+                                                                )}>
+                                                                    {isSelected && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                                                                </div>
+                                                                <div>
+                                                                    <p className="font-bold text-gray-900 dark:text-white transition-colors duration-300">{addr.street}, {addr.number}</p>
+                                                                    <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">{addr.neighborhood} - {addr.city}</p>
+                                                                    {addr.complement && <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 transition-colors duration-300">{addr.complement}</p>}
+                                                                </div>
                                                             </div>
-                                                            <div>
-                                                                <p className="font-bold text-gray-900 dark:text-white transition-colors duration-300">{addr.street}, {addr.number}</p>
-                                                                <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">{addr.neighborhood} - {addr.city}</p>
-                                                                {addr.complement && <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 transition-colors duration-300">{addr.complement}</p>}
-                                                            </div>
+                                                            {isSelected && isValidZone && (
+                                                                <div className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-[10px] font-black px-2 py-0.5 rounded-full animate-in zoom-in-95 duration-300 uppercase tracking-tighter">
+                                                                    Área Coberta
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                    </div>
-                                                ))
+                                                    );
+                                                })
                                             )}
                                         </div>
                                     )}
@@ -616,12 +780,34 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                                         </div>
                                         <div className="p-4 space-y-3 max-h-40 overflow-y-auto">
                                             {cart.map((item, idx) => (
-                                                <div key={idx} className="flex justify-between text-sm">
-                                                    <div className="flex gap-2">
-                                                        <span className="font-bold text-gray-900 dark:text-white transition-colors duration-300">{item.quantity}x</span>
-                                                        <span className="text-gray-600 dark:text-gray-300 line-clamp-1 transition-colors duration-300">{item.product.name}</span>
+                                                <div key={idx} className="space-y-1">
+                                                    <div className="flex justify-between text-sm">
+                                                        <div className="flex gap-2">
+                                                            <span className="font-bold text-gray-900 dark:text-white transition-colors duration-300">{item.quantity}x</span>
+                                                            <span className="font-bold text-gray-700 dark:text-gray-200 transition-colors duration-300 line-clamp-1">{item.product.name}</span>
+                                                        </div>
+                                                        <span className="text-gray-900 dark:text-white font-medium transition-colors duration-300">{formatPrice(item.subtotal)}</span>
                                                     </div>
-                                                    <span className="text-gray-900 dark:text-white font-medium transition-colors duration-300">{formatPrice(item.subtotal)}</span>
+                                                    
+                                                    {/* Complements */}
+                                                    {item.selectedComplements.length > 0 && (
+                                                        <div className="pl-7 space-y-0.5">
+                                                            {item.selectedComplements.map((c: any, cIdx: number) => (
+                                                                <p key={cIdx} className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight">
+                                                                    + {c.name}
+                                                                </p>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Notes */}
+                                                    {item.notes && (
+                                                        <div className="pl-7">
+                                                            <p className="text-[10px] italic text-gray-400 dark:text-gray-500 line-clamp-2">
+                                                                Obs: {item.notes}
+                                                            </p>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>
@@ -708,22 +894,30 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                             <button
                                 onClick={handleSubmit}
                                 disabled={loading}
-                                className="flex-[2] bg-primary hover:bg-primary-600 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-orange-200 disabled:opacity-70"
+                                className="flex-[2] bg-[#ff3d03] hover:bg-[#e63700] text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-orange-200 disabled:opacity-70"
                             >
                                 {loading ? <Loader2 className="animate-spin" /> : 'Confirmar Pedido'}
                             </button>
                         ) : (
                             <button
                                 onClick={handleNextStep}
-                                className="flex-[2] bg-primary hover:bg-primary-600 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-orange-200"
+                                disabled={loading || (mode === 'delivery' && !selectedAddressId) || (mode === 'delivery' && isValidZone === false)}
+                                className={clsx(
+                                    "flex-[2] px-4 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-orange-200",
+                                    (loading || (mode === 'delivery' && !selectedAddressId) || (mode === 'delivery' && isValidZone === false))
+                                        ? "bg-gray-300 dark:bg-gray-700 cursor-not-allowed shadow-none text-gray-500" 
+                                        : "bg-[#ff3d03] hover:bg-[#e63700] hover:shadow-orange-500/40 text-white"
+                                )}
                             >
-                                Continuar <ChevronRight className="w-5 h-5" />
+                                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                                    <>Continuar <ChevronRight className="w-5 h-5" /></>
+                                )}
                             </button>
                         )}
                     </div>
                 )}
-                    </>
-                )}
+                </>
+            )}
             </div>
         </Modal>
     );

@@ -22,9 +22,13 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\WhatsAppInstanceController;
 use App\Http\Controllers\Tenant\CustomerRedemptionController;
 use App\Http\Controllers\SuperAdminController;
+use App\Http\Controllers\StorageController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
+// Storage file serving route (bypasses symlink issues on shared hosting)
+Route::get('/storage/{path}', [StorageController::class, 'serve'])->where('path', '.*')->name('storage.serve');
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -92,8 +96,9 @@ Route::middleware(['throttle:60,1', 'tenant.scope'])->group(function () {
 
 // Public API Routes (no auth required) - ✅ COM RATE LIMITING
 Route::middleware(['throttle:30,1'])->group(function () {
-    Route::post('/api/validate-delivery-zone', [\App\Http\Controllers\Tenant\DeliveryZoneController::class, 'validate']);
-    Route::post('/api/validate-coupon', [\App\Http\Controllers\Tenant\CouponController::class, 'validate']);
+    Route::post('/api/validate-delivery-zone', [\App\Http\Controllers\Tenant\DeliveryZoneController::class, 'validate'])->name('api.validate-delivery-zone');
+    Route::get('/api/delivery-zones', [\App\Http\Controllers\Tenant\DeliveryZoneController::class, 'listActiveZones'])->name('api.delivery-zones.list');
+    Route::post('/api/validate-coupon', [\App\Http\Controllers\Tenant\CouponController::class, 'validate'])->name('api.validate-coupon');
     Route::get('/api/orders/{id}/track', [\App\Http\Controllers\Tenant\OrderTrackingController::class, 'track']);
 });
 
@@ -254,6 +259,7 @@ Route::middleware(['auth', 'subscription', 'role:admin,employee'])->group(functi
     Route::post('/tables/{table}/open', [TableController::class, 'open'])->name('tables.open');
     Route::post('/tables/{table}/add-items', [TableController::class, 'addItems'])->name('tables.addItems');
     Route::post('/tables/{table}/close', [TableController::class, 'close'])->name('tables.close');
+    Route::post('/tables/{table}/reopen', [TableController::class, 'reopen'])->name('tables.reopen');
 
 
     // Menu Organization (Cardapio)

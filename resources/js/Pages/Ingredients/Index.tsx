@@ -147,7 +147,7 @@ export default function IngredientsIndex({ ingredients }: Props) {
                                         <div className="flex items-center gap-2">
                                             <Package className="w-4 h-4 text-gray-400" />
                                             <span className={`text-sm font-black ${ingredient.stock <= ingredient.min_stock ? 'text-red-500' : 'text-gray-900 dark:text-white'}`}>
-                                                {ingredient.stock || 0} unid
+                                                {Number(ingredient.stock || 0).toString().replace('.', ',')} unid
                                             </span>
                                         </div>
                                     </div>
@@ -207,11 +207,14 @@ export default function IngredientsIndex({ ingredients }: Props) {
 
                         <div className="grid grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Estoque Inicial</label>
+                                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                                    {editingIngredient ? 'Quantidade em Estoque' : 'Estoque Inicial'}
+                                </label>
                                 <input
                                     type="number"
+                                    step="0.001"
                                     value={data.stock}
-                                    onChange={e => setData('stock', parseInt(e.target.value))}
+                                    onChange={e => setData('stock', parseFloat(e.target.value) || 0)}
                                     className="w-full px-5 py-4 rounded-2xl border-gray-200 dark:border-white/10 dark:bg-[#1a1b1e] dark:text-white focus:ring-2 focus:ring-[#ff3d03] transition-all"
                                     min="0"
                                 />
@@ -220,8 +223,9 @@ export default function IngredientsIndex({ ingredients }: Props) {
                                 <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Mínimo para Alerta</label>
                                 <input
                                     type="number"
+                                    step="0.001"
                                     value={data.min_stock}
-                                    onChange={e => setData('min_stock', parseInt(e.target.value))}
+                                    onChange={e => setData('min_stock', parseFloat(e.target.value) || 0)}
                                     className="w-full px-5 py-4 rounded-2xl border-gray-200 dark:border-white/10 dark:bg-[#1a1b1e] dark:text-white focus:ring-2 focus:ring-[#ff3d03] transition-all"
                                     min="0"
                                 />

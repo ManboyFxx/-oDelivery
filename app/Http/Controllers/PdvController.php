@@ -31,8 +31,9 @@ class PdvController extends Controller
             ])
             ->get();
 
-        // Fetch customers for the combobox
+        // Fetch customers for the combobox with addresses
         $customers = \App\Models\Customer::where('tenant_id', $tenantId)
+            ->with('addresses')
             ->select('id', 'name', 'phone', 'loyalty_points')
             ->orderBy('name')
             ->get();
@@ -66,6 +67,8 @@ class PdvController extends Controller
             'payment_method' => 'required_unless:order_mode,table|in:cash,credit_card,debit_card,pix',
             'order_mode' => 'required|in:delivery,pickup,table',
             'total' => 'required|numeric',
+            'delivery_fee' => 'nullable|numeric',
+            'delivery_address' => 'nullable|string',
             'table_id' => 'required_if:order_mode,table|nullable|exists:tables,id,tenant_id,' . $tenantId
         ]);
 
@@ -121,7 +124,9 @@ class PdvController extends Controller
                 'customer_name' => $customerName,
                 'customer_id' => $customerId, // Save link
                 'total' => $validated['total'],
-                'subtotal' => $validated['total'], // Simplified for now
+                'subtotal' => $validated['total'] - ($validated['delivery_fee'] ?? 0),
+                'delivery_fee' => $validated['delivery_fee'] ?? 0,
+                'delivery_address' => $validated['delivery_address'] ?? ($validated['order_mode'] === 'delivery' ? $validated['customer_name'] : null),
                 'mode' => $validated['order_mode'],
                 'payment_status' => $validated['order_mode'] === 'table' ? 'pending' : 'paid',
                 'created_at' => now(),

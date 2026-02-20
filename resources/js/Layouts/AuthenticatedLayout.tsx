@@ -23,23 +23,28 @@ export default function Authenticated({ user, header, children, tenant: propTena
     const { play } = useAudio();
     const { flash, toast } = usePage<any>().props;
     const prevFlashRef = useRef<any>(null);
+    const prevToastRef = useRef<any>(null);
 
     // Flash message handling is global via this layout
 
     // 2. Handle Flash Messages & Backend Toasts Globally
     useEffect(() => {
         // Avoid duplicate toasts if strict mode runs effect twice or props haven't changed meaningfully
-        if (JSON.stringify(flash) === JSON.stringify(prevFlashRef.current)) return;
+        const flashChanged = JSON.stringify(flash) !== JSON.stringify(prevFlashRef.current);
+        const toastChanged = JSON.stringify(toast) !== JSON.stringify(prevToastRef.current);
 
-        if (flash?.success) success('Sucesso', flash.success);
-        if (flash?.error) error('Erro', flash.error);
-        if (toast) {
+        if (flashChanged) {
+            if (flash?.success) success('Sucesso', flash.success);
+            if (flash?.error) error('Erro', flash.error);
+            prevFlashRef.current = flash;
+        }
+
+        if (toastChanged && toast) {
             if (toast.type === 'success') success(toast.title || 'Sucesso', toast.message);
             else if (toast.type === 'error') error(toast.title || 'Erro', toast.message);
             else info(toast.title || 'Info', toast.message);
+            prevToastRef.current = toast;
         }
-
-        prevFlashRef.current = flash;
     }, [flash, toast, success, error, info]);
 
     // 3. Global Order Polling (New Orders & Ready Orders)

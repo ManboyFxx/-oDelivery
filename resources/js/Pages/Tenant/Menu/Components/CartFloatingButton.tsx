@@ -17,13 +17,13 @@ export default function CartFloatingButton({ itemCount, total, onClick }: CartFl
                     initial={{ y: 100, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: 100, opacity: 0 }}
-                    className="fixed bottom-8 left-0 right-0 z-[100] px-4 flex justify-center pointer-events-none"
+                    className="fixed bottom-28 left-0 right-0 z-[100] px-4 flex justify-center pointer-events-none"
                 >
                     <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={onClick}
-                        className="flex items-center gap-6 bg-primary text-white px-8 py-5 rounded-full shadow-2xl shadow-primary/40 pointer-events-auto border-[3px] border-white dark:border-premium-dark ring-4 ring-primary/10 transition-colors duration-300"
+                        className="flex items-center gap-6 bg-[var(--primary-color,#ff3d03)] text-white px-8 py-5 rounded-full shadow-2xl shadow-[var(--primary-color,#ff3d03)]/40 pointer-events-auto border-[3px] border-white dark:border-premium-dark ring-4 ring-[var(--primary-color,#ff3d03)]/10 transition-colors duration-300"
                     >
                         <div className="relative">
                             <ShoppingCart className="h-6 w-6 stroke-[3]" />
@@ -37,7 +37,7 @@ export default function CartFloatingButton({ itemCount, total, onClick }: CartFl
                                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total)}
                             </span>
                         </div>
-                        <div className="h-8 w-8 bg-black/10 rounded-full flex items-center justify-center ml-2">
+                        <div className="h-8 w-8 bg-white/20 rounded-full flex items-center justify-center ml-2">
                             <ChevronRight className="h-5 w-5 text-white" />
                         </div>
                     </motion.button>

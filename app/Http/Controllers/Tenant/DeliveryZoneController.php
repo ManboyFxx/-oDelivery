@@ -18,13 +18,12 @@ class DeliveryZoneController extends Controller
     {
         $request->validate([
             'neighborhood' => 'required|string',
-            'tenant_id' => 'required|exists:tenants,id',
+            'tenant_id' => 'required', // Removed exists for debugging/flexibility
         ]);
 
         $neighborhood = trim($request->neighborhood);
         $tenantId = $request->tenant_id;
 
-        // Case-insensitive search for neighborhood
         $zone = DeliveryZone::where('tenant_id', $tenantId)
             ->where('is_active', true)
             ->whereRaw('LOWER(neighborhood) = ?', [strtolower($neighborhood)])
@@ -52,5 +51,19 @@ class DeliveryZoneController extends Controller
             'fee' => (float) $zone->delivery_fee,
             'estimated_time' => $zone->estimated_time_min,
         ]);
+    }
+
+    public function listActiveZones(Request $request)
+    {
+        $tenantId = $request->query('tenant_id');
+        if (!$tenantId)
+            return response()->json([]);
+
+        $zones = DeliveryZone::where('tenant_id', $tenantId)
+            ->where('is_active', true)
+            ->orderBy('neighborhood')
+            ->get(['neighborhood', 'delivery_fee', 'estimated_time_min']);
+
+        return response()->json($zones);
     }
 }

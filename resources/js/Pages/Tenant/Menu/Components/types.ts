@@ -4,6 +4,7 @@ export interface ComplementOption {
     price: number;
     is_available: boolean;
     max_quantity?: number;
+    stock?: number | null;
 }
 
 export interface ComplementGroup {

@@ -31,8 +31,8 @@ class IngredientController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'is_available' => 'boolean',
-            'stock' => 'nullable|integer',
-            'min_stock' => 'nullable|integer',
+            'stock' => 'nullable|numeric',
+            'min_stock' => 'nullable|numeric',
         ]);
 
         $ingredient = Ingredient::create([
@@ -57,8 +57,8 @@ class IngredientController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'is_available' => 'boolean',
-            'stock' => 'nullable|integer',
-            'min_stock' => 'nullable|integer',
+            'stock' => 'nullable|numeric',
+            'min_stock' => 'nullable|numeric',
         ]);
 
         $oldStock = $ingredient->stock;

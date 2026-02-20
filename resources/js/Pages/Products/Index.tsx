@@ -53,15 +53,7 @@ export default function ProductsIndex({ products, categories, complement_groups,
                         >
                             Produtos
                         </button>
-                        <button
-                            onClick={() => handleTabChange('ingredients')}
-                            className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'ingredients'
-                                ? 'bg-[#ff3d03] text-white shadow-md shadow-[#ff3d03]/20'
-                                : 'text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-white/5'
-                                }`}
-                        >
-                            Ingredientes
-                        </button>
+                        {/* Ingredientes removidos a pedido do usuário */}
                         <button
                             onClick={() => handleTabChange('categories')}
                             className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'categories'
@@ -99,9 +91,7 @@ export default function ProductsIndex({ products, categories, complement_groups,
                     {activeTab === 'complements' && (
                         <ComplementsTab groups={complement_groups} ingredients={ingredients} />
                     )}
-                    {activeTab === 'ingredients' && (
-                        <IngredientsTab ingredients={ingredients} />
-                    )}
+                    {/* Conteúdo de ingredientes removido */}
                 </div>
             </div>
         </AuthenticatedLayout>

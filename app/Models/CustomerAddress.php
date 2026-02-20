@@ -36,47 +36,47 @@ class CustomerAddress extends Model
      */
     protected function street(): Attribute
     {
-        return $this->encryptAttribute('street');
+        return $this->makeEncryptedAttribute();
     }
 
     protected function number(): Attribute
     {
-        return $this->encryptAttribute('number');
+        return $this->makeEncryptedAttribute();
     }
 
     protected function complement(): Attribute
     {
-        return $this->encryptAttribute('complement');
+        return $this->makeEncryptedAttribute();
     }
 
     protected function neighborhood(): Attribute
     {
-        return $this->encryptAttribute('neighborhood');
+        return $this->makeEncryptedAttribute();
     }
 
     protected function city(): Attribute
     {
-        return $this->encryptAttribute('city');
+        return $this->makeEncryptedAttribute();
     }
 
     protected function state(): Attribute
     {
-        return $this->encryptAttribute('state');
+        return $this->makeEncryptedAttribute();
     }
 
     protected function zipCode(): Attribute
     {
-        return $this->encryptAttribute('zip_code');
+        return $this->makeEncryptedAttribute();
     }
 
     /**
      * Create an encrypted attribute
      */
-    private function encryptAttribute(string $fieldName): Attribute
+    private function makeEncryptedAttribute(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => $value ? $this->decryptValue($value) : null,
-            set: fn($value) => $value ? Crypt::encryptString($value) : null,
+            get: fn($val) => $val ? $this->decryptValue($val) : null,
+            set: fn($val) => $val ? Crypt::encryptString($val) : null,
         );
     }
 

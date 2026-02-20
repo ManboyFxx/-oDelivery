@@ -54,7 +54,7 @@ export default function HeroSection({ store, customer, onOpenAuth, onOpenProfile
             </div>
 
             {/* --- STORE HEADER CARD (CENTRALIZED) --- */}
-            <div className="relative max-w-7xl mx-auto px-4 md:px-8 -mt-16 md:-mt-24 z-20 mb-4">
+            <div className="relative max-w-3xl mx-auto px-4 md:px-8 -mt-16 md:-mt-24 z-20 mb-4">
                 <div className="bg-white dark:bg-premium-card rounded-[32px] shadow-2xl p-6 md:p-8 flex flex-col items-center justify-center border border-gray-100 dark:border-white/5 relative overflow-visible transition-colors duration-300">
                     
                     {/* Background Decor */}
@@ -87,64 +87,68 @@ export default function HeroSection({ store, customer, onOpenAuth, onOpenProfile
                         </motion.div>
 
                         <div className="w-full mt-4">
-                            <div className="flex flex-col items-center justify-center gap-3 mb-8">
-                                <h1 className="text-3xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tighter leading-tight transition-colors duration-300">
-                                    {store?.name}
+                            <div className="flex flex-col items-center justify-center gap-2 mb-8">
+                                <h1 className="text-3xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tighter leading-tight transition-colors duration-300 relative group mb-2">
+                                    <span className="bg-clip-text text-transparent bg-gradient-to-b from-gray-900 to-gray-600 dark:from-white dark:to-gray-400">
+                                        {store?.name}
+                                    </span>
+                                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-1 bg-primary rounded-full opacity-30 group-hover:w-16 group-hover:opacity-100 transition-all duration-500" />
                                 </h1>
-                                
-
-
-                                <button 
-                                    onClick={onOpenInfo}
-                                    className="inline-flex items-center gap-2 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10 hover:scale-105 active:scale-95 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-gray-200 dark:border-white/10 transition-all shadow-sm mt-2"
-                                >
-                                    Mais informações <ChevronRight className="h-3 w-3" />
-                                </button>
+                                {store?.description && (
+                                    <p className="max-w-md text-sm text-gray-500 dark:text-gray-400 font-medium leading-relaxed transition-colors duration-300">
+                                        {store.description}
+                                    </p>
+                                )}
                             </div>
 
                             {/* Actions Row */}
-                            <div className="flex flex-wrap items-center justify-center gap-3">
-                                {/* Account Button */}
-                                <button 
-                                    onClick={customer ? onOpenProfile : onOpenAuth}
-                                    className="h-12 px-6 rounded-2xl text-white font-black uppercase text-[10px] tracking-widest shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 flex items-center gap-2 group"
-                                    style={{ background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)' }}
-                                >
-                                    {customer ? (
-                                        <>
-                                            <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
-                                                <User className="w-3 h-3 text-white" />
-                                            </div>
-                                            <span>{customer.name.split(' ')[0]}</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <LogIn className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" /> 
-                                            <span>Entrar</span>
-                                        </>
-                                    )}
-                                </button>
-
-                                <div className="h-8 w-[1px] bg-gray-100 mx-2 hidden sm:block" />
-
-                                {/* Social Icons */}
-                                <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center justify-center gap-6 mt-2">
+                                {/* Social Icons Grid/Row */}
+                                <div className="flex items-center gap-5">
                                     {store.instagram && (
-                                        <a href={`https://instagram.com/${store.instagram.replace('@', '')}`} target="_blank" className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-[#FFB700] via-[#FF0069] to-[#7638FF] flex items-center justify-center text-white shadow-lg shadow-pink-500/20 hover:scale-110 active:scale-95 transition-all">
-                                            <Instagram className="h-6 w-6 stroke-[2.5]" />
+                                        <a 
+                                            href={`https://instagram.com/${store.instagram.replace('@', '')}`} 
+                                            target="_blank" 
+                                            className="flex flex-col items-center gap-2 group transition-all"
+                                        >
+                                            <div className="h-9 w-9 rounded-2xl bg-gradient-to-tr from-[#FFB700] via-[#FF0069] to-[#7638FF] flex items-center justify-center text-white shadow-lg shadow-pink-500/20 group-hover:scale-110 active:scale-95 transition-all">
+                                                <Instagram className="h-4 w-4 stroke-[2.5]" />
+                                            </div>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 group-hover:text-primary transition-colors">Instagram</span>
                                         </a>
                                     )}
                                     {store.whatsapp && (
-                                        <a href={`https://wa.me/${store.whatsapp.replace(/\D/g, '')}`} target="_blank" className="h-12 w-12 rounded-2xl bg-[#25D366] flex items-center justify-center text-white shadow-lg shadow-green-500/20 hover:scale-110 active:scale-95 transition-all">
-                                            <MessageCircle className="h-6 w-6 stroke-[2.5]" />
+                                        <a 
+                                            href={`https://wa.me/${store.whatsapp.replace(/\D/g, '')}`} 
+                                            target="_blank" 
+                                            className="flex flex-col items-center gap-2 group transition-all"
+                                        >
+                                            <div className="h-9 w-9 rounded-2xl bg-[#25D366] flex items-center justify-center text-white shadow-lg shadow-green-500/20 group-hover:scale-110 active:scale-95 transition-all">
+                                                <MessageCircle className="h-4 w-4 stroke-[2.5]" />
+                                            </div>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 group-hover:text-primary transition-colors">WhatsApp</span>
                                         </a>
                                     )}
-                                    <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(store?.address || '')}`} target="_blank" className="h-12 w-12 rounded-2xl bg-[#4285F4] flex items-center justify-center text-white shadow-lg shadow-blue-500/20 hover:scale-110 active:scale-95 transition-all overflow-hidden relative group">
-                                        <MapPin className="h-6 w-6 stroke-[2.5] relative z-10" />
-                                        <div className="absolute inset-0 bg-black/10 translate-y-full group-hover:translate-y-0 transition-transform" />
+                                    <a 
+                                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(store?.address || '')}`} 
+                                        target="_blank" 
+                                        className="flex flex-col items-center gap-2 group transition-all"
+                                    >
+                                        <div className="h-9 w-9 rounded-2xl bg-[#4285F4] flex items-center justify-center text-white shadow-lg shadow-blue-500/20 group-hover:scale-110 active:scale-95 transition-all overflow-hidden relative">
+                                            <MapPin className="h-4 w-4 stroke-[2.5] relative z-10" />
+                                            <div className="absolute inset-0 bg-black/10 translate-y-full group-hover:translate-y-0 transition-transform" />
+                                        </div>
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 group-hover:text-primary transition-colors">Maps</span>
                                     </a>
-                                    <a href={`https://waze.com/ul?q=${encodeURIComponent(store?.address || '')}`} target="_blank" className="h-12 w-12 rounded-2xl bg-[#33CCFF] flex items-center justify-center text-white shadow-lg shadow-cyan-500/20 hover:scale-110 active:scale-95 transition-all">
-                                        <Navigation className="h-6 w-6 stroke-[2.5]" />
+                                    <a 
+                                        href={`https://waze.com/ul?q=${encodeURIComponent(store?.address || '')}`} 
+                                        target="_blank" 
+                                        className="flex flex-col items-center gap-2 group transition-all"
+                                    >
+                                        <div className="h-9 w-9 rounded-2xl bg-[#33CCFF] flex items-center justify-center text-white shadow-lg shadow-cyan-500/20 group-hover:scale-110 active:scale-95 transition-all">
+                                            <Navigation className="h-4 w-4 stroke-[2.5]" />
+                                        </div>
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 group-hover:text-primary transition-colors">Waze</span>
                                     </a>
                                 </div>
                             </div>

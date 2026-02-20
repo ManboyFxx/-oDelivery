@@ -59,6 +59,7 @@ class HandleInertiaRequests extends Middleware
                 'show_watermark' => $tenant->shouldShowWatermark(),
                 'features' => $tenant->getPlanLimits()?->features ?? [],
                 'notification_settings' => $tenant->settings?->notification_settings ?? [],
+                'settings' => $tenant->settings,
                 'store_status' => [
                     // Pass timezone to avoid back-query. Default to SP if not set.
                     'is_open' => $tenant->settings?->isOpenNow($tenant->timezone ?? 'America/Sao_Paulo') ?? false,

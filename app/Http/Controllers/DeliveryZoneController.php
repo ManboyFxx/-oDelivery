@@ -24,38 +24,101 @@ class DeliveryZoneController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'neighborhood' => 'required|string|max:255',
-            'delivery_fee' => 'required|numeric|min:0',
-            'estimated_time_min' => 'required|integer|min:0',
-            'is_active' => 'boolean',
-        ]);
+        try {
+            $tenant = auth()->user()->tenant;
+            if (!$tenant) {
+                return back()->with('error', 'Erro: Usuário não vinculado a uma loja.');
+            }
 
-        $tenant = auth()->user()->tenant;
+            // Sanitize currency input (R$ 5,00 -> 5.00)
+            $inputs = $request->all();
+            if (isset($inputs['delivery_fee'])) {
+                $inputs['delivery_fee'] = str_replace(',', '.', $inputs['delivery_fee']);
+            }
 
-        DeliveryZone::create([
-            ...$validated,
-            'tenant_id' => $tenant->id,
-            'is_active' => $request->input('is_active', true),
-        ]);
+            $validator = \Illuminate\Support\Facades\Validator::make($inputs, [
+                'neighborhood' => [
+                    'required',
+                    'string',
+                    'max:255',
+                    \Illuminate\Validation\Rule::unique('delivery_zones')->where(function ($query) use ($tenant) {
+                        return $query->where('tenant_id', $tenant->id);
+                    }),
+                ],
+                'delivery_fee' => 'required|numeric|min:0',
+                'estimated_time_min' => 'required|integer|min:0',
+                'is_active' => 'boolean',
+            ], [
+                'neighborhood.unique' => 'Este bairro já possui um cadastro de entrega.',
+                'delivery_fee.numeric' => 'A taxa de entrega deve ser um número válido.',
+            ]);
 
-        return back()->with('success', 'Zona de entrega adicionada com sucesso!');
+            if ($validator->fails()) {
+                return back()->withErrors($validator)->withInput();
+            }
+
+            $validated = $validator->validated();
+
+            DeliveryZone::create([
+                ...$validated,
+                'tenant_id' => $tenant->id,
+                'is_active' => $request->input('is_active', true),
+            ]);
+
+            return back()->with('success', 'Zona de entrega adicionada com sucesso!');
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Erro ao criar zona de entrega: ' . $e->getMessage());
+            return back()->with('error', 'Erro ao salvar: ' . $e->getMessage());
+        }
     }
 
     public function update(Request $request, $id)
     {
-        $zone = DeliveryZone::findOrFail($id);
+        try {
+            $tenant = auth()->user()->tenant;
+            if (!$tenant) {
+                return back()->with('error', 'Erro: Usuário não vinculado a uma loja.');
+            }
 
-        $validated = $request->validate([
-            'neighborhood' => 'required|string|max:255',
-            'delivery_fee' => 'required|numeric|min:0',
-            'estimated_time_min' => 'required|integer|min:0',
-            'is_active' => 'boolean',
-        ]);
+            $zone = DeliveryZone::where('tenant_id', $tenant->id)->findOrFail($id);
 
-        $zone->update($validated);
+            // Sanitize currency input
+            $inputs = $request->all();
+            if (isset($inputs['delivery_fee'])) {
+                $inputs['delivery_fee'] = str_replace(',', '.', $inputs['delivery_fee']);
+            }
 
-        return back()->with('success', 'Zona de entrega atualizada com sucesso!');
+            $validator = \Illuminate\Support\Facades\Validator::make($inputs, [
+                'neighborhood' => [
+                    'required',
+                    'string',
+                    'max:255',
+                    \Illuminate\Validation\Rule::unique('delivery_zones')->where(function ($query) use ($tenant) {
+                        return $query->where('tenant_id', $tenant->id);
+                    })->ignore($zone->id),
+                ],
+                'delivery_fee' => 'required|numeric|min:0',
+                'estimated_time_min' => 'required|integer|min:0',
+                'is_active' => 'boolean',
+            ], [
+                'neighborhood.unique' => 'Este bairro já possui um cadastro de entrega.',
+                'delivery_fee.numeric' => 'A taxa de entrega deve ser um número válido.',
+            ]);
+
+            if ($validator->fails()) {
+                return back()->withErrors($validator)->withInput();
+            }
+
+            $validated = $validator->validated();
+
+            $zone->update($validated);
+
+            return back()->with('success', 'Zona de entrega atualizada com sucesso!');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Erro ao atualizar zona de entrega: ' . $e->getMessage());
+            return back()->with('error', 'Erro ao salvar: ' . $e->getMessage());
+        }
     }
 
     public function destroy($id)

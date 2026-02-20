@@ -80,8 +80,12 @@ class TenantMenuController extends Controller
                                 ->with([
                                     'options' => function ($q) {
                                         $q->where('is_available', true)
-                                            ->orderBy('sort_order')
-                                            ->select('id', 'group_id', 'name', 'price', 'is_available', 'max_quantity', 'sort_order');
+                                            ->with([
+                                                'ingredient' => function ($qi) {
+                                                    $qi->select('id', 'stock', 'is_available');
+                                                }
+                                            ])
+                                            ->select('id', 'group_id', 'name', 'price', 'is_available', 'max_quantity', 'sort_order', 'ingredient_id');
                                     }
                                 ]);
                         }
@@ -127,8 +131,9 @@ class TenantMenuController extends Controller
                                             'name' => $option->name,
                                             'price' => $option->price,
                                             'max_quantity' => $option->max_quantity,
-                                            'is_available' => $option->is_available,
+                                            'is_available' => $option->is_available && (!$option->ingredient || $option->ingredient->is_available),
                                             'sort_order' => $option->sort_order,
+                                            'stock' => $option->ingredient ? $option->ingredient->stock : null,
                                         ];
                                     }),
                                 ];

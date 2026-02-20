@@ -32,7 +32,7 @@ class ComplementController extends Controller
         if ($request->has('sort') && $request->sort === 'az') {
             $query->orderBy('name');
         } else {
-            $query->orderBy('display_order')->orderBy('name');
+            $query->orderBy('sort_order')->orderBy('name');
         }
 
         $groups = $query->get();
@@ -62,6 +62,7 @@ class ComplementController extends Controller
             'options.*.price' => 'nullable|numeric|min:0',
             'options.*.max_quantity' => 'nullable|integer|min:0',
             'options.*.is_available' => 'boolean',
+            'options.*.ingredient_id' => 'nullable|uuid|exists:ingredients,id',
         ]);
 
         // Validate min <= max
@@ -80,7 +81,7 @@ class ComplementController extends Controller
             'is_required' => $validated['is_required'] ?? false,
             'min_selections' => $validated['min_selections'],
             'max_selections' => $validated['max_selections'],
-            'display_order' => ComplementGroup::where('tenant_id', $tenant->id)->max('display_order') + 1,
+            'sort_order' => ComplementGroup::where('tenant_id', $tenant->id)->max('sort_order') + 1,
         ]);
 
         // Create options
@@ -91,6 +92,7 @@ class ComplementController extends Controller
                 'price' => $optionData['price'] ?? 0,
                 'max_quantity' => (!empty($optionData['max_quantity']) && $optionData['max_quantity'] > 0) ? $optionData['max_quantity'] : 0,
                 'is_available' => $optionData['is_available'] ?? true,
+                'ingredient_id' => $optionData['ingredient_id'] ?? null,
                 'sort_order' => $index,
             ]);
         }
@@ -116,6 +118,7 @@ class ComplementController extends Controller
             'options.*.price' => 'nullable|numeric|min:0',
             'options.*.max_quantity' => 'nullable|integer|min:0',
             'options.*.is_available' => 'boolean',
+            'options.*.ingredient_id' => 'nullable|uuid|exists:ingredients,id',
         ]);
 
         // Validate min <= max
@@ -153,6 +156,7 @@ class ComplementController extends Controller
                         'price' => $optionData['price'] ?? 0,
                         'max_quantity' => (!empty($optionData['max_quantity']) && $optionData['max_quantity'] > 0) ? $optionData['max_quantity'] : 0,
                         'is_available' => $optionData['is_available'] ?? true,
+                        'ingredient_id' => $optionData['ingredient_id'] ?? null,
                         'sort_order' => $index,
                     ]);
             } else {
@@ -163,6 +167,7 @@ class ComplementController extends Controller
                     'price' => $optionData['price'] ?? 0,
                     'max_quantity' => (!empty($optionData['max_quantity']) && $optionData['max_quantity'] > 0) ? $optionData['max_quantity'] : 0,
                     'is_available' => $optionData['is_available'] ?? true,
+                    'ingredient_id' => $optionData['ingredient_id'] ?? null,
                     'sort_order' => $index,
                 ]);
             }
@@ -207,7 +212,7 @@ class ComplementController extends Controller
             'is_required' => $originalGroup->is_required,
             'min_selections' => $originalGroup->min_selections,
             'max_selections' => $originalGroup->max_selections,
-            'display_order' => ComplementGroup::where('tenant_id', $tenant->id)->max('display_order') + 1,
+            'sort_order' => ComplementGroup::where('tenant_id', $tenant->id)->max('sort_order') + 1,
         ]);
 
         // Duplicate options

@@ -1,8 +1,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm, router } from '@inertiajs/react'; // Add router
-import { Search, ShoppingCart, Trash2, CreditCard, Banknote, QrCode, User, Plus, Minus, X, LayoutGrid, Users, Image as ImageIcon, Check, AlertCircle } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { Head, useForm, router, usePage } from '@inertiajs/react'; // Add router
+import { Search, ShoppingCart, Trash2, CreditCard, Banknote, QrCode, User, Plus, Minus, X, LayoutGrid, Users, Image as ImageIcon, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
 import { clsx } from 'clsx';
+import axios from 'axios';
 import Modal from '@/Components/Modal';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
@@ -68,9 +69,18 @@ interface Customer {
     name: string;
     phone: string;
     loyalty_points?: number;
+    addresses?: Array<{
+        id: string;
+        street: string;
+        number: string;
+        neighborhood: string;
+        city: string;
+        complement?: string;
+    }>;
 }
 
 export default function PDV({ categories, allProducts, tables = [], customers = [] }: { categories: Category[], allProducts: Product[], tables: Table[], customers: Customer[] }) {
+    const { tenant } = usePage().props as any;
     const [cart, setCart] = useState<CartItem[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string | 'all'>('all');
@@ -117,11 +127,32 @@ export default function PDV({ categories, allProducts, tables = [], customers = 
         order_mode: 'pickup', // Default
         total: 0,
         table_id: '' as string | null,
+        address_street: '',
+        address_number: '',
+        address_neighborhood: '',
+        address_complement: '',
     });
 
     const [selectedTableId, setSelectedTableId] = useState<string>('');
 
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+
+    // Delivery Zone Validation States
+    const [isValidZone, setIsValidZone] = useState<boolean | null>(null);
+    const [validatingAddress, setValidatingAddress] = useState(false);
+    const [deliveryFeeOverride, setDeliveryFeeOverride] = useState<number | null>(null);
+    const [zoneMessage, setZoneMessage] = useState('');
+    const [deliveryAddress, setDeliveryAddress] = useState('');
+    const [isAddressValidating, setIsAddressValidating] = useState(false);
+    const [availableZones, setAvailableZones] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (isCheckoutModalOpen && availableZones.length === 0 && tenant?.id) {
+            axios.get(`/api/delivery-zones?tenant_id=${tenant.id}`)
+                    .then(res => setAvailableZones(res.data))
+                    .catch(err => console.error('Error fetching zones:', err));
+        }
+    }, [isCheckoutModalOpen, tenant?.id]);
 
     const openProductModal = (product: Product) => {
         setSelectedProduct(product);
@@ -284,7 +315,7 @@ export default function PDV({ categories, allProducts, tables = [], customers = 
     };
 
     const cartTotal = useMemo(() => {
-        return cart.reduce((total, item) => {
+        const itemsTotal = cart.reduce((total, item) => {
             let itemTotal = Number(item.price) * item.quantity;
             if (item.selectedComplements) {
                 const complementsTotal = item.selectedComplements.reduce((sum, comp) =>
@@ -294,7 +325,13 @@ export default function PDV({ categories, allProducts, tables = [], customers = 
             }
             return total + itemTotal;
         }, 0);
-    }, [cart]);
+
+        const fee = (data.order_mode === 'delivery' && isValidZone !== false) 
+            ? (deliveryFeeOverride !== null ? deliveryFeeOverride : (Number(tenant?.settings?.delivery_fee) || 0)) 
+            : 0;
+            
+        return itemsTotal + fee;
+    }, [cart, deliveryFeeOverride, data.order_mode, isValidZone, tenant]);
 
     const filteredProducts = useMemo(() => {
         let products = selectedCategory === 'all' ? allProducts : (categories.find(c => c.id === selectedCategory)?.products || []);
@@ -391,6 +428,8 @@ export default function PDV({ categories, allProducts, tables = [], customers = 
             payment_method: data.payment_method,
             order_mode: data.order_mode,
             total: cartTotal,
+            delivery_fee: deliveryFeeOverride,
+            delivery_address: data.order_mode === 'delivery' ? data.customer_name : null,
             table_id: data.order_mode === 'table' ? selectedTableId : null,
         }, {
             onSuccess: () => {
@@ -407,6 +446,62 @@ export default function PDV({ categories, allProducts, tables = [], customers = 
     };
 
 
+
+    const validatePdvAddress = async (neighborhood: string) => {
+        if (!neighborhood || data.order_mode !== 'delivery') {
+            setIsValidZone(true);
+            setDeliveryFeeOverride(null);
+            setZoneMessage('');
+            return;
+        }
+
+        if (neighborhood.length < 3) return;
+
+        setValidatingAddress(true);
+        try {
+            const zoneRes = await axios.post('/api/validate-delivery-zone', {
+                neighborhood: neighborhood,
+                tenant_id: tenant?.id
+            });
+
+            if (zoneRes.data.valid) {
+                setIsValidZone(true);
+                setDeliveryFeeOverride(zoneRes.data.fee);
+                setZoneMessage(zoneRes.data.message);
+            } else {
+                setIsValidZone(false);
+                setDeliveryFeeOverride(null);
+                setZoneMessage(zoneRes.data.message);
+            }
+        } catch (err) {
+            console.error('PDV Zone validation error', err);
+        } finally {
+            setValidatingAddress(false);
+        }
+    };
+
+    // Auto-validate when neighborhood changes
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (data.order_mode === 'delivery' && data.address_neighborhood) {
+                validatePdvAddress(data.address_neighborhood);
+            }
+        }, 800);
+        return () => clearTimeout(timer);
+    }, [data.address_neighborhood, data.order_mode]);
+
+    // Sync individual fields to combined address for backend
+    useEffect(() => {
+        if (data.order_mode === 'delivery') {
+            const fullAddress = [
+                data.address_street,
+                data.address_number,
+                data.address_neighborhood,
+                data.address_complement
+            ].filter(Boolean).join(', ');
+            setData('customer_name', fullAddress);
+        }
+    }, [data.address_street, data.address_number, data.address_neighborhood, data.address_complement]);
 
     const handleCloseTable = () => {
         if (!tableDetails) return;
@@ -1086,39 +1181,170 @@ export default function PDV({ categories, allProducts, tables = [], customers = 
                             )}
 
                             {/* Order Summary */}
-                            <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Resumo do Pedido</label>
-                                <div className="bg-gray-50 dark:bg-black/20 rounded-2xl p-4 space-y-2 max-h-40 overflow-y-auto">
-                                    {cart.map((item, idx) => (
-                                        <div key={idx} className="flex justify-between items-center text-sm">
-                                            <span className="text-gray-700 dark:text-gray-300 font-medium">
-                                                {item.quantity}x {allProducts.find(p => p.id === item.id)?.name}
-                                            </span>
-                                            <span className="text-gray-900 dark:text-white font-bold">
-                                                R$ {(parseFloat(allProducts.find(p => p.id === item.id)?.price || '0') * item.quantity).toFixed(2)}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Delivery Address - Show only for delivery */}
-                            {data.order_mode === 'delivery' && (
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
-                                        Endereço de Entrega *
-                                    </label>
-                                    <textarea
-                                        value={data.customer_name || ''}
-                                        onChange={(e) => setData('customer_name', e.target.value)}
-                                        className="w-full px-4 py-3 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent bg-white dark:bg-premium-dark text-gray-900 dark:text-white resize-none"
-                                        rows={3}
-                                        placeholder="Rua, número, bairro, complemento..."
-                                        required={data.order_mode === 'delivery'}
-                                    />
-                                    <p className="text-xs text-gray-500 mt-2">
-                                        ⚠️ Endereço obrigatório para entregas
-                                    </p>
+                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Resumo do Pedido</label>
+                                    <div className="bg-gray-50 dark:bg-black/20 rounded-2xl p-4 space-y-3 max-h-52 overflow-y-auto custom-scrollbar">
+                                        {cart.map((item, idx) => (
+                                            <div key={idx} className="space-y-1">
+                                                <div className="flex justify-between items-center text-sm">
+                                                    <span className="text-gray-900 dark:text-white font-bold">
+                                                        {item.quantity}x {item.name}
+                                                    </span>
+                                                    <span className="text-gray-900 dark:text-white font-black">
+                                                        R$ {( (Number(item.price) + (item.selectedComplements?.reduce((acc, c) => acc + (c.price * c.quantity), 0) || 0)) * item.quantity ).toFixed(2).replace('.', ',')}
+                                                    </span>
+                                                </div>
+                                                
+                                                {item.selectedComplements && item.selectedComplements.length > 0 && (
+                                                    <div className="pl-4 space-y-0.5">
+                                                        {item.selectedComplements.map((comp, cIdx) => (
+                                                            <div key={cIdx} className="text-[10px] text-gray-500 flex justify-between">
+                                                                <span>+ {comp.quantity}x {comp.name}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                {item.notes && (
+                                                    <div className="pl-4 text-[10px] text-[#ff3d03] italic">
+                                                        obs: {item.notes}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                            {data.order_mode === 'delivery' && (
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">
+                                            Endereço de Entrega *
+                                        </label>
+                                        
+                                        {validatingAddress && (
+                                            <div className="flex items-center gap-1 text-[10px] text-gray-400">
+                                                <Loader2 className="w-3 h-3 animate-spin" /> Validando...
+                                            </div>
+                                        )}
+                                        {!validatingAddress && isValidZone === true && (
+                                            <div className="text-[10px] font-black text-green-500 uppercase tracking-tighter bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded">
+                                                Área Coberta
+                                            </div>
+                                        )}
+                                        {!validatingAddress && isValidZone === false && (
+                                            <div className="text-[10px] font-black text-red-500 uppercase tracking-tighter bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded">
+                                                Fora da Área
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {selectedCustomer?.addresses && selectedCustomer.addresses.length > 0 && (
+                                        <div className="mb-4">
+                                            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">Endereços Salvos</label>
+                                            <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                                                {selectedCustomer.addresses.map((addr) => (
+                                                    <button
+                                                        key={addr.id}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setData(prev => ({
+                                                                ...prev,
+                                                                address_street: addr.street,
+                                                                address_number: addr.number,
+                                                                address_neighborhood: addr.neighborhood,
+                                                                address_complement: addr.complement || ''
+                                                            }));
+                                                            validatePdvAddress(addr.neighborhood);
+                                                        }}
+                                                        className="flex-shrink-0 text-left p-2 rounded-lg border border-gray-100 dark:border-white/5 bg-white dark:bg-white/5 text-[10px] hover:border-[#ff3d03] transition-all"
+                                                    >
+                                                        <p className="font-bold text-gray-900 dark:text-white">{addr.street}, {addr.number}</p>
+                                                        <p className="text-gray-500">{addr.neighborhood}</p>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="grid grid-cols-12 gap-2">
+                                        <div className="col-span-8">
+                                            <input
+                                                type="text"
+                                                placeholder="Rua / Logradouro"
+                                                value={data.address_street}
+                                                onChange={e => setData('address_street', e.target.value)}
+                                                className="w-full text-xs p-2 rounded-lg border border-gray-200 dark:border-white/10 dark:bg-black/20"
+                                            />
+                                        </div>
+                                        <div className="col-span-4">
+                                            <input
+                                                type="text"
+                                                placeholder="Nº"
+                                                value={data.address_number}
+                                                onChange={e => setData('address_number', e.target.value)}
+                                                className="w-full text-xs p-2 rounded-lg border border-gray-200 dark:border-white/10 dark:bg-black/20"
+                                            />
+                                        </div>
+                                        <div className="col-span-6">
+                                            {availableZones.length > 0 ? (
+                                                <select
+                                                    value={data.address_neighborhood}
+                                                    onChange={e => {
+                                                        const val = e.target.value;
+                                                        setData('address_neighborhood', val);
+                                                        const zone = availableZones.find(z => z.neighborhood === val);
+                                                        if (zone) {
+                                                            setIsValidZone(true);
+                                                            setDeliveryFeeOverride(Number(zone.delivery_fee));
+                                                            setZoneMessage(`Entregamos em ${zone.neighborhood}`);
+                                                        } else {
+                                                            setIsValidZone(null);
+                                                            setDeliveryFeeOverride(null);
+                                                            setZoneMessage('');
+                                                        }
+                                                    }}
+                                                    className={clsx(
+                                                        "w-full text-xs p-2 rounded-lg border dark:bg-black/20 dark:text-white",
+                                                        isValidZone === false ? "border-red-500" : "border-gray-200 dark:border-white/10"
+                                                    )}
+                                                >
+                                                    <option value="">Selecione o Bairro...</option>
+                                                    {availableZones.map((zone) => (
+                                                        <option key={zone.id} value={zone.neighborhood}>
+                                                            {zone.neighborhood} (R$ {Number(zone.delivery_fee).toFixed(2).replace('.', ',')})
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            ) : (
+                                                <input
+                                                    type="text"
+                                                    placeholder="Bairro"
+                                                    value={data.address_neighborhood}
+                                                    onChange={e => setData('address_neighborhood', e.target.value)}
+                                                    className="w-full text-xs p-2 rounded-lg border border-gray-200 dark:border-white/10 dark:bg-black/20"
+                                                />
+                                            )}
+                                        </div>
+                                        <div className="col-span-6">
+                                            <input
+                                                type="text"
+                                                placeholder="Complemento (opcional)"
+                                                value={data.address_complement}
+                                                onChange={e => setData('address_complement', e.target.value)}
+                                                className="w-full text-xs p-2 rounded-lg border border-gray-200 dark:border-white/10 dark:bg-black/20"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {zoneMessage && (
+                                        <p className={clsx(
+                                            "text-[10px] font-medium px-2",
+                                            isValidZone === false ? "text-red-500" : "text-green-600"
+                                        )}>
+                                            {zoneMessage} {deliveryFeeOverride !== null && `- Taxa: R$ ${deliveryFeeOverride.toFixed(2)}`}
+                                        </p>
+                                    )}
                                 </div>
                             )}
 
@@ -1159,8 +1385,13 @@ export default function PDV({ categories, allProducts, tables = [], customers = 
 
                                 <button
                                     onClick={(e) => submitOrder(e as any)}
-                                    disabled={processing || (data.order_mode === 'delivery' && !data.customer_name) || (data.order_mode === 'table' && !selectedTableId)}
-                                    className="w-full rounded-2xl bg-[#ff3d03] py-4 text-base font-bold uppercase tracking-wide text-white shadow-xl shadow-[#ff3d03]/20 hover:bg-[#e63700] hover:scale-[1.02] disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed transition-all"
+                                    disabled={processing || (data.order_mode === 'delivery' && !data.customer_name) || (data.order_mode === 'delivery' && isValidZone === false) || (data.order_mode === 'table' && !selectedTableId)}
+                                    className={clsx(
+                                        "w-full rounded-2xl py-4 text-base font-bold uppercase tracking-wide text-white shadow-xl transition-all",
+                                        (processing || (data.order_mode === 'delivery' && !data.customer_name) || (data.order_mode === 'delivery' && isValidZone === false) || (data.order_mode === 'table' && !selectedTableId))
+                                            ? "bg-gray-400 cursor-not-allowed shadow-none"
+                                            : "bg-[#ff3d03] shadow-[#ff3d03]/20 hover:bg-[#e63700] hover:scale-[1.02] active:scale-100"
+                                    )}
                                 >
                                     {processing ? (
                                         <span className="flex items-center justify-center gap-2">

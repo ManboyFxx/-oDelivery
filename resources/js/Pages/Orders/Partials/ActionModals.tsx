@@ -29,7 +29,6 @@ export function CancelOrderModal({ show, onClose, order }: Props) {
         if (!order) return;
         post(route('orders.cancel', order.id), {
             onSuccess: () => {
-                success('Pedido Cancelado', `Pedido #${order.order_number} foi cancelado com sucesso.`);
                 onClose();
             },
             onError: () => {
@@ -109,7 +108,6 @@ export function ChangePaymentModal({ show, onClose, order }: Props) {
         if (!order) return;
         post(route('orders.payment', order.id), {
             onSuccess: () => {
-                success('Pagamento Atualizado', 'Informações de pagamento foram atualizadas.');
                 onClose();
             }
         });
@@ -185,7 +183,6 @@ export function ChangeModeModal({ show, onClose, order }: Props) {
         if (!order) return;
         post(route('orders.mode', order.id), {
             onSuccess: () => {
-                success('Tipo Atualizado', 'Tipo de pedido foi alterado com sucesso.');
                 onClose();
             }
         });
@@ -355,7 +352,6 @@ export function EditOrderModal({ show, onClose, order, products = [] }: Props & 
         if (!order) return;
         put(route('orders.update-items', order.id), {
             onSuccess: () => {
-                success('Pedido Atualizado', 'Itens do pedido foram atualizados com sucesso.');
                 onClose();
             }
         });

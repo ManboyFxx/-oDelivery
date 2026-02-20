@@ -26,8 +26,9 @@ export function ToastContainer({ position = 'top-right', maxToasts = 5 }: ToastC
     return (
         <div
             className={cn(
-                'fixed z-[9999] flex flex-col gap-3 pointer-events-none',
-                positionClasses[position]
+                'fixed z-[9999] flex flex-col gap-3 pointer-events-none p-4 rounded-3xl transition-all duration-500',
+                positionClasses[position],
+                displayedToasts.length > 0 && 'bg-white/5 dark:bg-black/10 backdrop-blur-md border border-gray-200/20 dark:border-white/5 shadow-2xl shadow-black/5'
             )}
             aria-live="polite"
             aria-atomic="true"

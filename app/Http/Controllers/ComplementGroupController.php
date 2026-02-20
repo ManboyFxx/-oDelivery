@@ -18,7 +18,7 @@ class ComplementGroupController extends Controller
         $query = ComplementGroup::where('tenant_id', $tenant->id)
             ->with([
                 'options' => function ($q) {
-                    $q->orderBy('display_order')->orderBy('name');
+                    $q->orderBy('sort_order')->orderBy('name');
                 }
             ])
             ->withCount('options');
@@ -32,7 +32,7 @@ class ComplementGroupController extends Controller
         if ($request->has('sort') && $request->sort === 'az') {
             $query->orderBy('name');
         } else {
-            $query->orderBy('display_order')->orderBy('name');
+            $query->orderBy('sort_order')->orderBy('name');
         }
 
         $groups = $query->get();
@@ -80,7 +80,7 @@ class ComplementGroupController extends Controller
             'is_required' => $validated['is_required'] ?? false,
             'min_selections' => $validated['min_selections'],
             'max_selections' => $validated['max_selections'],
-            'display_order' => ComplementGroup::where('tenant_id', $tenant->id)->max('display_order') + 1,
+            'sort_order' => ComplementGroup::where('tenant_id', $tenant->id)->max('sort_order') + 1,
         ]);
 
         // Create options
@@ -207,7 +207,7 @@ class ComplementGroupController extends Controller
             'is_required' => $originalGroup->is_required,
             'min_selections' => $originalGroup->min_selections,
             'max_selections' => $originalGroup->max_selections,
-            'display_order' => ComplementGroup::where('tenant_id', $tenant->id)->max('display_order') + 1,
+            'sort_order' => ComplementGroup::where('tenant_id', $tenant->id)->max('sort_order') + 1,
         ]);
 
         // Duplicate options
@@ -235,13 +235,13 @@ class ComplementGroupController extends Controller
         $validated = $request->validate([
             'groups' => 'required|array',
             'groups.*.id' => 'required|exists:complement_groups,id',
-            'groups.*.display_order' => 'required|integer',
+            'groups.*.sort_order' => 'required|integer',
         ]);
 
         foreach ($validated['groups'] as $item) {
             ComplementGroup::where('tenant_id', $tenant->id)
                 ->where('id', $item['id'])
-                ->update(['display_order' => $item['display_order']]);
+                ->update(['sort_order' => $item['sort_order']]);
         }
 
         return response()->json(['message' => 'Ordem atualizada com sucesso!']);

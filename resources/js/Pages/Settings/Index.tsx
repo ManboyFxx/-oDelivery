@@ -216,9 +216,7 @@ export default function Settings({ auth, settings, deliveryZones: initialZones, 
         setShowZoneModal(true);
     };
 
-    const submitZone = (e: React.FormEvent) => {
-        e.preventDefault();
-
+    const submitZone = () => {
         if (editingZone) {
             putZone(route('delivery-zones.update', editingZone.id), {
                 onSuccess: () => {
@@ -234,6 +232,10 @@ export default function Settings({ auth, settings, deliveryZones: initialZones, 
                 onSuccess: () => {
                     setShowZoneModal(false);
                     resetZone();
+                },
+                onError: (errors) => {
+                    console.error('Zone submit errors:', errors);
+                    // Force re-render of errors if needed, usually handled by useForm
                 }
             });
         }

@@ -22,7 +22,22 @@ class TableController extends Controller
         $tables = Table::where('tenant_id', $tenant->id)
             ->with(['currentOrder.items.complements'])
             ->orderBy('number')
-            ->get();
+            ->orderBy('number')
+            ->get()
+            ->map(function ($table) {
+                /** @var Table $table */
+                if ($table->status === 'free') {
+                    // Check if has a recent closed order
+                    $hasRecentOrder = $table->orders()
+                        ->whereIn('status', ['confirmed', 'delivered', 'completed'])
+                        ->where('created_at', '>=', now()->subHours(24))
+                        ->exists();
+                    $table->can_reopen = $hasRecentOrder;
+                } else {
+                    $table->can_reopen = false;
+                }
+                return $table;
+            });
 
         return Inertia::render('Tables/Index', [
             'tables' => $tables,
@@ -322,5 +337,47 @@ class TableController extends Controller
         $table->free();
 
         return back()->with('success', "Mesa {$table->number} fechada e paga!");
+    }
+
+    public function reopen(Table $table)
+    {
+        if (!$table->isFree()) {
+            return back()->with('error', 'A mesa já está ocupada.');
+        }
+
+        // Find the last order for this table
+        // We look for orders that were confirmed/paid recently (e.g. last 24h)
+        $lastOrder = Order::where('table_id', $table->id)
+            ->where('tenant_id', auth()->user()->tenant_id)
+            ->whereIn('status', ['confirmed', 'delivered', 'completed']) // Adjust based on your "closed" statuses
+            ->where('created_at', '>=', now()->subHours(24))
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        if (!$lastOrder) {
+            return back()->with('error', 'Nenhum pedido recente encontrado para reabrir nesta mesa.');
+        }
+
+        // Use transaction to ensure data integrity
+        \DB::transaction(function () use ($table, $lastOrder) {
+            // 1. Revert Order Status
+            $lastOrder->update([
+                'status' => 'preparing', // Return to open status
+                'payment_status' => 'pending',
+                // We keep the items as they were
+            ]);
+
+            // 2. Remove Payment Logic
+            // If you have a Payment model linked:
+            Payment::where('order_id', $lastOrder->id)->delete();
+
+            // 3. Occupy Table
+            $table->occupy($lastOrder->id);
+
+            // Restore original occupation time if possible, otherwise use order creation
+            $table->update(['occupied_at' => $lastOrder->created_at]);
+        });
+
+        return back()->with('success', "Mesa {$table->number} reaberta com sucesso! O pagamento foi estornado.");
     }
 }

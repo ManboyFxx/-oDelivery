@@ -120,16 +120,16 @@ class Product extends Model
         }
     }
 
-    public function recordStockMovement(int $quantity, string $type, ?string $reason = null, ?string $orderId = null): void
+    public function recordStockMovement(float $quantity, string $type, ?string $description = null, ?string $orderId = null): void
     {
         StockMovement::create([
             'tenant_id' => $this->tenant_id,
             'product_id' => $this->id,
             'quantity' => abs($quantity),
             'type' => $type,
-            'reason' => $reason,
+            'description' => $description,
             'order_id' => $orderId,
-            'created_by' => auth()->id() ?? User::where('tenant_id', $this->tenant_id)->first()->id,
+            'user_id' => auth()->id() ?? User::where('tenant_id', $this->tenant_id)->first()->id,
         ]);
     }
 

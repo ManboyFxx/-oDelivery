@@ -1,4 +1,4 @@
-import React, { createContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useState, useCallback, useEffect, useRef } from 'react';
 import type { Toast, ToastContextType } from '@/types/toast';
 
 export const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -15,6 +15,12 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
         setSettings(newSettings);
     }, []);
 
+    const lastToastRef = useRef<{ title: string; description: string; timestamp: number } | null>(null);
+
+    const removeToast = useCallback((id: string) => {
+        setToasts((prev) => prev.filter((toast) => toast.id !== id));
+    }, []);
+
     const addToast = useCallback((toast: Omit<Toast, 'id'>) => {
         // Check if browser notifications are enabled
         if (settings && settings.browser_notifications === false) {
@@ -22,8 +28,30 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
             return;
         }
 
+        // Deduplication logic: ignore duplicates within 1.5 seconds
+        const now = Date.now();
+        const normalize = (str: string) => (str || '').toLowerCase().replace(/[!.?]/g, '').trim();
+        
+        const currentDesc = normalize(toast.description);
+        const lastDesc = lastToastRef.current ? normalize(lastToastRef.current.description) : '';
+
+        if (
+            lastToastRef.current &&
+            currentDesc === lastDesc &&
+            now - lastToastRef.current.timestamp < 1500
+        ) {
+            console.log('Duplicate toast suppressed (fuzzy match)');
+            return;
+        }
+
         const id = crypto.randomUUID();
         const newToast: Toast = { ...toast, id };
+
+        lastToastRef.current = {
+            title: toast.title,
+            description: toast.description,
+            timestamp: now,
+        };
 
         setToasts((prev) => {
             const updated = [...prev, newToast];
@@ -39,11 +67,8 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
             }, duration);
         }
 
-    }, [settings]);
+    }, [settings, removeToast]);
 
-    const removeToast = useCallback((id: string) => {
-        setToasts((prev) => prev.filter((toast) => toast.id !== id));
-    }, []);
 
     const clearAll = useCallback(() => {
         setToasts([]);

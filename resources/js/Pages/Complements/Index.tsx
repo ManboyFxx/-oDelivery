@@ -445,36 +445,44 @@ export default function Index({ groups, ingredients, errors, flash }: { groups: 
                                     <div className="space-y-3">
                                         {formData.options.map((option, index) => (
                                             <div key={index} className="flex gap-3 items-start p-3 border border-gray-200 rounded-xl">
-                                                <div className="flex-1 grid grid-cols-3 gap-3">
-                                                    <input
-                                                        type="text"
-                                                        value={option.name}
-                                                        onChange={(e) => updateOption(index, 'name', e.target.value)}
-                                                        placeholder="Nome da opção"
-                                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent"
-                                                        required
-                                                    />
-                                                    <input
-                                                        type="number"
-                                                        step="0.01"
-                                                        min="0"
-                                                        value={option.price}
-                                                        onChange={(e) => updateOption(index, 'price', parseFloat(e.target.value))}
-                                                        placeholder="Preço"
-                                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent"
-                                                        required
-                                                    />
-                                                    <div className="flex flex-col">
-                                                        <span className="text-xs text-gray-500 mb-1">Qtd. Máx</span>
-                                                        <input
-                                                            type="number"
-                                                            min="1"
-                                                            value={option.max_quantity ?? ''}
-                                                            onChange={(e) => updateOption(index, 'max_quantity', e.target.value === '' ? null : parseInt(e.target.value))}
-                                                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent"
-                                                            placeholder="Ilimitado"
-                                                            title="Deixe vazio para ilimitado"
-                                                        />
+                                                <div className="flex-1 space-y-3">
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div className="col-span-2 md:col-span-1">
+                                                            <input
+                                                                type="text"
+                                                                value={option.name}
+                                                                onChange={(e) => updateOption(index, 'name', e.target.value)}
+                                                                placeholder="Nome da opção"
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent"
+                                                                required
+                                                            />
+                                                        </div>
+                                                        <div className="col-span-2 md:col-span-1">
+                                                            <input
+                                                                type="number"
+                                                                step="0.01"
+                                                                min="0"
+                                                                value={option.price}
+                                                                onChange={(e) => updateOption(index, 'price', parseFloat(e.target.value))}
+                                                                placeholder="Preço"
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent"
+                                                                required
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 gap-3">
+                                                        <div>
+                                                            <span className="text-xs text-gray-500 mb-1 block">Qtd. Máx</span>
+                                                            <input
+                                                                type="number"
+                                                                min="1"
+                                                                value={option.max_quantity ?? ''}
+                                                                onChange={(e) => updateOption(index, 'max_quantity', e.target.value === '' ? null : parseInt(e.target.value))}
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent"
+                                                                placeholder="Ilimitado"
+                                                            />
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 {formData.options.length > 1 && (

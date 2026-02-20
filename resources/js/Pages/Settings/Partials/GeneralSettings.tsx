@@ -48,27 +48,6 @@ export default function GeneralSettings({
                         {errors.store_name && <p className="mt-1 text-sm text-red-600">{errors.store_name}</p>}
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                             <Palette className="h-4 w-4 inline mr-1" />
-                            Cor do Tema
-                        </label>
-                        <div className="flex gap-2">
-                            <input
-                                type="color"
-                                value={data.theme_color || '#ff3d03'}
-                                onChange={(e) => setData('theme_color', e.target.value)}
-                                className="h-12 w-12 p-1 rounded-lg border border-gray-300 dark:border-white/10 cursor-pointer bg-white dark:bg-premium-dark"
-                            />
-                            <input
-                                type="text"
-                                value={data.theme_color || '#ff3d03'}
-                                onChange={(e) => setData('theme_color', e.target.value)}
-                                className="flex-1 px-4 py-3 border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent bg-white dark:bg-premium-dark text-gray-900 dark:text-white uppercase"
-                                placeholder="#FF3D03"
-                            />
-                        </div>
-                    </div>
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
