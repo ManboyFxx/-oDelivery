@@ -265,6 +265,7 @@ export default function TablesIndex({ tables }: { tables: Table[] }) {
                                                         )}
                                                     </div>
                                                 )}
+                                            </div>
                                         </div>
                                     );
                                 })}
