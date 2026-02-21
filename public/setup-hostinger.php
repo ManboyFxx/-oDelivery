@@ -15,12 +15,12 @@ if (!isset($_GET['token']) || $_GET['token'] !== SECRET_TOKEN) {
 
 function run_command($command)
 {
-    echo "<h2>> Rodando: php artisan $command</h2>";
+    echo "<h2>> Rodando: php ../artisan $command</h2>";
     echo "<pre style='background:#000; color:#0f0; padding:10px; border-radius:5px;'>";
 
     // Tenta rodar via shell_exec ou via Artisan::call se disponível
     try {
-        $output = shell_exec("php artisan $command 2>&1");
+        $output = shell_exec("php ../artisan $command 2>&1");
         if ($output) {
             echo $output;
         } else {
@@ -34,8 +34,8 @@ function run_command($command)
 }
 
 // 1. Verificar .env
-if (!file_exists('.env')) {
-    die("<p style='color:orange'>AVISO: Arquivo .env não encontrado. Crie o arquivo primeiro!</p>");
+if (!file_exists('../.env')) {
+    die("<p style='color:orange'>AVISO: Arquivo .env não encontrado. O arquivo deve estar na pasta raiz (acima da public)!</p>");
 }
 
 // 2. Executar Comandos
