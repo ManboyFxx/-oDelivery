@@ -46,7 +46,12 @@ class StorageController extends Controller
             ]);
 
             if (!$fullPath) {
-                \Log::error('File not found in any candidate path:', ['path' => $path]);
+                \Log::error('File not found in any candidate path:', [
+                    'requested_path' => $path,
+                    'storage_path' => storage_path(),
+                    'base_path' => base_path(),
+                    'public_path' => public_path()
+                ]);
                 abort(404, 'Arquivo não encontrado no servidor');
             }
 
