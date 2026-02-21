@@ -538,6 +538,6 @@ class Tenant extends Model
             $path = parse_url($value, PHP_URL_PATH);
             return $path;
         }
-        return '/storage/' . ltrim($value, '/');
+        return '/uploads/' . ltrim($value, '/');
     }
 }

@@ -197,10 +197,10 @@ class SettingsService
         // 3. Environment Fallback
         if (config('app.env') === 'local') {
             $baseUrl = config('app.asset_url') ?: 'https://oodelivery.online';
-            return rtrim($baseUrl, '/') . '/storage/' . $cleanPath;
+            return rtrim($baseUrl, '/') . '/uploads/' . $cleanPath;
         }
 
-        return asset('storage/' . $cleanPath);
+        return asset('uploads/' . $cleanPath);
     }
 
     public function clearCache($tenantId)

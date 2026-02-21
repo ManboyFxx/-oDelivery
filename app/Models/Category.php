@@ -45,7 +45,7 @@ class Category extends Model
             $cleanPath = substr($cleanPath, 8);
         }
 
-        return '/storage/' . ltrim($cleanPath, '/');
+        return '/uploads/' . ltrim($cleanPath, '/');
     }
 
     // Relationships

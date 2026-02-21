@@ -14,9 +14,8 @@
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
-    # DO NOT block /storage/* - let Laravel handle it
-    # Force resolving storage through Laravel to fix broken Hostinger symlinks
-    RewriteRule ^storage/ index.php [L]
+    # Redirect old /storage/ paths to the new /uploads/ directory
+    RewriteRule ^storage/(.*)$ /uploads/$1 [L,R=301]
 
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d

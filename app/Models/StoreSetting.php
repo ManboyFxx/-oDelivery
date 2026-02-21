@@ -142,7 +142,7 @@ class StoreSetting extends Model
             $cleanPath = substr($cleanPath, 8);
         }
 
-        return '/storage/' . ltrim($cleanPath, '/');
+        return '/uploads/' . ltrim($cleanPath, '/');
     }
 
     public function getBannerUrlAttribute($value): ?string
@@ -159,7 +159,7 @@ class StoreSetting extends Model
             $cleanPath = substr($cleanPath, 8);
         }
 
-        return '/storage/' . ltrim($cleanPath, '/');
+        return '/uploads/' . ltrim($cleanPath, '/');
     }
 
     /**

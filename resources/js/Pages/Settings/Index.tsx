@@ -149,7 +149,7 @@ export default function Settings({ auth, settings, deliveryZones: initialZones, 
         if (data.logo_url) {
             setLogoPreview(data.logo_url);
         } else if (data.logo_path) {
-            setLogoPreview(`/storage/${data.logo_path}`);
+            setLogoPreview(`/uploads/${data.logo_path}`);
         } else {
             setLogoPreview(null);
         }
@@ -159,7 +159,7 @@ export default function Settings({ auth, settings, deliveryZones: initialZones, 
         if (data.banner_url) {
             setBannerPreview(data.banner_url);
         } else if (data.banner_path) {
-            setBannerPreview(`/storage/${data.banner_path}`);
+            setBannerPreview(`/uploads/${data.banner_path}`);
         } else {
             setBannerPreview(null);
         }

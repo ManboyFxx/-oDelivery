@@ -259,7 +259,7 @@ class TenantMenuController extends Controller
             'authCustomer' => $customer,
             'store' => [
                 'name' => $settings->store_name,
-                'logo_url' => $settings->logo_path ? "/storage/{$settings->logo_path}" : $settings->logo_url,
+                'logo_url' => $settings->logo_path ? "/uploads/{$settings->logo_path}" : $settings->logo_url,
                 'theme_color' => $settings->pwa_theme_color ?? '#ff3d03',
                 'operating_hours_formatted' => $this->settingsService->formatOperatingHours($settings->business_hours),
                 'is_open' => $settings->isOpenNow(),
