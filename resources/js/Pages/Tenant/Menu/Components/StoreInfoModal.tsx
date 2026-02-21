@@ -21,11 +21,11 @@ export default function StoreInfoModal({ isOpen, onClose, store }: StoreInfoModa
                         className="absolute inset-0 bg-gray-950/40 backdrop-blur-md hidden sm:block"
                     />
                     <motion.div 
-                        initial={{ x: "100%" }}
-                        animate={{ x: 0 }}
-                        exit={{ x: "100%" }}
+                        initial={{ x: "100%", opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        exit={{ x: "100%", opacity: 0 }}
                         transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                        className="relative bg-white dark:bg-premium-dark w-full max-w-xl h-full sm:h-auto sm:max-h-[85vh] sm:rounded-[48px] shadow-2xl overflow-y-auto text-gray-900 dark:text-gray-100 border-gray-100 dark:border-white/5 flex flex-col transition-colors duration-300"
+                        className="relative bg-white/90 dark:bg-gray-950/90 backdrop-blur-2xl w-full max-w-xl h-full sm:h-auto sm:max-h-[85vh] sm:rounded-[48px] shadow-[0_32px_128px_-32px_rgba(0,0,0,0.5)] overflow-y-auto text-gray-900 dark:text-gray-100 border-gray-100 dark:border-white/5 flex flex-col transition-all duration-500"
                     >
                         {/* Cabeçalho de Navegação Mobile */}
                         <div className="sticky top-0 z-20 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-100 dark:border-white/10 p-4 flex items-center gap-4 sm:hidden">
@@ -57,29 +57,37 @@ export default function StoreInfoModal({ isOpen, onClose, store }: StoreInfoModa
                             </button>
                         </div>
 
-                        <div className="px-6 md:px-10 pb-12 -mt-12 relative z-10">
+                        <div className="px-6 md:px-10 pb-12 -mt-16 relative z-10">
                             {/* Logo e Nome Dinâmico */}
                             <div className="flex items-start gap-6 mb-8">
-                                <div className="h-28 w-28 rounded-[32px] border-[6px] border-white dark:border-premium-dark overflow-hidden bg-white dark:bg-premium-dark shadow-2xl shrink-0 flex items-center justify-center transition-colors duration-300" style={{ backgroundColor: store?.theme_color || '#ff3d03' }}>
+                                <div 
+                                    className="h-32 w-32 rounded-[40px] border-[8px] border-white dark:border-gray-950 overflow-hidden bg-white dark:bg-gray-900 shadow-[0_20px_50px_rgba(0,0,0,0.3)] shrink-0 flex items-center justify-center transition-all duration-500 relative group"
+                                    style={{ 
+                                        backgroundColor: store?.theme_color || '#ff3d03',
+                                        boxShadow: `0 20px 50px -12px ${store?.theme_color ? store.theme_color + '40' : 'rgba(255, 61, 3, 0.25)'}`
+                                    }}
+                                >
                                     {store?.logo_url ? (
-                                        <img src={store.logo_url} className="h-full w-full object-cover" />
+                                        <img src={store.logo_url} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" />
                                     ) : (
-                                        <span className="text-4xl font-black text-white">{store?.name?.charAt(0) || 'L'}</span>
+                                        <span className="text-5xl font-black text-white drop-shadow-lg">{store?.name?.charAt(0) || 'L'}</span>
                                     )}
+                                    {/* Inner Shine Effect */}
+                                    <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                 </div>
-                                <div className="pt-20 text-left">
-                                    <h1 className="text-2xl md:text-3xl font-black tracking-tight leading-none mb-2">
+                                <div className="pt-24 text-left">
+                                    <h1 className="text-2xl md:text-3xl font-black tracking-tight leading-none mb-3">
                                         {store?.name || 'Carregando...'}
                                     </h1>
                                     <div className={clsx(
-                                        "inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border",
+                                        "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all duration-500",
                                         store?.is_open 
-                                            ? "bg-green-50 text-green-600 border-green-100" 
-                                            : "bg-red-50 text-red-600 border-red-100"
+                                            ? "bg-green-500/10 text-green-500 border-green-500/20 shadow-[0_0_20px_rgba(34,197,94,0.2)]" 
+                                            : "bg-red-500/10 text-red-500 border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.2)]"
                                     )}>
                                         <div className={clsx(
-                                            "h-2 w-2 rounded-full animate-pulse",
-                                            store?.is_open ? "bg-green-500" : "bg-red-500"
+                                            "h-2 w-2 rounded-full",
+                                            store?.is_open ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,1)] animate-pulse" : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,1)]"
                                         )} /> 
                                         {store?.is_open ? "Aberto agora" : "Fechado"}
                                     </div>
@@ -91,41 +99,50 @@ export default function StoreInfoModal({ isOpen, onClose, store }: StoreInfoModa
                                 
                                 {/* Entrega & Tempo - Row Horizontal */}
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="p-5 bg-orange-50/50 dark:bg-white/5 rounded-3xl border border-orange-100 dark:border-white/5 flex items-center gap-4 transition-colors duration-300">
-                                        <div className="h-10 w-10 flex items-center justify-center bg-white rounded-2xl shadow-sm text-[#ff3d03]">
+                                    <div className="p-5 bg-orange-50/50 dark:bg-white/5 rounded-3xl border border-orange-100/50 dark:border-white/5 flex items-center gap-4 transition-all duration-300 hover:scale-[1.02]">
+                                        <div className="h-10 w-10 flex items-center justify-center bg-white dark:bg-gray-800 rounded-2xl shadow-sm text-[#ff3d03] dark:text-orange-400">
                                             <Clock className="h-5 w-5" />
                                         </div>
                                         <div>
-                                            <p className="text-[9px] font-black text-[#ff3d03]/60 uppercase tracking-widest">Tempo Médio</p>
-                                            <p className="text-sm font-black text-gray-950 dark:text-white">{store?.estimated_delivery_time || '35-50'} min</p>
+                                            <p className="text-[9px] font-black text-[#ff3d03]/60 dark:text-orange-400/60 uppercase tracking-widest">Tempo Médio</p>
+                                            <p className="text-sm font-black text-gray-900 dark:text-white">{store?.estimated_delivery_time || '35-50'} min</p>
                                         </div>
                                     </div>
-                                    <div className="p-5 bg-blue-50/50 rounded-3xl border border-blue-100 flex items-center gap-4">
-                                        <div className="h-10 w-10 flex items-center justify-center bg-white rounded-2xl shadow-sm text-blue-500">
+                                    <div className="p-5 bg-blue-50/50 dark:bg-blue-400/10 rounded-3xl border border-blue-100/50 dark:border-blue-400/20 flex items-center gap-4 transition-all duration-300 hover:scale-[1.02]">
+                                        <div className="h-10 w-10 flex items-center justify-center bg-white dark:bg-gray-800 rounded-2xl shadow-sm text-blue-500">
                                             <Star className="h-5 w-5 fill-current" />
                                         </div>
                                         <div>
-                                            <p className="text-[9px] font-black text-blue-600/60 uppercase tracking-widest">Avaliação</p>
-                                            <p className="text-sm font-black text-blue-950 dark:text-blue-200">4.9 (500+)</p>
+                                            <p className="text-[9px] font-black text-blue-600/60 dark:text-blue-400/60 uppercase tracking-widest">Avaliação</p>
+                                            <p className="text-sm font-black text-blue-900 dark:text-blue-200">4.9 (500+)</p>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Localização Interativa */}
-                                <div className="p-6 bg-gray-50 dark:bg-white/5 rounded-[40px] border border-gray-100 dark:border-white/5 transition-colors duration-300">
-                                    <h3 className="font-black text-sm uppercase tracking-widest mb-4 flex items-center gap-2">
-                                        <MapPin className="h-4 w-4 text-gray-400" /> Endereço oficial
+                                <div className="p-6 bg-gray-50/50 dark:bg-white/5 rounded-[40px] border border-gray-100 dark:border-white/5 transition-all duration-300 hover:shadow-lg">
+                                    <h3 className="font-black text-[10px] uppercase tracking-widest mb-4 flex items-center gap-2 text-gray-400 dark:text-gray-500">
+                                        <MapPin className="h-4 w-4" /> Endereço oficial
                                     </h3>
                                     <div className="flex flex-col gap-6">
                                         <div>
-                                            <p className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-relaxed mb-4">
+                                            <p className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-relaxed mb-5">
                                                 {store?.address || 'Endereço não informado'}
                                             </p>
                                             <div className="flex items-center gap-3">
-                                                <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(store?.address || '')}`} target="_blank" className="h-11 px-5 bg-blue-600 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase text-white hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
+                                                <a 
+                                                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(store?.address || '')}`} 
+                                                    target="_blank" 
+                                                    className="h-12 px-6 bg-blue-600 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase text-white hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/25 active:scale-95"
+                                                >
+                                                    <Navigation className="h-4 w-4" />
                                                     Abrir no Maps
                                                 </a>
-                                                <a href={`https://waze.com/ul?q=${encodeURIComponent(store?.address || '')}`} target="_blank" className="h-11 w-11 bg-white rounded-2xl border border-gray-200 flex items-center justify-center text-sky-500 hover:bg-sky-50 transition-all shadow-sm">
+                                                <a 
+                                                    href={`https://waze.com/ul?q=${encodeURIComponent(store?.address || '')}`} 
+                                                    target="_blank" 
+                                                    className="h-12 w-12 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-white/10 flex items-center justify-center text-sky-500 hover:bg-sky-50 dark:hover:bg-gray-700 transition-all shadow-sm active:scale-95"
+                                                >
                                                     <Share2 className="h-5 w-5" />
                                                 </a>
                                             </div>
@@ -136,37 +153,45 @@ export default function StoreInfoModal({ isOpen, onClose, store }: StoreInfoModa
                                 {/* Contato & Redes */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {store?.whatsapp && (
-                                        <a href={`https://wa.me/${store.whatsapp.replace(/\D/g, '')}`} target="_blank" className="p-5 bg-[#25D366]/10 rounded-3xl border border-[#25D366]/20 flex items-center gap-4 group hover:bg-[#25D366]/20 transition-all cursor-pointer">
-                                            <div className="h-12 w-12 flex items-center justify-center bg-[#25D366] text-white rounded-2xl shadow-lg shadow-green-500/20 group-hover:scale-110 transition-transform">
+                                        <a 
+                                            href={`https://wa.me/${store.whatsapp.replace(/\D/g, '')}`} 
+                                            target="_blank" 
+                                            className="p-5 bg-[#25D366]/5 dark:bg-[#25D366]/10 rounded-3xl border border-[#25D366]/10 dark:border-[#25D366]/20 flex items-center gap-4 group hover:bg-[#25D366]/10 dark:hover:bg-[#25D366]/20 transition-all cursor-pointer active:scale-[0.98]"
+                                        >
+                                            <div className="h-12 w-12 flex items-center justify-center bg-[#25D366] text-white rounded-2xl shadow-lg shadow-green-500/20 group-hover:scale-110 group-hover:rotate-6 transition-all">
                                                 <MessageCircle className="h-6 w-6" />
                                             </div>
                                             <div>
                                                 <p className="text-[9px] font-black text-[#25D366] uppercase tracking-widest mb-1">WhatsApp</p>
-                                                <p className="text-sm font-bold text-gray-900 dark:text-gray-100">Falar com atendente</p>
+                                                <p className="text-sm font-extrabold text-gray-950 dark:text-white">Falar com atendente</p>
                                             </div>
                                         </a>
                                     )}
                                     
                                     {store?.instagram && (
-                                        <a href={`https://instagram.com/${store.instagram.replace('@', '')}`} target="_blank" className="p-5 bg-pink-50 dark:bg-white/5 rounded-3xl border border-pink-100 dark:border-white/5 flex items-center gap-4 group hover:bg-pink-100 dark:hover:bg-white/10 transition-all cursor-pointer">
-                                            <div className="h-12 w-12 flex items-center justify-center bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-500 text-white rounded-2xl shadow-lg shadow-pink-500/20 group-hover:scale-110 transition-transform">
+                                        <a 
+                                            href={`https://instagram.com/${store.instagram.replace('@', '')}`} 
+                                            target="_blank" 
+                                            className="p-5 bg-pink-50/50 dark:bg-pink-500/10 rounded-3xl border border-pink-100/50 dark:border-pink-500/20 flex items-center gap-4 group hover:bg-pink-100 dark:hover:bg-pink-500/20 transition-all cursor-pointer active:scale-[0.98]"
+                                        >
+                                            <div className="h-12 w-12 flex items-center justify-center bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-500 text-white rounded-2xl shadow-lg shadow-pink-500/20 group-hover:scale-110 group-hover:-rotate-6 transition-all">
                                                 <Instagram className="h-6 w-6" />
                                             </div>
                                             <div>
-                                                <p className="text-[9px] font-black text-pink-500 uppercase tracking-widest mb-1">Instagram</p>
-                                                <p className="text-sm font-bold text-gray-900 dark:text-gray-100">Ver fotos e stories</p>
+                                                <p className="text-[9px] font-black text-pink-500 dark:text-pink-400 uppercase tracking-widest mb-1">Instagram</p>
+                                                <p className="text-sm font-extrabold text-gray-950 dark:text-white">Ver fotos e stories</p>
                                             </div>
                                         </a>
                                     )}
                                 </div>
 
                                 {/* Horários Detalhados */}
-                                <div className="p-6 rounded-[32px] border border-gray-100 dark:border-white/5 bg-white dark:bg-white/5 shadow-sm transition-colors duration-300">
-                                    <h3 className="font-black text-sm uppercase tracking-widest mb-4 flex items-center gap-2">
-                                        <Clock className="h-4 w-4 text-gray-400" /> Horário de Funcionamento
+                                <div className="p-8 rounded-[40px] border border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/5 transition-all duration-300">
+                                    <h3 className="font-black text-[10px] uppercase tracking-widest mb-5 flex items-center gap-2 text-gray-400 dark:text-gray-500">
+                                        <Clock className="h-4 w-4" /> Horário de Funcionamento
                                     </h3>
                                     <div className="space-y-3">
-                                        <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-line leading-relaxed transition-colors duration-300">
+                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-300 whitespace-pre-line leading-relaxed italic opacity-80">
                                             {store?.operating_hours_formatted || "Horário não informado."}
                                         </p>
                                     </div>
