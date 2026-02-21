@@ -46,8 +46,11 @@ class MediaController extends Controller
         $filename = Str::uuid() . '.' . $extension;
         $path = "media/{$tenantId}/{$filename}";
 
-        // Ensure directory exists
-        Storage::disk('public')->makeDirectory("media/{$tenantId}");
+        // Ensure directory exists with correct permissions for shared hosting
+        $dirPath = storage_path("app/public/media/{$tenantId}");
+        if (!file_exists($dirPath)) {
+            mkdir($dirPath, 0755, true);
+        }
 
         // Process and save image as WebP
         try {
