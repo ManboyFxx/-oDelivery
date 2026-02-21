@@ -34,16 +34,7 @@ jobs:
       - name: 🏗️ Build frontend assets
         run: npm run build
 
-      - name: 🤐 Zip Release
-        uses: TheDoctor0/zip-release@0.7.1
-        with:
-          type: "zip"
-          filename: "deploy.zip"
-          directory: "."
-          path: "."
-          exclusions: "*.git* /*node_modules/* /*tests/* /*storage/*.key /*public/storage/*"
-
-      - name: 📂 Upload Zip and Unzip Script
+      - name: 📂 Upload Files via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
@@ -51,20 +42,20 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: ./
           local-dir: ./
-          include: |
-            deploy.zip
-            unzip_deploy.php
+          timeout: 120000
           exclude: |
-            **
-
-      - name: 🚀 Trigger Unzip on Server
-        continue-on-error: true
-        run: |
-          echo "Triggering unzip on server..."
-          curl -L "https://oodelivery.online/unzip_deploy.php"
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/tests/**
+            **/storage/*.key
+            **/public/storage/**
+            deploy_temp/**
+            deploy.zip
+            .env
 
       - name: 🔗 Recreate Storage Symlink
-        # public/storage is excluded from the zip, but recreate just in case
+        # Use one of the existing scripts to fix symlinks if needed
         continue-on-error: true
         run: |
           echo "Recreating storage symlink..."
