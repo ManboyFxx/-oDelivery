@@ -69,13 +69,13 @@ class Product extends Model
             return $value;
         }
 
-        // Old format: /storage/products/file.jpg
-        if (str_starts_with($value, '/storage/')) {
-            return $value; // already a valid web path
+        // Clean any existing storage/ prefix to prevent duplication
+        $cleanPath = ltrim($value, '/');
+        if (str_starts_with($cleanPath, 'storage/')) {
+            $cleanPath = substr($cleanPath, 8);
         }
 
-        // New format: just the storage key, e.g. products/file.jpg
-        return '/storage/' . ltrim($value, '/');
+        return '/storage/' . ltrim($cleanPath, '/');
     }
 
 

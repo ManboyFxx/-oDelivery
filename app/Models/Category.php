@@ -35,14 +35,17 @@ class Category extends Model
     {
         if (!$value)
             return null;
+
         if (str_starts_with($value, 'http'))
             return $value;
 
-        if (str_starts_with($value, '/storage/')) {
-            return $value; // already a valid web path
+        // Clean any existing storage/ prefix to prevent duplication
+        $cleanPath = ltrim($value, '/');
+        if (str_starts_with($cleanPath, 'storage/')) {
+            $cleanPath = substr($cleanPath, 8);
         }
 
-        return '/storage/' . ltrim($value, '/');
+        return '/storage/' . ltrim($cleanPath, '/');
     }
 
     // Relationships

@@ -26,9 +26,9 @@ interface HeroSectionProps {
 
 export default function HeroSection({ store, customer, onOpenAuth, onOpenProfile, onOpenCart, onOpenInfo, cartCount }: HeroSectionProps) {
     return (
-        <div className="relative bg-gray-50 dark:bg-premium-dark pb-8 transition-colors duration-300">
-            {/* --- STORE BANNER & BRANDING --- */}
-            <div className="relative h-52 md:h-80 w-full overflow-hidden group">
+        <div className="relative bg-gray-50 dark:bg-premium-dark pb-4 transition-colors duration-300">
+            {/* --- STORE BANNER --- */}
+            <div className="relative h-28 md:h-40 w-full overflow-hidden group">
                 <div className="absolute inset-0 bg-neutral-900">
                     {store?.banner_url ? (
                         <div 
@@ -40,118 +40,90 @@ export default function HeroSection({ store, customer, onOpenAuth, onOpenProfile
                     )}
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-            
-                {/* Mobile Status Badge (Top Right) */}
-                 <div className="absolute top-4 right-4 md:hidden flex flex-col items-end gap-2 z-10">
-                    <div className={clsx(
-                        "px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-lg backdrop-blur-md border border-white/10",
-                        store.is_open ? "bg-green-500/90 text-white" : "bg-red-500/90 text-white"
-                    )}>
-                        <div className={clsx("w-1.5 h-1.5 rounded-full bg-white", store.is_open && "animate-pulse")} />
-                        {store.is_open ? "Aberto" : "Fechado"}
-                    </div>
-                </div>
             </div>
 
-            {/* --- STORE HEADER CARD (CENTRALIZED) --- */}
-            <div className="relative max-w-3xl mx-auto px-4 md:px-8 -mt-16 md:-mt-24 z-20 mb-4">
-                <div className="bg-white dark:bg-premium-card rounded-[32px] shadow-2xl p-6 md:p-8 flex flex-col items-center justify-center border border-gray-100 dark:border-white/5 relative overflow-visible transition-colors duration-300">
+            {/* --- COMPACT STORE HEADER CARD --- */}
+            <div className="relative max-w-7xl mx-auto px-4 md:px-8 -mt-10 md:-mt-14 z-20 mb-2">
+                <div className="bg-white dark:bg-premium-card rounded-[24px] shadow-xl p-4 md:p-6 flex flex-col md:flex-row items-center gap-4 md:gap-8 border border-gray-100 dark:border-white/5 relative transition-colors duration-300">
                     
-                    {/* Background Decor */}
-                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-transparent via-gray-100 to-transparent opacity-50" />
+                    {/* Store Logo/Badge */}
+                    <motion.div 
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="h-20 w-20 md:h-28 md:w-28 rounded-[20px] shadow-lg flex items-center justify-center text-white text-3xl md:text-4xl font-black border-4 border-white dark:border-premium-card shrink-0 relative z-10"
+                        style={{ backgroundColor: 'var(--primary-color)' }}
+                    >
+                        {store?.logo_url ? (
+                            <img src={store.logo_url} className="h-full w-full object-cover rounded-[16px]" alt={store.name} />
+                        ) : (
+                            <div className="h-full w-full rounded-[16px] flex items-center justify-center">
+                                {store?.name?.charAt(0) || 'V'}
+                            </div>
+                        )}
+                        
+                        {/* Compact Status Pin */}
+                        <div className={clsx(
+                            "absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white shadow-sm z-20",
+                            store.is_open ? "bg-green-500" : "bg-red-500"
+                        )} />
+                    </motion.div>
 
-                    <div className="flex flex-col items-center text-center w-full">
-                        {/* Store Main Badge/Logo */}
-                        <motion.div 
-                            initial={{ scale: 0.5, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            className="h-28 w-28 md:h-36 md:w-36 rounded-[40px] shadow-2xl flex items-center justify-center text-white text-5xl md:text-6xl font-black mb-6 border-[6px] border-white relative z-10"
-                            style={{ backgroundColor: 'var(--primary-color)', marginTop: '-80px' }}
-                        >
-                            {store?.logo_url ? (
-                                <img src={store.logo_url} className="h-full w-full object-cover rounded-[34px]" alt={store.name} />
-                            ) : (
-                                <div className="h-full w-full rounded-[34px] flex items-center justify-center">
-                                    {store?.name?.charAt(0) || 'V'}
-                                </div>
+                    {/* Store Brand Info */}
+                    <div className="flex-1 flex flex-col md:flex-row md:items-center justify-between gap-4 w-full">
+                        <div className="text-center md:text-left">
+                            <h1 className="text-xl md:text-3xl font-black text-gray-900 dark:text-white tracking-tight flex items-center justify-center md:justify-start gap-3">
+                                {store?.name}
+                                <span className={clsx(
+                                    "hidden md:flex px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest text-white shadow-sm",
+                                    store.is_open ? "bg-green-500" : "bg-red-500"
+                                )}>
+                                    {store.is_open ? "Aberto" : "Fechado"}
+                                </span>
+                            </h1>
+                            {store?.description && (
+                                <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 font-medium mt-1 line-clamp-1">
+                                    {store.description}
+                                </p>
                             )}
-                            
-                            {/* Desktop Status Badge */}
-                            <div className={clsx(
-                                "absolute -bottom-2 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border-[3px] border-white shadow-xl z-20 whitespace-nowrap flex items-center gap-2",
-                                store.is_open ? "bg-green-500 text-white" : "bg-red-500 text-white"
-                            )}>
-                                <div className={clsx("h-2 w-2 rounded-full bg-white", store.is_open && "animate-pulse")} />
-                                {store.is_open ? "Aberto" : "Fechado"}
-                            </div>
-                        </motion.div>
+                        </div>
 
-                        <div className="w-full mt-4">
-                            <div className="flex flex-col items-center justify-center gap-2 mb-8">
-                                <h1 className="text-3xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tighter leading-tight transition-colors duration-300 relative group mb-2">
-                                    <span className="bg-clip-text text-transparent bg-gradient-to-b from-gray-900 to-gray-600 dark:from-white dark:to-gray-400">
-                                        {store?.name}
-                                    </span>
-                                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-1 bg-primary rounded-full opacity-30 group-hover:w-16 group-hover:opacity-100 transition-all duration-500" />
-                                </h1>
-                                {store?.description && (
-                                    <p className="max-w-md text-sm text-gray-500 dark:text-gray-400 font-medium leading-relaxed transition-colors duration-300">
-                                        {store.description}
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Actions Row */}
-                            <div className="flex flex-wrap items-center justify-center gap-6 mt-2">
-                                {/* Social Icons Grid/Row */}
-                                <div className="flex items-center gap-5">
-                                    {store.instagram && (
-                                        <a 
-                                            href={`https://instagram.com/${store.instagram.replace('@', '')}`} 
-                                            target="_blank" 
-                                            className="flex flex-col items-center gap-2 group transition-all"
-                                        >
-                                            <div className="h-9 w-9 rounded-2xl bg-gradient-to-tr from-[#FFB700] via-[#FF0069] to-[#7638FF] flex items-center justify-center text-white shadow-lg shadow-pink-500/20 group-hover:scale-110 active:scale-95 transition-all">
-                                                <Instagram className="h-4 w-4 stroke-[2.5]" />
-                                            </div>
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 group-hover:text-primary transition-colors">Instagram</span>
-                                        </a>
-                                    )}
-                                    {store.whatsapp && (
-                                        <a 
-                                            href={`https://wa.me/${store.whatsapp.replace(/\D/g, '')}`} 
-                                            target="_blank" 
-                                            className="flex flex-col items-center gap-2 group transition-all"
-                                        >
-                                            <div className="h-9 w-9 rounded-2xl bg-[#25D366] flex items-center justify-center text-white shadow-lg shadow-green-500/20 group-hover:scale-110 active:scale-95 transition-all">
-                                                <MessageCircle className="h-4 w-4 stroke-[2.5]" />
-                                            </div>
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 group-hover:text-primary transition-colors">WhatsApp</span>
-                                        </a>
-                                    )}
-                                    <a 
-                                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(store?.address || '')}`} 
-                                        target="_blank" 
-                                        className="flex flex-col items-center gap-2 group transition-all"
-                                    >
-                                        <div className="h-9 w-9 rounded-2xl bg-[#4285F4] flex items-center justify-center text-white shadow-lg shadow-blue-500/20 group-hover:scale-110 active:scale-95 transition-all overflow-hidden relative">
-                                            <MapPin className="h-4 w-4 stroke-[2.5] relative z-10" />
-                                            <div className="absolute inset-0 bg-black/10 translate-y-full group-hover:translate-y-0 transition-transform" />
-                                        </div>
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 group-hover:text-primary transition-colors">Maps</span>
-                                    </a>
-                                    <a 
-                                        href={`https://waze.com/ul?q=${encodeURIComponent(store?.address || '')}`} 
-                                        target="_blank" 
-                                        className="flex flex-col items-center gap-2 group transition-all"
-                                    >
-                                        <div className="h-9 w-9 rounded-2xl bg-[#33CCFF] flex items-center justify-center text-white shadow-lg shadow-cyan-500/20 group-hover:scale-110 active:scale-95 transition-all">
-                                            <Navigation className="h-4 w-4 stroke-[2.5]" />
-                                        </div>
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 group-hover:text-primary transition-colors">Waze</span>
-                                    </a>
-                                </div>
-                            </div>
+                        {/* Actions Row */}
+                        <div className="flex items-center justify-center md:justify-end gap-3 md:gap-4">
+                            {store.instagram && (
+                                <a 
+                                    href={`https://instagram.com/${store.instagram.replace('@', '')}`} 
+                                    target="_blank" 
+                                    title="Instagram"
+                                    className="h-10 w-10 rounded-xl bg-gradient-to-tr from-[#FFB700] via-[#FF0069] to-[#7638FF] flex items-center justify-center text-white shadow-lg shadow-pink-500/10 hover:scale-110 active:scale-95 transition-all"
+                                >
+                                    <Instagram className="h-5 w-5" />
+                                </a>
+                            )}
+                            {store.whatsapp && (
+                                <a 
+                                    href={`https://wa.me/${store.whatsapp.replace(/\D/g, '')}`} 
+                                    target="_blank" 
+                                    title="WhatsApp"
+                                    className="h-10 w-10 rounded-xl bg-[#25D366] flex items-center justify-center text-white shadow-lg shadow-green-500/10 hover:scale-110 active:scale-95 transition-all"
+                                >
+                                    <MessageCircle className="h-5 w-5" />
+                                </a>
+                            )}
+                            <a 
+                                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(store?.address || '')}`} 
+                                target="_blank" 
+                                title="Localização"
+                                className="h-10 w-10 rounded-xl bg-[#4285F4] flex items-center justify-center text-white shadow-lg shadow-blue-500/10 hover:scale-110 active:scale-95 transition-all"
+                            >
+                                <MapPin className="h-5 w-5" />
+                            </a>
+                            <button 
+                                onClick={onOpenInfo}
+                                className="h-10 px-4 rounded-xl bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10 active:scale-95 transition-all text-xs font-bold flex items-center gap-2"
+                            >
+                                <ChevronRight className="h-4 w-4" />
+                                <span className="hidden sm:inline">Sobre</span>
+                            </button>
                         </div>
                     </div>
                 </div>
