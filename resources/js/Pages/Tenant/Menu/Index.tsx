@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAudio } from '@/Hooks/useAudio';
 import { toast } from 'sonner';
 import axios from 'axios';
-import { Loader2, Search, Sun, Moon, LayoutGrid, List } from 'lucide-react';
+import { Loader2, Search, Sun, Moon, LayoutGrid, List, Star, Flame } from 'lucide-react';
 import clsx from 'clsx';
 
 import { Category, Product, Customer } from './Components/types';
@@ -275,6 +275,107 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                 onOpenInfo={() => setShowStoreInfo(true)}
                 cartCount={cartCount}
             />
+
+            {/* Featured Products Section */}
+            {!searchQuery && activeCategory === 'all' && categories.some((c: Category) => c.products.some((p: Product) => p.is_featured)) && (
+                <section className="max-w-7xl mx-auto px-4 md:px-8 py-8">
+                    <div className="mb-10">
+                        <div className="flex items-center gap-4">
+                            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 text-white flex items-center justify-center rotate-3 shadow-xl">
+                                <Flame className="h-6 w-6" />
+                            </div>
+                            <div>
+                                <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+                                    Destaques da Casa
+                                </h2>
+                                <p className="text-[10px] md:text-xs font-bold text-orange-500 uppercase tracking-[0.2em] mt-1">
+                                    Os favoritos dos clientes
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-4 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-4 mt-6">
+                            {categories
+                                .flatMap((c: Category) => c.products)
+                                .filter((p: Product) => p.is_featured)
+                                .map((product: Product) => (
+                                    <div
+                                        key={product.id}
+                                        onClick={() => handleProductAdd(product)}
+                                        className="min-w-[280px] md:min-w-[320px] bg-white dark:bg-premium-dark rounded-3xl p-4 shadow-lg hover:shadow-xl transition-shadow cursor-pointer group flex-shrink-0"
+                                    >
+                                        <div className="relative h-48 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-white/5 dark:to-white/10 overflow-hidden mb-4">
+                                            {product.image_url ? (
+                                                <img
+                                                    src={product.image_url}
+                                                    alt={product.name}
+                                                    className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                                />
+                                            ) : (
+                                                <div className="h-full w-full flex items-center justify-center text-6xl">🍕</div>
+                                            )}
+                                            
+                                            {/* Badge de Destaque */}
+                                            <div className="absolute top-3 left-3">
+                                                <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl shadow-orange-500/50 flex items-center gap-1">
+                                                    <Star className="h-3 w-3 fill-current" /> Destaque
+                                                </div>
+                                            </div>
+
+                                            {/* Badge de Promoção */}
+                                            {product.is_promotional && (
+                                                <div className="absolute top-3 right-3">
+                                                    <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide shadow-lg">
+                                                        PROMO
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div>
+                                            <h3 className="font-bold text-lg text-gray-900 dark:text-white group-hover:text-orange-500 transition-colors line-clamp-1">
+                                                {product.name}
+                                            </h3>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-1 mb-3">
+                                                {product.description}
+                                            </p>
+                                            
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex flex-col">
+                                                    {product.promotional_price && product.promotional_price < product.price ? (
+                                                        <>
+                                                            <span className="text-xs text-gray-400 line-through">
+                                                                R$ {Number(product.price).toFixed(2).replace('.', ',')}
+                                                            </span>
+                                                            <span className="text-lg font-black text-green-500">
+                                                                R$ {Number(product.promotional_price).toFixed(2).replace('.', ',')}
+                                                            </span>
+                                                        </>
+                                                    ) : (
+                                                        <span className="text-lg font-black text-gray-900 dark:text-white">
+                                                            R$ {Number(product.price).toFixed(2).replace('.', ',')}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <button
+                                                    className="h-9 w-9 rounded-full bg-gradient-to-br from-orange-500 to-red-500 text-white flex items-center justify-center hover:scale-110 active:scale-95 transition-transform shadow-lg shadow-orange-500/30"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleProductAdd(product);
+                                                    }}
+                                                >
+                                                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                        </div>
+                    </div>
+                </section>
+            )}
 
             {/* Sticky Search Header */}
             <header className="sticky top-0 z-40 bg-white/80 dark:bg-premium-dark/80 backdrop-blur-md shadow-sm border-b border-gray-100 dark:border-white/5 transition-colors duration-300">
