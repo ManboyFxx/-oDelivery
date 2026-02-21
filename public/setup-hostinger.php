@@ -5,6 +5,11 @@
  * Script para automatizar o setup inicial do Laravel na Hostinger via navegador.
  */
 
+// Habilitar reporte de erros para debug
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 define('SECRET_TOKEN', 'oodelivery_setup_2026'); // Proteção simples
 
 echo "<h1>🚀 OoDelivery - Setup Hostinger</h1>";
@@ -39,11 +44,18 @@ if (!file_exists('../.env')) {
 }
 
 // 2. Executar Comandos
-run_command('key:generate --force');
-run_command('migrate --force');
-run_command('storage:link');
-run_command('config:cache');
-run_command('view:cache');
+$step = isset($_GET['step']) ? $_GET['step'] : 'all';
+
+if ($step === 'all' || $step === 'key')
+    run_command('key:generate --force');
+if ($step === 'all' || $step === 'migrate')
+    run_command('migrate --force');
+if ($step === 'all' || $step === 'link')
+    run_command('storage:link');
+if ($step === 'all' || $step === 'cache') {
+    run_command('config:cache');
+    run_command('view:cache');
+}
 
 echo "<h2 style='color:green'>✅ Setup concluído!</h2>";
 echo "<p><a href='/'>Clique aqui para acessar o site</a></p>";
