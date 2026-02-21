@@ -10,6 +10,8 @@
 /storage/framework/sessions/*
 /storage/framework/views/*
 .phpunit.result.cache
+*.sqlite
+Database/database.sqlite
 Homestead.json
 Homestead.yaml
 npm-debug.log
