@@ -62,7 +62,7 @@ class DeliveryZoneController extends Controller
         $zones = DeliveryZone::where('tenant_id', $tenantId)
             ->where('is_active', true)
             ->orderBy('neighborhood')
-            ->get(['neighborhood', 'delivery_fee', 'estimated_time_min']);
+            ->get(['id', 'neighborhood', 'delivery_fee', 'estimated_time_min']);
 
         return response()->json($zones);
     }

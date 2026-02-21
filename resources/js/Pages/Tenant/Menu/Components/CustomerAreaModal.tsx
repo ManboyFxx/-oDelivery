@@ -4,6 +4,7 @@ import { Customer, Address, Order } from './types';
 import clsx from 'clsx';
 import axios from 'axios';
 import { toast } from 'sonner';
+import AddressForm from './AddressForm';
 
 interface CustomerAreaModalProps {
     isOpen: boolean;
@@ -114,28 +115,10 @@ export default function CustomerAreaModal({ isOpen, onClose, customer, onLogout,
         if (activeTab === 'orders') loadOrders(1);
     }, [activeTab]);
 
-    // Address Handlers
-    const handleAddressSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoadingAddress(true);
-        try {
-            if (editingAddress) {
-                await axios.put(`/customer/addresses/${editingAddress.id}`, addressForm);
-                toast.success('Endereço atualizado!');
-            } else {
-                await axios.post('/customer/addresses', addressForm);
-                toast.success('Endereço cadastrado!');
-            }
-            await loadAddresses();
-            setShowAddressForm(false);
-            setEditingAddress(null);
-            resetAddressForm();
-        } catch (error: any) {
-            console.error('Error saving address:', error);
-            toast.error(error.response?.data?.message || 'Erro ao salvar endereço.');
-        } finally {
-            setLoadingAddress(false);
-        }
+    const handleAddressSuccess = () => {
+        loadAddresses();
+        setShowAddressForm(false);
+        setEditingAddress(null);
     };
 
     const handleDeleteAddress = async (id: string) => {
@@ -173,15 +156,6 @@ export default function CustomerAreaModal({ isOpen, onClose, customer, onLogout,
 
     const openEditAddress = (address: Address) => {
         setEditingAddress(address);
-        setAddressForm({
-            street: address.street,
-            number: address.number,
-            complement: address.complement || '',
-            neighborhood: address.neighborhood,
-            city: address.city,
-            state: address.state,
-            zip_code: address.zip_code
-        });
         setShowAddressForm(true);
     };
 
@@ -397,97 +371,14 @@ export default function CustomerAreaModal({ isOpen, onClose, customer, onLogout,
                                     ))}
                                 </>
                             ) : (
-                                <form onSubmit={handleAddressSubmit} className="bg-white dark:bg-premium-card p-6 rounded-2xl border border-gray-200 dark:border-white/5 transition-colors duration-300">
-                                    <h4 className="font-bold text-gray-900 dark:text-white mb-4 transition-colors duration-300">{editingAddress ? 'Editar Endereço' : 'Novo Endereço'}</h4>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="col-span-2">
-                                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 transition-colors duration-300">CEP</label>
-                                            <input
-                                                type="text"
-                                                value={addressForm.zip_code}
-                                                onChange={e => setAddressForm({ ...addressForm, zip_code: e.target.value })}
-                                                className="w-full p-3 bg-gray-50 dark:bg-white/5 rounded-xl border-none focus:ring-2 focus:ring-[#ff3d03] text-gray-900 dark:text-white transition-colors duration-300"
-                                                required
-                                            />
-                                        </div>
-                                        <div className="col-span-2">
-                                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 transition-colors duration-300">Rua</label>
-                                            <input
-                                                type="text"
-                                                value={addressForm.street}
-                                                onChange={e => setAddressForm({ ...addressForm, street: e.target.value })}
-                                                className="w-full p-3 bg-gray-50 dark:bg-white/5 rounded-xl border-none focus:ring-2 focus:ring-[#ff3d03] text-gray-900 dark:text-white transition-colors duration-300"
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 transition-colors duration-300">Número</label>
-                                            <input
-                                                type="text"
-                                                value={addressForm.number}
-                                                onChange={e => setAddressForm({ ...addressForm, number: e.target.value })}
-                                                className="w-full p-3 bg-gray-50 dark:bg-white/5 rounded-xl border-none focus:ring-2 focus:ring-[#ff3d03] text-gray-900 dark:text-white transition-colors duration-300"
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 transition-colors duration-300">Comp.</label>
-                                            <input
-                                                type="text"
-                                                value={addressForm.complement}
-                                                onChange={e => setAddressForm({ ...addressForm, complement: e.target.value })}
-                                                className="w-full p-3 bg-gray-50 dark:bg-white/5 rounded-xl border-none focus:ring-2 focus:ring-[#ff3d03] text-gray-900 dark:text-white transition-colors duration-300"
-                                            />
-                                        </div>
-                                        <div className="col-span-2">
-                                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 transition-colors duration-300">Bairro</label>
-                                            <input
-                                                type="text"
-                                                value={addressForm.neighborhood}
-                                                onChange={e => setAddressForm({ ...addressForm, neighborhood: e.target.value })}
-                                                className="w-full p-3 bg-gray-50 dark:bg-white/5 rounded-xl border-none focus:ring-2 focus:ring-[#ff3d03] text-gray-900 dark:text-white transition-colors duration-300"
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 transition-colors duration-300">Cidade</label>
-                                            <input
-                                                type="text"
-                                                value={addressForm.city}
-                                                onChange={e => setAddressForm({ ...addressForm, city: e.target.value })}
-                                                className="w-full p-3 bg-gray-50 dark:bg-white/5 rounded-xl border-none focus:ring-2 focus:ring-[#ff3d03] text-gray-900 dark:text-white transition-colors duration-300"
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 transition-colors duration-300">UF</label>
-                                            <input
-                                                type="text"
-                                                maxLength={2}
-                                                value={addressForm.state}
-                                                onChange={e => setAddressForm({ ...addressForm, state: e.target.value })}
-                                                className="w-full p-3 bg-gray-50 dark:bg-white/5 rounded-xl border-none focus:ring-2 focus:ring-[#ff3d03] text-gray-900 dark:text-white transition-colors duration-300"
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-3 mt-6">
-                                        <button
-                                            type="button"
-                                            onClick={() => { setShowAddressForm(false); resetAddressForm(); setEditingAddress(null); }}
-                                            className="flex-1 py-3 font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl transition-colors"
-                                        >
-                                            Cancelar
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            disabled={loadingAddress}
-                                            className="flex-1 py-3 bg-[#ff3d03] text-white font-bold rounded-xl hover:bg-[#e63700] transition-colors shadow-lg shadow-orange-500/30"
-                                        >
-                                            {loadingAddress ? 'Salvando...' : 'Salvar Endereço'}
-                                        </button>
-                                    </div>
-                                </form>
+                                <AddressForm
+                                    onCancel={() => { setShowAddressForm(false); setEditingAddress(null); }}
+                                    onSuccess={handleAddressSuccess}
+                                    tenantId={store.settings.tenant_id}
+                                    customerId={customer.id}
+                                    initialData={editingAddress}
+                                    store={store}
+                                />
                             )}
                         </div>
                     )}

@@ -13,115 +13,99 @@ interface AddressFormProps {
     onSuccess: (address: any) => void;
     tenantId: string;
     customerId: string;
-    preloadedZones?: any[]; // Optional prop to avoid refetching
+    preloadedZones?: any[];
+    initialData?: any; // For editing
+    store?: any; // To get default city/state
 }
 
-export default function AddressForm({ onCancel, onSuccess, tenantId, customerId, preloadedZones = [] }: AddressFormProps) {
+export default function AddressForm({ onCancel, onSuccess, tenantId, customerId, preloadedZones = [], initialData, store }: AddressFormProps) {
     const [loading, setLoading] = useState(false);
-    const [cepLoading, setCepLoading] = useState(false);
+    
+    // Extract defaults from store address if available
+    const storeCity = store?.address?.city || store?.settings?.address?.city || '';
+    const storeState = store?.address?.state || store?.settings?.address?.state || '';
+
     const [form, setForm] = useState({
-        zip_code: '',
-        street: '',
-        number: '',
-        complement: '',
-        neighborhood: '',
-        city: '',
-        state: '',
+        zip_code: initialData?.zip_code || '00000-000',
+        street: initialData?.street || '',
+        number: initialData?.number || '',
+        complement: initialData?.complement || '',
+        neighborhood: initialData?.neighborhood || '',
+        city: initialData?.city || storeCity, 
+        state: initialData?.state || storeState,
     });
     const { success, error: showError } = useToast();
 
-    const [isZoneValid, setIsZoneValid] = useState<boolean | null>(null);
-    const [zoneFee, setZoneFee] = useState<number>(0);
-    const [availableZones, setAvailableZones] = useState<any[]>(preloadedZones);
+    const [availableZones, setAvailableZones] = useState<any[] | null>(preloadedZones.length > 0 ? preloadedZones : null);
+    const [zonesLoading, setZonesLoading] = useState(true); // Always start true to avoid flicker
+    const [isZoneValid, setIsZoneValid] = useState<boolean | null>(initialData ? true : null);
+
+    // Use a stable reference check for preloadedZones
+    const preloadedZonesLength = preloadedZones?.length || 0;
 
     useEffect(() => {
+        let isMounted = true;
+        
+        const stopLoading = () => {
+            if (isMounted) setZonesLoading(false);
+        };
+
         if (preloadedZones && preloadedZones.length > 0) {
+            console.log("AddressForm: Using preloaded zones", preloadedZones.length);
             setAvailableZones(preloadedZones);
+            stopLoading();
             return;
         }
 
-        if (!tenantId) return;
+        if (!tenantId) {
+            console.warn("AddressForm: Waiting for tenantId...");
+            const timer = setTimeout(stopLoading, 3000);
+            return () => {
+                isMounted = false;
+                clearTimeout(timer);
+            };
+        }
 
         const fetchZones = async () => {
+            if (!isMounted) return;
+            setZonesLoading(true);
             try {
+                console.log("AddressForm: Fetching zones for tenant", tenantId);
                 const response = await axios.get(`/api/delivery-zones?tenant_id=${tenantId}`);
-                console.log("AddressForm fetched zones:", response.data);
-                setAvailableZones(response.data);
+                console.log("AddressForm: Zones fetched", response.data?.length);
+                if (isMounted) setAvailableZones(response.data || []);
             } catch (err) {
                 console.error('Error fetching delivery zones:', err);
+                if (isMounted) setAvailableZones([]); 
+            } finally {
+                stopLoading();
             }
         };
+
         fetchZones();
-    }, [tenantId, preloadedZones]);
+
+        return () => {
+            isMounted = false;
+        };
+    }, [tenantId, preloadedZonesLength]); // Use length instead of array reference
 
     const handleNeighborhoodChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const selectedNeighborhood = e.target.value;
-        const zone = availableZones.find(z => z.neighborhood === selectedNeighborhood);
+        const zone = availableZones?.find(z => z.neighborhood === selectedNeighborhood);
         
         setForm(prev => ({ ...prev, neighborhood: selectedNeighborhood }));
         
         if (zone) {
             setIsZoneValid(true);
-            setZoneFee(Number(zone.delivery_fee));
         } else {
             setIsZoneValid(selectedNeighborhood ? false : null);
-            setZoneFee(0);
-        }
-    };
-
-    const handleCepBlur = async () => {
-        const cep = form.zip_code.replace(/\D/g, '');
-        if (cep.length !== 8) return;
-
-        setCepLoading(true);
-        setIsZoneValid(null);
-        try {
-            const response = await axios.get(`https://viacep.com.br/ws/${cep}/json/`);
-            if (response.data.erro) {
-                showError('CEP não encontrado', 'Verifique o CEP digitado.');
-                return;
-            }
-            
-            setForm(prev => ({
-                ...prev,
-                street: response.data.logradouro || prev.street,
-                city: response.data.localidade || prev.city,
-                state: response.data.uf || prev.state,
-            }));
-
-            // Try to auto-select the neighborhood from the available zones
-            if (response.data.bairro && availableZones.length > 0) {
-                const cepNeighborhood = response.data.bairro;
-                const match = availableZones.find(z => 
-                    z.neighborhood.toLowerCase() === cepNeighborhood.toLowerCase() ||
-                    z.neighborhood.toLowerCase().includes(cepNeighborhood.toLowerCase()) ||
-                    cepNeighborhood.toLowerCase().includes(z.neighborhood.toLowerCase())
-                );
-
-                if (match) {
-                    setForm(prev => ({ ...prev, neighborhood: match.neighborhood }));
-                    setIsZoneValid(true);
-                    setZoneFee(Number(match.delivery_fee));
-                } else {
-                    // Force user to select from dropdown if zone is available but no match found
-                    setForm(prev => ({ ...prev, neighborhood: '' })); 
-                    setIsZoneValid(false);
-                    setZoneFee(0);
-                    showError('Bairro não atendido', 'Selecione um bairro da lista de entregas.');
-                }
-            }
-        } catch (err) {
-            showError('Erro ao buscar CEP', 'Tente preencher manualmente.');
-        } finally {
-            setCepLoading(false);
         }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // If zones are configured, require a valid neighborhood selection
-        if (availableZones.length > 0 && !form.neighborhood) {
+        if (!form.neighborhood) {
             showError('Bairro obrigatório', 'Selecione o bairro de entrega.');
             return;
         }
@@ -129,14 +113,25 @@ export default function AddressForm({ onCancel, onSuccess, tenantId, customerId,
         setLoading(true);
 
         try {
-            const response = await axios.post('/customer/addresses', {
+            const data = {
                 ...form,
+                city: form.city || 'Cidade',
+                state: form.state || 'UF',
+                zip_code: form.zip_code || '00000-000',
                 tenant_id: tenantId,
                 customer_id: customerId,
-            });
+            };
 
-            success('Endereço adicionado!', 'Seu novo endereço foi salvo.');
-            onSuccess(response.data);
+            let response;
+            if (initialData?.id) {
+                response = await axios.put(`/customer/addresses/${initialData.id}`, data);
+                success('Endereço atualizado!', 'Suas alterações foram salvas.');
+            } else {
+                response = await axios.post('/customer/addresses', data);
+                success('Endereço adicionado!', 'Seu novo endereço foi salvo.');
+            }
+
+            onSuccess(response.data.address || response.data);
         } catch (err: any) {
             showError('Erro ao salvar', err.response?.data?.message || 'Tente novamente.');
         } finally {
@@ -147,57 +142,81 @@ export default function AddressForm({ onCancel, onSuccess, tenantId, customerId,
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex justify-between items-center mb-4">
-                <h3 className="font-bold text-gray-900 dark:text-white transition-colors">Novo Endereço</h3>
+                <h3 className="font-bold text-gray-900 dark:text-white transition-colors">Cadastrar Endereço</h3>
                 <button type="button" onClick={onCancel} className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
                     Cancelar
                 </button>
             </div>
 
+            {/* Neighborhood Dropdown - Strictly Selectable */}
             <div>
                 <div className="flex justify-between items-center mb-1">
-                    <InputLabel htmlFor="zip_code" value="CEP" />
-                    <div className="h-4"></div>
+                    <InputLabel htmlFor="neighborhood" value="Bairro de Entrega" />
                 </div>
+                
                 <div className="relative">
-                    <TextInput
-                        id="zip_code"
-                        value={form.zip_code}
-                        onChange={e => setForm({ ...form, zip_code: e.target.value })}
-                        onBlur={handleCepBlur}
-                        className="w-full pl-10"
-                        placeholder="00000-000"
-                        required
-                    />
-                    <div className="absolute left-3 top-2.5 text-gray-400 dark:text-gray-500">
-                        {cepLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
-                    </div>
+                    {zonesLoading ? (
+                        <div className="w-full border-2 border-gray-100 dark:border-gray-800 rounded-xl p-3 flex items-center justify-center text-gray-400 gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span className="text-sm font-medium">Buscando bairros...</span>
+                        </div>
+                    ) : availableZones && availableZones.length > 0 ? (
+                        <select
+                            id="neighborhood"
+                            value={form.neighborhood}
+                            onChange={handleNeighborhoodChange}
+                            className={clsx(
+                                "w-full border-2 rounded-xl shadow-sm outline-none transition-all duration-300 p-3",
+                                "focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent",
+                                isZoneValid === true 
+                                    ? "border-green-500 bg-green-50/30 text-green-900 dark:bg-green-900/10 dark:text-green-400" 
+                                    : "border-gray-200 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 placeholder-gray-400"
+                            )}
+                            required
+                        >
+                            <option value="">Selecione o Bairro...</option>
+                            {availableZones.map((zone) => (
+                                <option key={zone.id || zone.neighborhood} value={zone.neighborhood}>
+                                    {zone.neighborhood} {zone.delivery_fee > 0 ? `(+ R$ ${Number(zone.delivery_fee).toFixed(2)})` : '(Entrega Grátis)'}
+                                </option>
+                            ))}
+                        </select>
+                    ) : (
+                        <div className="w-full border-2 border-amber-100 bg-amber-50 dark:bg-amber-900/10 dark:border-amber-900/30 rounded-xl p-3 text-amber-600 dark:text-amber-400 text-sm flex items-center gap-2">
+                            <Search className="w-4 h-4" />
+                            <span>Nenhum bairro de entrega configurado pela loja.</span>
+                        </div>
+                    )}
                 </div>
-
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
-                <div className="col-span-2">
-                    <InputLabel htmlFor="street" value="Rua / Avenida" />
+            {/* Street and Number - Priority #2 */}
+            <div className="grid grid-cols-4 gap-4">
+                <div className="col-span-3">
+                    <InputLabel htmlFor="street" value="Nome da Rua / Avenida" />
                     <TextInput
                         id="street"
                         value={form.street}
                         onChange={e => setForm({ ...form, street: e.target.value })}
                         className="w-full"
+                        placeholder="Ex: Rua das Flores"
                         required
                     />
                 </div>
-                <div>
-                    <InputLabel htmlFor="number" value="Número" />
+                <div className="col-span-1">
+                    <InputLabel htmlFor="number" value="Nº" />
                     <TextInput
                         id="number"
                         value={form.number}
                         onChange={e => setForm({ ...form, number: e.target.value })}
                         className="w-full"
+                        placeholder="123"
                         required
                     />
                 </div>
             </div>
 
+            {/* Complement - Optional */}
             <div>
                 <InputLabel htmlFor="complement" value="Complemento (Opcional)" />
                 <TextInput
@@ -205,88 +224,20 @@ export default function AddressForm({ onCancel, onSuccess, tenantId, customerId,
                     value={form.complement}
                     onChange={e => setForm({ ...form, complement: e.target.value })}
                     className="w-full"
-                    placeholder="Ap 102, Bloco C..."
+                    placeholder="Ex: Apt 42, Bloco B, Casa no fundo..."
                 />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <div className="flex justify-between items-center mb-1">
-                        <InputLabel htmlFor="neighborhood" value="Bairro" />
-                        {isZoneValid === true && (
-                            <div className="text-[10px] font-black text-green-500 uppercase tracking-tighter">
-                                Entregamos aqui!
-                            </div>
-                        )}
-                        {isZoneValid === false && (
-                            <div className="text-[10px] font-black text-red-500 uppercase tracking-tighter">
-                                Fora da área
-                            </div>
-                        )}
-                    </div>
-                    {availableZones.length > 0 ? (
-                        <div className="relative">
-                            <select
-                                id="neighborhood"
-                                value={form.neighborhood}
-                                onChange={handleNeighborhoodChange}
-                                className={clsx(
-                                    "w-full border-2 rounded-xl shadow-sm outline-none transition-all duration-300",
-                                    "focus:ring-0 focus:border-[#ff3d03]",
-                                    isZoneValid === false 
-                                        ? "border-red-300 bg-red-50 text-red-900 focus:border-red-500" 
-                                        : (isZoneValid === true 
-                                            ? "border-green-500 bg-green-50 text-green-900" 
-                                            : "border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 hover:border-gray-300")
-                                )}
-                                required
-                            >
-                                <option value="">Selecione o Bairro...</option>
-                                {availableZones.map((zone) => (
-                                    <option key={zone.id} value={zone.neighborhood}>
-                                        {zone.neighborhood} (+ R$ {Number(zone.delivery_fee).toFixed(2)})
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    ) : (
-                        <TextInput
-                            id="neighborhood"
-                            value={form.neighborhood}
-                            onChange={e => setForm({ ...form, neighborhood: e.target.value })}
-                            className={clsx(
-                                "w-full",
-                                isZoneValid === false && "border-red-500 focus:ring-red-500",
-                                isZoneValid === true && "border-green-500 focus:ring-green-500"
-                            )}
-                            required
-                        />
-                    )}
-                </div>
-                <div>
-                    <InputLabel htmlFor="city" value="Cidade - UF" />
-                    <TextInput
-                        id="city"
-                        value={`${form.city} - ${form.state}`}
-                        readOnly
-                        className="w-full bg-gray-50 dark:bg-white/5 dark:text-gray-400"
-                    />
-                </div>
-            </div>
-
             <div className="pt-4 flex gap-3">
-                <SecondaryButton type="button" onClick={onCancel} className="flex-1 justify-center">
-                    Voltar
+                <SecondaryButton type="button" onClick={onCancel} className="flex-1 justify-center py-3">
+                    Cancelar
                 </SecondaryButton>
                 <PrimaryButton 
                     type="submit" 
-                    disabled={loading || isZoneValid === false} 
-                    className={clsx(
-                        "flex-1 justify-center transition-all",
-                        isZoneValid === false ? "bg-gray-400 cursor-not-allowed" : "bg-[#ff3d03] hover:bg-[#e63700]"
-                    )}
+                    disabled={loading} 
+                    className="flex-1 justify-center bg-[#ff3d03] hover:bg-[#e63700] py-3 shadow-lg shadow-orange-500/20"
                 >
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvar Endereço'}
+                    {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto text-white" /> : 'Confirmar Endereço'}
                 </PrimaryButton>
             </div>
         </form>

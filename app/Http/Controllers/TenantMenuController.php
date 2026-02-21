@@ -156,6 +156,7 @@ class TenantMenuController extends Controller
 
         // ✅ Sanitizar settings
         $sanitizedSettings = [
+            'tenant_id' => $tenant->id, // Essential for API calls like delivery-zones
             'loyalty_enabled' => $settings->loyalty_enabled ?? true,
             'points_per_currency' => $settings->points_per_currency ?? 1,
             'currency_per_point' => $settings->currency_per_point ?? 0.10,

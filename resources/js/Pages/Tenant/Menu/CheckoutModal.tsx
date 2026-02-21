@@ -477,6 +477,7 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                             tenantId={store.settings.tenant_id}
                             customerId={customer.id}
                             preloadedZones={availableZones}
+                            store={store}
                         />
                     ) : (
                         <>
@@ -557,7 +558,7 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                                                             >
                                                                 <option value="">Selecione o bairro...</option>
                                                                 {availableZones.map(zone => (
-                                                                    <option key={zone.id} value={zone.neighborhood}>
+                                                                    <option key={zone.id || zone.neighborhood} value={zone.neighborhood}>
                                                                         {zone.neighborhood} — R$ {Number(zone.delivery_fee).toFixed(2).replace('.', ',')}
                                                                     </option>
                                                                 ))}
