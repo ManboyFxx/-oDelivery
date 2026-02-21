@@ -56,6 +56,30 @@ class Product extends Model
         'sort_order' => 'integer',
     ];
 
+    /**
+     * Always return a full absolute URL for the product image.
+     * Handles both old paths (/storage/products/...) and new storage keys (products/...).
+     */
+    public function getImageUrlAttribute($value): ?string
+    {
+        if (!$value)
+            return null;
+
+        // Already a full URL (e.g. https://...)
+        if (str_starts_with($value, 'http')) {
+            return $value;
+        }
+
+        // Old format: /storage/products/file.jpg → keep as is (it's already a web path)
+        if (str_starts_with($value, '/storage/')) {
+            return asset(ltrim($value, '/'));
+        }
+
+        // New format: just the storage key, e.g. products/file.jpg
+        return asset('storage/' . ltrim($value, '/'));
+    }
+
+
     // Relationships
     public function category()
     {

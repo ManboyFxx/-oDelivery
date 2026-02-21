@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use Illuminate\Support\Facades\Storage;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -94,8 +95,8 @@ class ProductController extends Controller implements HasMiddleware
         }
 
         if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('products', 'public');
-            $validated['image_url'] = '/storage/' . $path;
+            // Store the relative key; Product model accessor generates the absolute URL
+            $validated['image_url'] = $request->file('image')->store('products', 'public');
         }
 
         $validated['tenant_id'] = auth()->user()->tenant_id;
@@ -163,8 +164,8 @@ class ProductController extends Controller implements HasMiddleware
         }
 
         if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('products', 'public');
-            $validated['image_url'] = '/storage/' . $path;
+            // Store the relative key; Product model accessor generates the absolute URL
+            $validated['image_url'] = $request->file('image')->store('products', 'public');
         }
 
         // Ensure boolean casting
