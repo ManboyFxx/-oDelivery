@@ -69,9 +69,14 @@ class Product extends Model
             return $value;
         }
 
-        // Clean any existing storage/ prefix to prevent duplication
-        $cleanPath = ltrim($value, '/');
-        if (str_starts_with($cleanPath, 'storage/')) {
+        $cleanPath = $value;
+        if (str_starts_with($cleanPath, '/storage/')) {
+            $cleanPath = substr($cleanPath, 9);
+        } elseif (str_starts_with($cleanPath, 'storage/')) {
+            $cleanPath = substr($cleanPath, 8);
+        } elseif (str_starts_with($cleanPath, '/uploads/')) {
+            $cleanPath = substr($cleanPath, 9);
+        } elseif (str_starts_with($cleanPath, 'uploads/')) {
             $cleanPath = substr($cleanPath, 8);
         }
 

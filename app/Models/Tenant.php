@@ -530,14 +530,29 @@ class Tenant extends Model
         return $planLimits?->display_name ?? 'Gratuito';
     }
 
-    public function getLogoUrlAttribute($value): ?string
+    public function getLogoUrlAttribute($value)
     {
-        if (!$value)
+        if (empty($value))
             return null;
-        if (str_starts_with($value, 'http')) {
+        if (filter_var($value, FILTER_VALIDATE_URL)) {
+            // Em vez de retornar direto o caminho da URL completa que pode dar problema se mudar o domínio,
+            // poderíamos limpar, mas por hora vamos manter a lógica atual de extrair PATH.
             $path = parse_url($value, PHP_URL_PATH);
-            return $path;
+            $cleanPath = ltrim($path, '/');
+        } else {
+            $cleanPath = $value;
         }
-        return '/uploads/' . ltrim($value, '/');
+
+        if (str_starts_with($cleanPath, '/storage/')) {
+            $cleanPath = substr($cleanPath, 9);
+        } elseif (str_starts_with($cleanPath, 'storage/')) {
+            $cleanPath = substr($cleanPath, 8);
+        } elseif (str_starts_with($cleanPath, '/uploads/')) {
+            $cleanPath = substr($cleanPath, 9);
+        } elseif (str_starts_with($cleanPath, 'uploads/')) {
+            $cleanPath = substr($cleanPath, 8);
+        }
+
+        return '/uploads/' . ltrim($cleanPath, '/');
     }
 }

@@ -136,9 +136,11 @@ class StoreSetting extends Model
             return $value;
         }
 
-        // Clean any existing storage/ prefix to prevent duplication
+        // Clean any existing storage/ or uploads/ prefix to prevent duplication
         $cleanPath = ltrim($value, '/');
         if (str_starts_with($cleanPath, 'storage/')) {
+            $cleanPath = substr($cleanPath, 8);
+        } elseif (str_starts_with($cleanPath, 'uploads/')) {
             $cleanPath = substr($cleanPath, 8);
         }
 
@@ -153,9 +155,11 @@ class StoreSetting extends Model
             return $value;
         }
 
-        // Clean any existing storage/ prefix to prevent duplication
+        // Clean any existing storage/ or uploads/ prefix to prevent duplication
         $cleanPath = ltrim($value, '/');
         if (str_starts_with($cleanPath, 'storage/')) {
+            $cleanPath = substr($cleanPath, 8);
+        } elseif (str_starts_with($cleanPath, 'uploads/')) {
             $cleanPath = substr($cleanPath, 8);
         }
 

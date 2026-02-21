@@ -179,8 +179,11 @@ class SettingsService
         $changed = true;
         while ($changed) {
             $oldPath = $cleanPath;
+            // 2. Clean the path
             $cleanPath = ltrim($cleanPath, '/');
             if (str_starts_with(strtolower($cleanPath), 'storage/')) {
+                $cleanPath = substr($cleanPath, 8);
+            } elseif (str_starts_with(strtolower($cleanPath), 'uploads/')) {
                 $cleanPath = substr($cleanPath, 8);
             }
             $changed = ($oldPath !== $cleanPath);
