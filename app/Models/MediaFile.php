@@ -34,7 +34,7 @@ class MediaFile extends Model
      */
     public function getUrlAttribute(): string
     {
-        return url('/storage/' . ltrim($this->path, '/'));
+        return '/storage/' . ltrim($this->path, '/');
     }
 
     public function tenant()

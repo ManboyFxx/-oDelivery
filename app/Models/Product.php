@@ -75,7 +75,7 @@ class Product extends Model
         }
 
         // New format: just the storage key, e.g. products/file.jpg
-        return url('/storage/' . ltrim($value, '/'));
+        return '/storage/' . ltrim($value, '/');
     }
 
 

@@ -42,7 +42,7 @@ class Category extends Model
             return $value; // already a valid web path
         }
 
-        return url('/storage/' . ltrim($value, '/'));
+        return '/storage/' . ltrim($value, '/');
     }
 
     // Relationships
