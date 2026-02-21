@@ -20,16 +20,34 @@ class StorageController extends Controller
         try {
             // Sanitize path
             $path = ltrim($path, '/');
-            
+
             // Check if file exists in public disk
             $disk = Storage::disk('public');
-            $fullPath = storage_path('app/public/' . $path);
-            
-            \Log::info('Checking file:', ['full_path' => $fullPath, 'exists' => file_exists($fullPath)]);
 
-            if (!file_exists($fullPath)) {
-                \Log::error('File not found:', ['path' => $fullPath]);
-                abort(404, 'Arquivo não encontrado');
+            // Try different possible paths for common shared hosting layouts
+            $pathsToTry = [
+                storage_path('app/public/' . $path),
+                base_path('storage/app/public/' . $path),
+                public_path('storage/' . $path),
+            ];
+
+            $fullPath = null;
+            foreach ($pathsToTry as $candidate) {
+                if (file_exists($candidate) && !is_dir($candidate)) {
+                    $fullPath = $candidate;
+                    break;
+                }
+            }
+
+            \Log::info('Checking file candidates:', [
+                'paths' => $pathsToTry,
+                'found' => $fullPath ? true : false,
+                'resolved' => $fullPath
+            ]);
+
+            if (!$fullPath) {
+                \Log::error('File not found in any candidate path:', ['path' => $path]);
+                abort(404, 'Arquivo não encontrado no servidor');
             }
 
             // Get file info

@@ -128,6 +128,29 @@ class StoreSetting extends Model
         'default_motoboy_id' => 'string',
     ];
 
+    public function getLogoUrlAttribute($value): ?string
+    {
+        if (!$value)
+            return null;
+        if (str_starts_with($value, 'http')) {
+            // Se for uma URL absoluta (ex: de um servidor local), extraímos apenas o caminho relativo
+            $path = parse_url($value, PHP_URL_PATH);
+            return $path;
+        }
+        return '/storage/' . ltrim($value, '/');
+    }
+
+    public function getBannerUrlAttribute($value): ?string
+    {
+        if (!$value)
+            return null;
+        if (str_starts_with($value, 'http')) {
+            $path = parse_url($value, PHP_URL_PATH);
+            return $path;
+        }
+        return '/storage/' . ltrim($value, '/');
+    }
+
     /**
      * Get loyalty tiers with defaults if not set
      */

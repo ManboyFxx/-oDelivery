@@ -529,4 +529,15 @@ class Tenant extends Model
 
         return $planLimits?->display_name ?? 'Gratuito';
     }
+
+    public function getLogoUrlAttribute($value): ?string
+    {
+        if (!$value)
+            return null;
+        if (str_starts_with($value, 'http')) {
+            $path = parse_url($value, PHP_URL_PATH);
+            return $path;
+        }
+        return '/storage/' . ltrim($value, '/');
+    }
 }
