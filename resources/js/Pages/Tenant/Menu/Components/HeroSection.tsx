@@ -28,22 +28,22 @@ export default function HeroSection({ store, customer, onOpenAuth, onOpenProfile
     return (
         <div className="relative bg-gray-50 dark:bg-premium-dark pb-4 transition-colors duration-300">
             {/* --- STORE BANNER --- */}
-            <div className="relative h-28 md:h-40 w-full overflow-hidden group">
+            <div className="relative h-32 md:h-48 w-full overflow-hidden group">
                 <div className="absolute inset-0 bg-neutral-900">
                     {store?.banner_url ? (
                         <div 
-                            className="w-full h-full bg-cover bg-center opacity-60 transition-transform duration-700 group-hover:scale-105"
+                            className="w-full h-full bg-cover bg-center opacity-90 transition-transform duration-700 group-hover:scale-105"
                             style={{ backgroundImage: `url('${store.banner_url}')` }}
                         />
                     ) : (
                         <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 opacity-80" />
                     )}
                 </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
             </div>
 
             {/* --- COMPACT STORE HEADER CARD --- */}
-            <div className="relative max-w-7xl mx-auto px-4 md:px-8 -mt-10 md:-mt-14 z-20 mb-2">
+            <div className="relative max-w-7xl mx-auto px-4 md:px-8 -mt-12 md:-mt-16 z-20 mb-2">
                 <div className="bg-white dark:bg-premium-card rounded-[24px] shadow-xl p-4 md:p-6 flex flex-col md:flex-row items-center gap-4 md:gap-8 border border-gray-100 dark:border-white/5 relative transition-colors duration-300">
                     
                     {/* Store Logo/Badge */}
