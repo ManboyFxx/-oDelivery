@@ -31,30 +31,30 @@ foreach ($paths as $name => $path) {
     echo "<h3>$name:</h3>";
     echo "<p>Caminho: <code>$path</code></p>";
     if (file_exists($path)) {
-        echo "<p style='color:green'>✅ EXISTE</p>";
+        $perms = fileperms($path);
+        echo "<p style='color:green'>✅ EXISTE (Permissões: " . substr(sprintf('%o', $perms), -4) . ")</p>";
         echo "<p>Tamanho: " . filesize($path) . " bytes</p>";
     } else {
         echo "<p style='color:red'>❌ NÃO EXISTE</p>";
 
-        // Se não existe, vamos listar o conteúdo da pasta pai
-        $parent = dirname($path);
-        echo "<p>Verificando pasta pai: <code>$parent</code></p>";
-        if (file_exists($parent)) {
-            echo "<p style='color:green'>✅ Pasta pai existe. Conteúdo:</p><ul>";
-            try {
-                $files = scandir($parent);
-                foreach ($files as $file) {
-                    if ($file != '.' && $file != '..') {
-                        echo "<li>$file</li>";
-                    }
-                }
-            } catch (Exception $e) {
-                echo "<li>Erro ao listar: " . $e->getMessage() . "</li>";
+        // Verificar níveis acima para ver onde quebra
+        $parts = explode('/', ltrim($path, '/'));
+        $current = '/';
+        echo "<p>Rastreando subpastas:</p><ul>";
+        foreach ($parts as $part) {
+            if (empty($part))
+                continue;
+            $next = $current . $part . '/';
+            if (file_exists($next)) {
+                $p = fileperms($next);
+                echo "<li>✅ $next (Perms: " . substr(sprintf('%o', $p), -4) . ")</li>";
+                $current = $next;
+            } else {
+                echo "<li style='color:red'>❌ " . $current . $part . " (NÃO ENCONTRADO)</li>";
+                break;
             }
-            echo "</ul>";
-        } else {
-            echo "<p style='color:red'>❌ Pasta pai TAMBÉM não existe.</p>";
         }
+        echo "</ul>";
     }
 }
 
