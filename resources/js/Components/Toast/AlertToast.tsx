@@ -115,46 +115,81 @@ const AlertToast = React.forwardRef<HTMLDivElement, AlertToastProps>(
     ({ className, variant = 'info', styleVariant = 'default', title, description, onClose, ...props }, ref) => {
         const Icon = iconMap[variant!];
 
+        // Custom colors for the premium pill design
+        const variantStyles = {
+            success: "border-green-500/50 bg-green-50/80 dark:bg-green-500/10 text-green-900 dark:text-green-100 shadow-green-500/10",
+            warning: "border-yellow-500/50 bg-yellow-50/80 dark:bg-yellow-500/10 text-yellow-900 dark:text-yellow-100 shadow-yellow-500/10",
+            info: "border-blue-500/50 bg-blue-50/80 dark:bg-blue-500/10 text-blue-900 dark:text-blue-100 shadow-blue-500/10",
+            error: "border-red-500/50 bg-red-50/80 dark:bg-red-500/10 text-red-900 dark:text-red-100 shadow-red-500/10",
+        };
+
+        const iconBgStyles = {
+            success: "bg-green-500",
+            warning: "bg-yellow-500",
+            info: "bg-blue-500",
+            error: "bg-red-500",
+        };
+
         return (
             <motion.div
                 ref={ref}
                 role="alert"
                 layout
-                initial={{ opacity: 0, y: 50, scale: 0.3 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 20, scale: 0.5 }}
+                initial={{ opacity: 0, y: 50, scale: 0.9, filter: "blur(10px)" }}
+                animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+                exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
                 transition={{
                     type: "spring",
-                    stiffness: 260,
-                    damping: 20,
+                    stiffness: 300,
+                    damping: 25,
                 }}
-                className={cn(alertToastVariants({ variant, styleVariant }), className)}
+                className={cn(
+                    "relative w-full max-w-[400px] overflow-hidden rounded-[32px] border-2 shadow-2xl backdrop-blur-xl flex items-center p-4 pl-5 gap-4 pointer-events-auto",
+                    variantStyles[variant!],
+                    className
+                )}
                 {...props}
             >
-                {/* Icon */}
-                <div className="flex-shrink-0">
-                    <Icon className={cn("h-6 w-6", iconColorClasses[styleVariant!][variant!])} aria-hidden="true" />
+                {/* Icon Container */}
+                <div className={cn(
+                    "flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center text-white shadow-lg",
+                    iconBgStyles[variant!]
+                )}>
+                    <Icon className="h-5 w-5 stroke-[2.5px]" aria-hidden="true" />
                 </div>
 
                 {/* Content */}
-                <div className="flex-1">
-                    <p className="text-sm font-semibold">{title}</p>
-                    <p className="text-sm opacity-90">{description}</p>
+                <div className="flex-1 flex flex-col justify-center min-w-0">
+                    <h3 className="text-[15px] font-black leading-tight truncate">
+                        {title}
+                    </h3>
+                    <p className="text-[13px] font-medium opacity-80 leading-snug line-clamp-2">
+                        {description}
+                    </p>
                 </div>
 
                 {/* Close Button */}
-                <div className="flex-shrink-0">
-                    <button
-                        onClick={onClose}
-                        aria-label="Close"
-                        className={cn(
-                            "p-1 rounded-full opacity-80 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2",
-                            styleVariant === 'default' ? "text-foreground/70 hover:bg-muted" : "hover:bg-black/20"
-                        )}
-                    >
-                        <X className="h-5 w-5" />
-                    </button>
-                </div>
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onClose();
+                    }}
+                    aria-label="Close"
+                    className="flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-current opacity-60 hover:opacity-100"
+                >
+                    <X className="h-4 w-4 stroke-[3px]" />
+                </button>
+
+                {/* Subtle progress bar at bottom for auto-dismiss (optional visual hint) */}
+                <motion.div 
+                    initial={{ width: "100%" }}
+                    animate={{ width: "0%" }}
+                    transition={{ duration: 5, ease: "linear" }}
+                    className={cn(
+                        "absolute bottom-0 left-0 h-1 opacity-20",
+                        iconBgStyles[variant!]
+                    )}
+                />
             </motion.div>
         );
     }

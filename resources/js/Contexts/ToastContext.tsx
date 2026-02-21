@@ -1,5 +1,6 @@
 import React, { createContext, useState, useCallback, useEffect, useRef } from 'react';
 import type { Toast, ToastContextType } from '@/types/toast';
+import { useAudio } from '@/Hooks/useAudio';
 
 export const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
@@ -10,6 +11,7 @@ interface ToastProviderProps {
 export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     const [toasts, setToasts] = useState<Toast[]>([]);
     const [settings, setSettings] = useState<any>({});
+    const { play } = useAudio();
 
     const updateSettings = useCallback((newSettings: any) => {
         setSettings(newSettings);
@@ -67,7 +69,22 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
             }, duration);
         }
 
-    }, [settings, removeToast]);
+        // Play Sound
+        const soundEnabled = settings?.sound_enabled !== false;
+        if (soundEnabled) {
+            const soundMap: Record<string, any> = {
+                success: 'success',
+                error: 'error',
+                warning: 'alert',
+                info: 'notification'
+            };
+            const soundType = soundMap[toast.variant];
+            if (soundType) {
+                play(soundType);
+            }
+        }
+
+    }, [settings, removeToast, play]);
 
 
     const clearAll = useCallback(() => {
