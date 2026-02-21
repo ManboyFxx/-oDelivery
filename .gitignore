@@ -1,49 +1,52 @@
+# Laravel Core
 /vendor
 /node_modules
 /public/hot
 /public/storage
 /storage/*.key
 /storage/pail
-.env
-.env.backup
-.env.production
+/storage/logs/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
 .phpunit.result.cache
 Homestead.json
 Homestead.yaml
 npm-debug.log
 yarn-error.log
+
+# IDE & OS
 /.idea
 /.vscode
 .DS_Store
 Thumbs.db
-/deploy.zip
-/deploy_part*
-*.log
 
-# Environment & Secrets (AIOS)
+# Environment
+.env
+.env.backup
+.env.backup.*
+.env.production
 .env.local
 .env.*.local
-*.key
 
-# Dependencies (AIOS)
+# Build & Deploy
+/deploy.zip
+/deploy_part*
+/deploy_staging/
+*.log
+
+# Dependencies
 node_modules/
 
-# Build & Logs (AIOS)
+# Build Output (keep public/build)
 dist/
 build/
 !/public/build
 
-logs/
-
-# IDE & OS (AIOS)
-.idea/
-*.swp
-
-# AIOS Local (AIOS)
+# AIOS Specific
 .aios-core/local/
 .claude/settings.local.json
 .aios/install-log.txt
-
 
 # Security Tools
 _dev_tools/
