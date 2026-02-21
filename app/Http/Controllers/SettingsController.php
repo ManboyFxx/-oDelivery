@@ -43,6 +43,10 @@ class SettingsController extends Controller
 
         $motoboys = $tenant->motoboys()->get();
 
+        // Resolve logo and banner URLs using the service
+        $settings->logo_url = $this->settingsService->resolveMediaUrl($settings->logo_path);
+        $settings->banner_url = $this->settingsService->resolveMediaUrl($settings->banner_path);
+
         return Inertia::render('Settings/Index', [
             'settings' => $settings,
             'paymentMethods' => $paymentMethods,

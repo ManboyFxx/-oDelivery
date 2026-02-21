@@ -133,11 +133,16 @@ class StoreSetting extends Model
         if (!$value)
             return null;
         if (str_starts_with($value, 'http')) {
-            // Se for uma URL absoluta (ex: de um servidor local), extraímos apenas o caminho relativo
-            $path = parse_url($value, PHP_URL_PATH);
-            return $path;
+            return $value;
         }
-        return '/storage/' . ltrim($value, '/');
+
+        // Clean any existing storage/ prefix to prevent duplication
+        $cleanPath = ltrim($value, '/');
+        if (str_starts_with($cleanPath, 'storage/')) {
+            $cleanPath = substr($cleanPath, 8);
+        }
+
+        return '/storage/' . ltrim($cleanPath, '/');
     }
 
     public function getBannerUrlAttribute($value): ?string
@@ -145,10 +150,16 @@ class StoreSetting extends Model
         if (!$value)
             return null;
         if (str_starts_with($value, 'http')) {
-            $path = parse_url($value, PHP_URL_PATH);
-            return $path;
+            return $value;
         }
-        return '/storage/' . ltrim($value, '/');
+
+        // Clean any existing storage/ prefix to prevent duplication
+        $cleanPath = ltrim($value, '/');
+        if (str_starts_with($cleanPath, 'storage/')) {
+            $cleanPath = substr($cleanPath, 8);
+        }
+
+        return '/storage/' . ltrim($cleanPath, '/');
     }
 
     /**
