@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAudio } from '@/Hooks/useAudio';
 import { toast } from 'sonner';
 import axios from 'axios';
-import { Loader2, Search, Sun, Moon, LayoutGrid, List, Star, Flame } from 'lucide-react';
+import { Loader2, Search, Sun, Moon, LayoutGrid, List, Star, Flame, Plus } from 'lucide-react';
 import clsx from 'clsx';
 
 import { Category, Product, Customer } from './Components/types';
@@ -294,7 +294,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                             </div>
                         </div>
 
-                        <div className="flex gap-4 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-4 mt-6">
+                        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-6 mt-6">
                             {categories
                                 .flatMap((c: Category) => c.products)
                                 .filter((p: Product) => p.is_featured)
@@ -302,71 +302,64 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                                     <div
                                         key={product.id}
                                         onClick={() => handleProductAdd(product)}
-                                        className="min-w-[280px] md:min-w-[320px] bg-white dark:bg-premium-dark rounded-3xl p-4 shadow-lg hover:shadow-xl transition-shadow cursor-pointer group flex-shrink-0"
+                                        className="group bg-gray-100 dark:bg-white/5 rounded-[24px] border border-gray-200 dark:border-white/5 shadow-sm hover:shadow-xl hover:border-primary/30 dark:hover:border-primary/30 transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col h-full p-3 md:p-4 gap-4"
                                     >
-                                        <div className="relative h-48 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-white/5 dark:to-white/10 overflow-hidden mb-4">
+                                        {/* Badge de Destaque */}
+                                        <div className="absolute top-3 left-3 z-10">
+                                            <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl shadow-orange-500/50 flex items-center gap-1">
+                                                <Star className="h-3 w-3 fill-current" /> Destaque
+                                            </div>
+                                        </div>
+
+                                        {/* Image */}
+                                        <div className="shrink-0 relative w-full aspect-square rounded-[20px] overflow-hidden bg-gray-50 dark:bg-white/5">
                                             {product.image_url ? (
                                                 <img
                                                     src={product.image_url}
                                                     alt={product.name}
-                                                    className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                                    className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700"
                                                 />
                                             ) : (
-                                                <div className="h-full w-full flex items-center justify-center text-6xl">🍕</div>
-                                            )}
-                                            
-                                            {/* Badge de Destaque */}
-                                            <div className="absolute top-3 left-3">
-                                                <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl shadow-orange-500/50 flex items-center gap-1">
-                                                    <Star className="h-3 w-3 fill-current" /> Destaque
-                                                </div>
-                                            </div>
-
-                                            {/* Badge de Promoção */}
-                                            {product.is_promotional && (
-                                                <div className="absolute top-3 right-3">
-                                                    <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide shadow-lg">
-                                                        PROMO
-                                                    </div>
-                                                </div>
+                                                <div className="h-full w-full flex items-center justify-center text-4xl">🍕</div>
                                             )}
                                         </div>
 
-                                        <div>
-                                            <h3 className="font-bold text-lg text-gray-900 dark:text-white group-hover:text-orange-500 transition-colors line-clamp-1">
-                                                {product.name}
-                                            </h3>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-1 mb-3">
-                                                {product.description}
-                                            </p>
-                                            
-                                            <div className="flex items-center justify-between">
+                                        {/* Content */}
+                                        <div className="flex flex-col flex-1 justify-between h-full">
+                                            <div>
+                                                <h3 className="font-bold text-base md:text-lg text-gray-900 dark:text-white leading-tight mb-1 transition-colors duration-300 line-clamp-2">
+                                                    {product.name}
+                                                </h3>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 transition-colors duration-300 leading-relaxed line-clamp-2">
+                                                    {product.description}
+                                                </p>
+                                            </div>
+
+                                            <div className="flex items-center justify-between mt-auto">
                                                 <div className="flex flex-col">
                                                     {product.promotional_price && product.promotional_price < product.price ? (
                                                         <>
                                                             <span className="text-xs text-gray-400 line-through">
                                                                 R$ {Number(product.price).toFixed(2).replace('.', ',')}
                                                             </span>
-                                                            <span className="text-lg font-black text-green-500">
+                                                            <span className="text-base md:text-lg font-black text-green-500">
                                                                 R$ {Number(product.promotional_price).toFixed(2).replace('.', ',')}
                                                             </span>
                                                         </>
                                                     ) : (
-                                                        <span className="text-lg font-black text-gray-900 dark:text-white">
+                                                        <span className="text-base md:text-lg font-black text-gray-900 dark:text-white">
                                                             R$ {Number(product.price).toFixed(2).replace('.', ',')}
                                                         </span>
                                                     )}
                                                 </div>
                                                 <button
-                                                    className="h-9 w-9 rounded-full bg-gradient-to-br from-orange-500 to-red-500 text-white flex items-center justify-center hover:scale-110 active:scale-95 transition-transform shadow-lg shadow-orange-500/30"
+                                                    className="h-8 w-8 md:h-9 md:w-9 rounded-full bg-gradient-to-br from-orange-500 to-red-500 text-white flex items-center justify-center hover:scale-110 active:scale-95 transition-transform shadow-lg shadow-primary/40"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         handleProductAdd(product);
                                                     }}
                                                 >
-                                                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                                                    </svg>
+                                                    <Plus className="h-4 w-4 md:h-5 md:w-5" />
                                                 </button>
                                             </div>
                                         </div>
