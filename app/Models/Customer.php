@@ -27,6 +27,7 @@ class Customer extends Model
         'referral_code',
         'referred_by',
         'push_subscription',
+        'phone_hash',
     ];
 
     protected $casts = [
@@ -41,7 +42,14 @@ class Customer extends Model
     {
         return Attribute::make(
             get: fn($value) => $value ? $this->decryptValue($value) : null,
-            set: fn($value) => $value ? Crypt::encryptString($value) : null,
+            set: function ($value) {
+                if ($value) {
+                    $this->attributes['phone_hash'] = hash('sha256', $value);
+                    return Crypt::encryptString($value);
+                }
+                $this->attributes['phone_hash'] = null;
+                return null;
+            },
         );
     }
 

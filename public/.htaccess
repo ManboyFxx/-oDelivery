@@ -14,8 +14,19 @@
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
+    # DO NOT block /storage/* - let Laravel handle it
+    # Remove any existing RewriteRule that blocks storage
+
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
+</IfModule>
+
+# Disable mod_security for storage requests (Hostinger fix)
+<IfModule mod_security.c>
+    <FilesMatch "\.(jpg|jpeg|png|gif|webp|svg|pdf|doc|docx)$">
+        SecFilterEngine Off
+        SecFilterScanPOST Off
+    </FilesMatch>
 </IfModule>

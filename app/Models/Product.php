@@ -58,7 +58,6 @@ class Product extends Model
 
     /**
      * Always return a full absolute URL for the product image.
-     * Handles both old paths (/storage/products/...) and new storage keys (products/...).
      */
     public function getImageUrlAttribute($value): ?string
     {
@@ -70,14 +69,15 @@ class Product extends Model
             return $value;
         }
 
-        // Old format: /storage/products/file.jpg → keep as is (it's already a web path)
+        // Old format: /storage/products/file.jpg
         if (str_starts_with($value, '/storage/')) {
-            return asset(ltrim($value, '/'));
+            return $value; // already a valid web path
         }
 
         // New format: just the storage key, e.g. products/file.jpg
-        return asset('storage/' . ltrim($value, '/'));
+        return url('/storage/' . ltrim($value, '/'));
     }
+
 
 
     // Relationships

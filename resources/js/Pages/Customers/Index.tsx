@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
-import { Users, Plus, Pencil, Phone, Search, Mail, ShoppingBag } from 'lucide-react';
+import { Users, Plus, Pencil, Phone, Search, Mail, ShoppingBag, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import PageHeader from '@/Components/PageHeader';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -23,6 +23,16 @@ export default function CustomerIndex({ customers }: { customers: { data: Custom
         customer.phone.includes(search) ||
         (customer.email && customer.email.toLowerCase().includes(search.toLowerCase()))
     );
+
+    const handleDelete = (id: string, name: string, hasOrders: boolean) => {
+        const message = hasOrders
+            ? `⚠️ ATENÇÃO: O cliente "${name}" possui pedidos cadastrados.\n\nAo remover este cliente, os pedidos associados permanecerão no sistema mas sem vínculo com o cliente.\n\nDeseja realmente continuar?`
+            : `Tem certeza que deseja remover o cliente "${name}"? Esta ação não pode ser desfeita.`;
+
+        if (confirm(message)) {
+            router.delete(route('customers.destroy', id));
+        }
+    };
 
     return (
         <AuthenticatedLayout>
@@ -68,13 +78,20 @@ export default function CustomerIndex({ customers }: { customers: { data: Custom
                                 <div className="h-16 w-16 rounded-2xl bg-white dark:bg-[#0f1012] shadow-sm flex items-center justify-center text-2xl font-black text-[#ff3d03]">
                                     {customer.name.substring(0, 1).toUpperCase()}
                                 </div>
-                                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <Link
                                         href={route('customers.edit', customer.id)}
                                         className="p-2 bg-white/90 dark:bg-black/60 rounded-xl text-gray-600 dark:text-gray-300 hover:text-[#ff3d03] transition-colors block shadow-sm backdrop-blur-sm"
                                     >
                                         <Pencil className="h-4 w-4" />
                                     </Link>
+                                    <button
+                                        onClick={() => handleDelete(customer.id, customer.name, customer.orders_count > 0)}
+                                        className="p-2 bg-white/90 dark:bg-black/60 rounded-xl text-gray-600 dark:text-gray-300 hover:text-red-500 transition-colors block shadow-sm backdrop-blur-sm"
+                                        title="Remover cliente"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
                                 </div>
                                 {/* Tier Badge */}
                                 {(customer.loyalty_tier && customer.loyalty_tier !== 'bronze') && (

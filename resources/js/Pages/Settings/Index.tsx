@@ -30,16 +30,8 @@ export default function Settings({ auth, settings, deliveryZones: initialZones, 
     // Tab State
     const [activeTab, setActiveTab] = useState('general');
 
-    // UI State
-    const [showingSuccessMessage, setShowingSuccessMessage] = useState(false);
-    const [logoPreview, setLogoPreview] = useState<string | null>(
-        settings?.logo_path ? `/storage/${settings.logo_path}` : (settings?.logo_url || null)
-    );
-    const [bannerPreview, setBannerPreview] = useState<string | null>(
-        settings?.banner_path ? `/storage/${settings.banner_path}` : (settings?.banner_url || null)
-    );
-
     // Business Hours State
+
     const [businessHours, setBusinessHours] = useState(() => {
         if (settings?.business_hours) { // settings.business_hours is already an object in DB casting? Or string?
             // Usually it's casted in model. If string, parse it.
@@ -98,10 +90,13 @@ export default function Settings({ auth, settings, deliveryZones: initialZones, 
         facebook: settings?.facebook || '',
         website: settings?.website || '', // New field
 
-        logo: null as File | null,
-        banner: null as File | null,
+        logo_url: settings?.logo_url || '',
+        banner_url: settings?.banner_url || '',
+        logo_path: settings?.logo_path || null,
+        banner_path: settings?.banner_path || null,
         remove_logo: false,
         remove_banner: false,
+
 
         business_hours: JSON.stringify(businessHours),
         notification_settings: JSON.stringify(notificationSettings),
@@ -144,6 +139,33 @@ export default function Settings({ auth, settings, deliveryZones: initialZones, 
         is_active: true
     });
 
+    // UI State
+    const [showingSuccessMessage, setShowingSuccessMessage] = useState(false);
+    const [logoPreview, setLogoPreview] = useState<string | null>(null);
+    const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+
+    // Sync previews with data
+    useEffect(() => {
+        if (data.logo_url) {
+            setLogoPreview(data.logo_url);
+        } else if (data.logo_path) {
+            setLogoPreview(`/storage/${data.logo_path}`);
+        } else {
+            setLogoPreview(null);
+        }
+    }, [data.logo_url, data.logo_path]);
+
+    useEffect(() => {
+        if (data.banner_url) {
+            setBannerPreview(data.banner_url);
+        } else if (data.banner_path) {
+            setBannerPreview(`/storage/${data.banner_path}`);
+        } else {
+            setBannerPreview(null);
+        }
+    }, [data.banner_url, data.banner_path]);
+
+
     // Effects
     useEffect(() => {
         if (recentlySuccessful) {
@@ -154,47 +176,13 @@ export default function Settings({ auth, settings, deliveryZones: initialZones, 
     }, [recentlySuccessful]);
 
     // Handlers
-    const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        // Show preview immediately
-        const reader = new FileReader();
-        reader.onload = (ev) => setLogoPreview(ev.target?.result as string);
-        reader.readAsDataURL(file);
-        // Upload directly to dedicated route
-        const formData = new FormData();
-        formData.append('logo', file);
-        router.post(route('settings.upload-logo'), formData, { preserveScroll: true });
-    };
-
-    const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => setBannerPreview(ev.target?.result as string);
-        reader.readAsDataURL(file);
-        const formData = new FormData();
-        formData.append('banner', file);
-        router.post(route('settings.upload-banner'), formData, { preserveScroll: true });
-    };
-
-    const handleLogoRemove = () => {
-        setLogoPreview(null);
-        router.delete(route('settings.remove-logo'), { preserveScroll: true });
-    };
-
-    const handleBannerRemove = () => {
-        setBannerPreview(null);
-        router.delete(route('settings.remove-banner'), { preserveScroll: true });
-    };
-
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
         post(route('settings.update'), {
-            forceFormData: true,
             preserveScroll: true,
         });
     };
+
 
     // Zone Actions
     const openCreateZoneModal = () => {
@@ -341,11 +329,8 @@ export default function Settings({ auth, settings, deliveryZones: initialZones, 
                                         errors={errors}
                                         logoPreview={logoPreview}
                                         bannerPreview={bannerPreview}
-                                        handleLogoUpload={handleLogoUpload}
-                                        handleBannerUpload={handleBannerUpload}
-                                        handleLogoRemove={handleLogoRemove}
-                                        handleBannerRemove={handleBannerRemove}
                                     />
+
                                 )}
 
                                 {activeTab === 'hours' && (

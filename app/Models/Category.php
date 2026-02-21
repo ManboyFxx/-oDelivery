@@ -28,6 +28,23 @@ class Category extends Model
         'is_active' => 'boolean',
     ];
 
+    /**
+     * Always return a full absolute URL for the category image.
+     */
+    public function getImageUrlAttribute($value): ?string
+    {
+        if (!$value)
+            return null;
+        if (str_starts_with($value, 'http'))
+            return $value;
+
+        if (str_starts_with($value, '/storage/')) {
+            return $value; // already a valid web path
+        }
+
+        return url('/storage/' . ltrim($value, '/'));
+    }
+
     // Relationships
     public function products()
     {

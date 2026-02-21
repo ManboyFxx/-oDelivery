@@ -7,9 +7,11 @@ import TextInput from '@/Components/TextInput';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import InputError from '@/Components/InputError';
+import MediaPickerModal from '@/Components/MediaPickerModal';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import DraggableCategoryItem from '../Partials/DraggableCategoryItem';
+
 
 interface Category {
     id: string;
@@ -32,7 +34,9 @@ export default function CategoriesTab({ categories: initialCategories }: { categ
     const [search, setSearch] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+    const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
     const [activeId, setActiveId] = useState<string | null>(null);
+
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -226,6 +230,44 @@ export default function CategoriesTab({ categories: initialCategories }: { categ
                             />
                             <InputError message={errors.description} className="mt-2" />
                         </div>
+
+                        <div>
+                            <InputLabel value="Imagem da Categoria" />
+                            <div
+                                onClick={() => setMediaPickerOpen(true)}
+                                className="mt-1 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-2xl hover:border-[#ff3d03] transition-colors cursor-pointer relative bg-gray-50 dark:bg-gray-800 h-32 overflow-hidden"
+                            >
+                                {data.image_url ? (
+                                    <div className="relative w-full h-full group">
+                                        <img src={data.image_url} alt="Preview" className="w-full h-full object-cover" />
+                                        <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity gap-2">
+                                            <p className="text-white text-xs font-bold">Trocar Imagem</p>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); setData('image_url', ''); }}
+                                                className="text-[10px] text-red-300 hover:text-red-100"
+                                            >
+                                                Remover
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center p-4">
+                                        <ImageIcon className="mx-auto h-6 w-6 text-gray-400" />
+                                        <p className="mt-1 text-xs font-medium text-gray-500">Banco de Imagens</p>
+                                    </div>
+                                )}
+                            </div>
+                            <InputError message={errors.image_url} className="mt-2" />
+                        </div>
+
+                        <MediaPickerModal
+                            open={mediaPickerOpen}
+                            onClose={() => setMediaPickerOpen(false)}
+                            onSelect={(media) => { setData('image_url', media.url); setMediaPickerOpen(false); }}
+                            currentUrl={data.image_url}
+                        />
+
 
                         <div className="flex justify-end gap-3 pt-4 mt-6 border-t border-gray-100 dark:border-white/5">
                             <SecondaryButton onClick={() => setIsModalOpen(false)} className="py-3 rounded-xl">Cancelar</SecondaryButton>

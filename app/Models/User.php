@@ -29,6 +29,7 @@ class User extends Authenticatable
         'role',
         'is_available',
         'is_active',
+        'phone_hash',
     ];
 
     protected $hidden = [
@@ -154,7 +155,14 @@ class User extends Authenticatable
     {
         return Attribute::make(
             get: fn($value) => $value ? $this->decryptValue($value) : null,
-            set: fn($value) => \Illuminate\Support\Facades\Crypt::encryptString($value),
+            set: function ($value) {
+                if ($value) {
+                    $this->attributes['phone_hash'] = hash('sha256', $value);
+                    return \Illuminate\Support\Facades\Crypt::encryptString($value);
+                }
+                $this->attributes['phone_hash'] = null;
+                return null;
+            },
         );
     }
 

@@ -466,6 +466,8 @@ export default function AuthModal({ isOpen, onClose, onLogin, slug }: AuthModalP
                             </label>
                             <input
                                 placeholder="Digite seu nome"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
                                 className="w-full px-4 py-3 border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent transition-all outline-none bg-white dark:bg-white/5 text-gray-900 dark:text-white dark:placeholder-gray-500"
                                 required
                             />

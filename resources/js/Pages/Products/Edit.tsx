@@ -1,8 +1,10 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm, Link, router } from '@inertiajs/react'; // Add router
+import { Head, useForm, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import RecipeTab from './Tabs/RecipeTab';
 import { Package, List, Beaker, Save, ChevronLeft } from 'lucide-react';
+import MediaPickerModal from '@/Components/MediaPickerModal';
+
 
 interface Category {
     id: string;
@@ -29,10 +31,10 @@ interface Group {
 
 export default function Edit({ product, categories, complement_groups = [], ingredients = [] }: { product: any, categories: Category[], complement_groups: Group[], ingredients: any[] }) {
     const [activeTab, setActiveTab] = useState<'general' | 'complements' | 'recipe'>('general');
-    const [imageError, setImageError] = useState(false);
+    const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
 
     const { data, setData, post, processing, errors } = useForm({
-        _method: 'PATCH', // Spoof PATCH for file upload support in Laravel
+        _method: 'PATCH',
         name: product.name,
         price: product.price,
         description: product.description || '',
@@ -43,29 +45,17 @@ export default function Edit({ product, categories, complement_groups = [], ingr
             name: i.name,
             quantity: i.pivot ? i.pivot.quantity : 1
         })) : [] as any[],
-        image: null as File | null,
+        image_url: (product.image_url || '') as string,
         loyalty_redeemable: product.loyalty_redeemable || false,
         loyalty_points_cost: product.loyalty_points_cost || 0,
         loyalty_points_multiplier: product.loyalty_points_multiplier || 1.0,
     });
 
-    const [imagePreview, setImagePreview] = useState<string | null>(product.image_url || null);
-
     const submit = (e: React.FormEvent | React.MouseEvent) => {
         e.preventDefault();
-        post(route('products.update', product.id), {
-            forceFormData: true,
-        });
+        post(route('products.update', product.id));
     };
 
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setData('image', file);
-            setImagePreview(URL.createObjectURL(file));
-            setImageError(false);
-        }
-    };
 
     return (
         <AuthenticatedLayout>
@@ -237,17 +227,16 @@ export default function Edit({ product, categories, complement_groups = [], ingr
                             </div>
 
                             <div className="space-y-6">
-                                {/* Image Preview */}
+                                {/* Image Preview / Picker */}
                                 <div className="bg-white dark:bg-[#1a1b1e] p-6 rounded-[32px] border border-gray-100 dark:border-white/5 shadow-xl shadow-gray-200/50 dark:shadow-none">
                                     <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-4 text-center">Imagem em Destaque</label>
-                                    <div className="relative group">
-                                    <div className="aspect-square rounded-2xl overflow-hidden bg-gray-50 dark:bg-white/5 border-2 border-dashed border-gray-200 dark:border-white/10 flex items-center justify-center transition-all group-hover:border-[#ff3d03]">
-                                            {imagePreview && !imageError ? (
+                                    <div className="relative group" onClick={() => setMediaPickerOpen(true)}>
+                                        <div className="aspect-square rounded-2xl overflow-hidden bg-gray-50 dark:bg-white/5 border-2 border-dashed border-gray-200 dark:border-white/10 flex items-center justify-center transition-all group-hover:border-[#ff3d03] cursor-pointer">
+                                            {data.image_url ? (
                                                 <img
-                                                    src={imagePreview}
+                                                    src={data.image_url}
                                                     className="w-full h-full object-cover"
                                                     alt="Preview"
-                                                    onError={() => setImageError(true)}
                                                 />
                                             ) : (
                                                 <div className="flex flex-col items-center gap-3">
@@ -256,13 +245,19 @@ export default function Edit({ product, categories, complement_groups = [], ingr
                                                 </div>
                                             )}
                                         </div>
-                                        <label className="absolute inset-0 cursor-pointer flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl backdrop-blur-sm">
+                                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl backdrop-blur-sm cursor-pointer">
                                             <span className="text-white font-black text-xs uppercase tracking-widest bg-[#ff3d03] px-4 py-2 rounded-xl">Alterar Foto</span>
-                                            <input type="file" className="hidden" onChange={handleImageChange} accept="image/*" />
-                                        </label>
+                                        </div>
                                     </div>
-                                    {errors.image && <p className="mt-2 text-sm text-red-600 font-bold text-center">{errors.image}</p>}
+                                    {errors.image_url && <p className="mt-2 text-sm text-red-600 font-bold text-center">{errors.image_url}</p>}
                                 </div>
+
+                                <MediaPickerModal
+                                    open={mediaPickerOpen}
+                                    onClose={() => setMediaPickerOpen(false)}
+                                    onSelect={(media) => setData('image_url', media.url)}
+                                    currentUrl={data.image_url}
+                                />
                             </div>
                         </div>
                     )}

@@ -19,7 +19,7 @@ class CategoryController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'image_url' => 'nullable|url',
+            'image_url' => 'nullable|string|max:2048',
         ]);
 
         $tenantId = auth()->user()->tenant_id;
@@ -48,7 +48,7 @@ class CategoryController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'image_url' => 'nullable|url',
+            'image_url' => 'nullable|string|max:2048',
         ]);
 
         $category->update($validated);

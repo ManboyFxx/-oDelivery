@@ -1,5 +1,8 @@
-import React from 'react';
-import { Store, Phone, Mail, MapPin, Globe, Instagram, Facebook, Upload, Trash2, Palette } from 'lucide-react';
+import React, { useState } from 'react';
+import { Store, Phone, Mail, MapPin, Globe, Instagram, Facebook, Trash2, Image as ImageIcon } from 'lucide-react';
+import MediaPickerModal from '@/Components/MediaPickerModal';
+import InputError from '@/Components/InputError';
+
 
 interface GeneralSettingsProps {
     data: any;
@@ -7,11 +10,8 @@ interface GeneralSettingsProps {
     errors: any;
     logoPreview: string | null;
     bannerPreview: string | null;
-    handleLogoUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    handleBannerUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    handleLogoRemove: () => void;
-    handleBannerRemove: () => void;
 }
+
 
 export default function GeneralSettings({
     data,
@@ -19,11 +19,10 @@ export default function GeneralSettings({
     errors,
     logoPreview,
     bannerPreview,
-    handleLogoUpload,
-    handleBannerUpload,
-    handleLogoRemove,
-    handleBannerRemove
 }: GeneralSettingsProps) {
+    const [logoModalOpen, setLogoModalOpen] = useState(false);
+    const [bannerModalOpen, setBannerModalOpen] = useState(false);
+
     return (
         <div className="space-y-6">
             {/* Store Information */}
@@ -178,32 +177,46 @@ export default function GeneralSettings({
                     <h3 className="text-gray-900 dark:text-gray-200 mb-6 font-bold">Logo</h3>
 
                     {logoPreview ? (
-                        <div className="relative">
+                        <div className="relative group overflow-hidden rounded-2xl">
                             <img
                                 src={logoPreview}
                                 alt="Logo"
-                                className="w-full h-48 object-contain bg-gray-50 bg-white dark:bg-premium-dark rounded-2xl"
+                                className="w-full h-48 object-contain bg-gray-50 dark:bg-premium-dark rounded-2xl"
                             />
-                            <button
-                                type="button"
-                                onClick={handleLogoRemove}
-                                className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                            >
-                                <Trash2 className="h-4 w-4" />
-                            </button>
+                            <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setLogoModalOpen(true)}
+                                    className="px-4 py-2 bg-white/20 hover:bg-white/40 text-white rounded-xl text-sm font-bold backdrop-blur-md"
+                                >
+                                    Trocar Logo
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setData('logo_url', ''); setData('logo_path', null); }}
+                                    className="text-red-300 hover:text-red-100 text-xs"
+                                >
+                                    Remover
+                                </button>
+                            </div>
                         </div>
                     ) : (
-                        <label className="flex flex-col items-center justify-center h-48 border-2 border-dashed border-gray-300 dark:border-white/10 rounded-2xl cursor-pointer hover:border-[#ff3d03] transition-colors">
-                            <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                            <span className="text-sm text-gray-600 dark:text-gray-400">Clique para fazer upload</span>
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleLogoUpload}
-                                className="hidden"
-                            />
-                        </label>
+                        <div
+                            onClick={() => setLogoModalOpen(true)}
+                            className="flex flex-col items-center justify-center h-48 border-2 border-dashed border-gray-300 dark:border-white/10 rounded-2xl cursor-pointer hover:border-[#ff3d03] transition-colors bg-gray-50 dark:bg-white/5"
+                        >
+                            <ImageIcon className="h-8 w-8 text-gray-400 mb-2" />
+                            <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">Banco de Imagens</span>
+                            <span className="text-xs text-gray-400">Clique para selecionar</span>
+                        </div>
                     )}
+                    <InputError message={errors.logo_url} className="mt-2" />
+                    <MediaPickerModal
+                        open={logoModalOpen}
+                        onClose={() => setLogoModalOpen(false)}
+                        onSelect={(media) => { setData('logo_url', media.url); setData('logo_path', null); setLogoModalOpen(false); }}
+                        currentUrl={data.logo_url}
+                    />
                 </div>
 
                 {/* Banner */}
@@ -211,32 +224,47 @@ export default function GeneralSettings({
                     <h3 className="text-gray-900 dark:text-gray-200 mb-6 font-bold">Banner</h3>
 
                     {bannerPreview ? (
-                        <div className="relative">
+                        <div className="relative group overflow-hidden rounded-2xl">
                             <img
                                 src={bannerPreview}
                                 alt="Banner"
-                                className="w-full h-48 object-cover bg-gray-50 dark:bg-premium-dark bg-white rounded-2xl"
+                                className="w-full h-48 object-cover bg-gray-50 dark:bg-premium-dark rounded-2xl"
                             />
-                            <button
-                                type="button"
-                                onClick={handleBannerRemove}
-                                className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                            >
-                                <Trash2 className="h-4 w-4" />
-                            </button>
+                            <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setBannerModalOpen(true)}
+                                    className="px-4 py-2 bg-white/20 hover:bg-white/40 text-white rounded-xl text-sm font-bold backdrop-blur-md"
+                                >
+                                    Trocar Banner
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setData('banner_url', ''); setData('banner_path', null); }}
+                                    className="text-red-300 hover:text-red-100 text-xs"
+                                >
+                                    Remover
+                                </button>
+                            </div>
                         </div>
                     ) : (
-                        <label className="flex flex-col items-center justify-center h-48 border-2 border-dashed border-gray-300 dark:border-white/10 rounded-2xl cursor-pointer hover:border-[#ff3d03] transition-colors">
-                            <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                            <span className="text-sm text-gray-600 dark:text-gray-400">Clique para fazer upload</span>
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleBannerUpload}
-                                className="hidden"
-                            />
-                        </label>
+                        <div
+                            onClick={() => setBannerModalOpen(true)}
+                            className="flex flex-col items-center justify-center h-48 border-2 border-dashed border-gray-300 dark:border-white/10 rounded-2xl cursor-pointer hover:border-[#ff3d03] transition-colors bg-gray-50 dark:bg-white/5"
+                        >
+                            <ImageIcon className="h-8 w-8 text-gray-400 mb-2" />
+                            <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">Banco de Imagens</span>
+                            <span className="text-xs text-gray-400">Clique para selecionar</span>
+                        </div>
                     )}
+                    <InputError message={errors.banner_url} className="mt-2" />
+                    <MediaPickerModal
+                        open={bannerModalOpen}
+                        onClose={() => setBannerModalOpen(false)}
+                        onSelect={(media) => { setData('banner_url', media.url); setData('banner_path', null); setBannerModalOpen(false); }}
+                        currentUrl={data.banner_url}
+                    />
+
                 </div>
             </div>
         </div>

@@ -15,6 +15,16 @@ export default defineConfig({
             origin: '*',
         },
         host: '127.0.0.1',
+        proxy: {
+            '/customer': {
+                target: 'http://127.0.0.1:8000',
+                changeOrigin: true,
+            },
+            '/api': {
+                target: 'http://127.0.0.1:8000',
+                changeOrigin: true,
+            },
+        },
     },
     build: {
         chunkSizeWarningLimit: 1000,

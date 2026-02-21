@@ -79,7 +79,7 @@ class ProductController extends Controller implements HasMiddleware
                 'price' => 'required|numeric|min:0',
                 'description' => 'nullable|string',
                 'category_id' => 'nullable|exists:categories,id',
-                'image' => 'nullable|image|max:2048',
+                'image_url' => 'nullable|string|max:2048',
                 'complement_groups' => 'nullable|array',
                 'complement_groups.*' => 'string|exists:complement_groups,id',
                 'is_available' => 'boolean',
@@ -92,13 +92,6 @@ class ProductController extends Controller implements HasMiddleware
         } catch (\Illuminate\Validation\ValidationException $e) {
             \Illuminate\Support\Facades\Log::error('Product Create Validation Error:', $e->errors());
             throw $e;
-        }
-
-        if ($request->hasFile('image')) {
-            // Ensure the target directory exists (critical on Hostinger where it may be missing)
-            \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('products');
-            // Store the relative key; Product model accessor generates the absolute URL
-            $validated['image_url'] = $request->file('image')->store('products', 'public');
         }
 
         $validated['tenant_id'] = auth()->user()->tenant_id;
@@ -147,7 +140,7 @@ class ProductController extends Controller implements HasMiddleware
                 'price' => 'required|numeric|min:0',
                 'description' => 'nullable|string',
                 'category_id' => 'nullable|exists:categories,id',
-                'image' => 'nullable|image|max:2048',
+                'image_url' => 'nullable|string|max:2048',
                 'complement_groups' => 'nullable|array',
                 'complement_groups.*' => 'string|exists:complement_groups,id',
                 'is_available' => 'boolean',
@@ -163,13 +156,6 @@ class ProductController extends Controller implements HasMiddleware
         } catch (\Illuminate\Validation\ValidationException $e) {
             \Illuminate\Support\Facades\Log::error('Product Update Validation Error:', $e->errors());
             throw $e;
-        }
-
-        if ($request->hasFile('image')) {
-            // Ensure the target directory exists (critical on Hostinger where it may be missing)
-            \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('products');
-            // Store the relative key; Product model accessor generates the absolute URL
-            $validated['image_url'] = $request->file('image')->store('products', 'public');
         }
 
         // Ensure boolean casting

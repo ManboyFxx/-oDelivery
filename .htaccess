@@ -10,6 +10,10 @@
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
+    # Force /storage/* requests to go through public/index.php
+    RewriteCond %{REQUEST_URI} ^/storage/
+    RewriteRule ^(.*)$ public/$1 [L,QSA]
+
     # Handle Front Controller...
     RewriteCond %{REQUEST_URI} !^/public/
     RewriteRule ^(.*)$ public/$1 [L]

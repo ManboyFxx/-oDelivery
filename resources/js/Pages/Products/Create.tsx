@@ -1,6 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm, Link } from '@inertiajs/react';
 import { FormEventHandler, useState } from 'react';
+import { Image as ImageIcon, X } from 'lucide-react';
+import MediaPickerModal from '@/Components/MediaPickerModal';
 
 interface Category {
     id: string;
@@ -15,7 +17,7 @@ interface Group {
 }
 
 export default function Create({ categories, complement_groups = [] }: { categories: Category[], complement_groups: Group[] }) {
-    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
 
     const { data, setData, post, processing, errors } = useForm({
         name: '',
@@ -23,19 +25,11 @@ export default function Create({ categories, complement_groups = [] }: { categor
         description: '',
         category_id: '',
         complement_groups: [] as string[],
-        image: null as File | null,
+        image_url: '' as string,
         loyalty_redeemable: false,
         loyalty_points_cost: 0,
         loyalty_points_multiplier: 1.0,
     });
-
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setData('image', file);
-            setImagePreview(URL.createObjectURL(file));
-        }
-    };
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -55,34 +49,39 @@ export default function Create({ categories, complement_groups = [] }: { categor
                 </div>
 
                 <form onSubmit={submit} className="space-y-6" encType="multipart/form-data">
-                    {/* Image Upload */}
+                    {/* Image Upload via Media Library */}
                     <div>
                         <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">Foto do Produto</label>
                         <div className="mt-2 flex items-center gap-x-3">
-                            {imagePreview ? (
-                                <img src={imagePreview} alt="Preview" className="h-24 w-24 rounded-lg object-cover bg-gray-100" />
+                            {data.image_url ? (
+                                <div className="relative h-24 w-24">
+                                    <img src={data.image_url} alt="Preview" className="h-24 w-24 rounded-lg object-cover bg-gray-100" />
+                                    <button type="button" onClick={() => setData('image_url', '')} className="absolute -top-2 -right-2 p-0.5 bg-red-500 rounded-full text-white hover:bg-red-600">
+                                        <X className="h-3.5 w-3.5" />
+                                    </button>
+                                </div>
                             ) : (
                                 <div className="h-24 w-24 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-400">
-                                    Sem foto
+                                    <ImageIcon className="h-8 w-8" />
                                 </div>
                             )}
-                            <label
-                                htmlFor="image-upload"
-                                className="rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-white dark:ring-gray-600 dark:hover:bg-gray-700 cursor-pointer"
+                            <button
+                                type="button"
+                                onClick={() => setMediaPickerOpen(true)}
+                                className="rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-white dark:ring-gray-600 dark:hover:bg-gray-700"
                             >
-                                Enviar Foto
-                                <input
-                                    id="image-upload"
-                                    name="image"
-                                    type="file"
-                                    className="sr-only"
-                                    onChange={handleImageChange}
-                                    accept="image/*"
-                                />
-                            </label>
+                                {data.image_url ? 'Trocar Imagem' : 'Escolher do Banco'}
+                            </button>
                         </div>
-                        {errors.image && <p className="mt-2 text-sm text-red-600">{errors.image}</p>}
+                        {errors.image_url && <p className="mt-2 text-sm text-red-600">{errors.image_url}</p>}
                     </div>
+
+                    <MediaPickerModal
+                        open={mediaPickerOpen}
+                        onClose={() => setMediaPickerOpen(false)}
+                        onSelect={(media) => setData('image_url', media.url)}
+                        currentUrl={data.image_url}
+                    />
 
                     {/* Name */}
                     <div>

@@ -22,6 +22,8 @@ class CustomerAuthController extends Controller
      */
     public function checkPhone(Request $request)
     {
+        \Log::info('Check Phone Request:', $request->all());
+
         $validated = $request->validate([
             'phone' => 'required|string',
             'tenant_slug' => 'nullable|string',
@@ -49,75 +51,29 @@ class CustomerAuthController extends Controller
         // Store tenant slug in session for later use
         session(['current_tenant_slug' => $tenantSlug]);
 
-        $customer = Customer::where('tenant_id', $tenant->id)
-            ->where('phone', $validated['phone'])
+        $customer = Customer::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->where('phone_hash', hash('sha256', $validated['phone']))
             ->first();
 
         if ($customer) {
-            // ✅ Verificar se dispositivo é confiável
-            $deviceToken = $request->cookie('device_token');
-            if ($deviceToken && $this->isDeviceTrusted($customer->id, $deviceToken)) {
-                // Login direto (dispositivo confiável)
-                $request->session()->regenerate();
-                session([
-                    'customer_id' => $customer->id,
-                    'customer_tenant_id' => $customer->tenant_id,
-                    'current_tenant_slug' => $tenantSlug
-                ]);
-
-                return response()->json([
-                    'exists' => true,
-                    'trusted_device' => true,
-                    'customer' => [
-                        'id' => $customer->id,
-                        'name' => $customer->name,
-                        'loyalty_points' => $customer->loyalty_points,
-                        'loyalty_tier' => $customer->loyalty_tier,
-                    ],
-                ]);
-            }
-
-            // Check if OTP is enabled in store settings (Tenant specific or Global Fallback)
-            $storeSettings = \App\Models\StoreSetting::where('tenant_id', $tenant->id)->first();
-
-            if ($storeSettings) {
-                $otpEnabled = $storeSettings->enable_otp_verification;
-            } else {
-                // Fallback to Global setting (tenant_id is null)
-                $globalSettings = \App\Models\StoreSetting::whereNull('tenant_id')->first();
-                $otpEnabled = $globalSettings ? $globalSettings->enable_otp_verification : true;
-            }
-
-            if (!$otpEnabled) {
-                // OTP disabled -> Check for Password
-                if ($customer->password) {
-                    return response()->json([
-                        'exists' => true,
-                        'requires_password' => true,
-                        'name' => $customer->name, // Help UX
-                        'message' => 'Digite sua senha para entrar'
-                    ]);
-                } else {
-                    // No password yet → setup flow without OTP (since OTP is disabled)
-                    $digitsRequired = $storeSettings->phone_digits_required ?? 4;
-                    return response()->json([
-                        'exists' => true,
-                        'requires_setup' => true,
-                        'otp_enabled' => false,
-                        'phone_digits_required' => $digitsRequired,
-                        'message' => "Confirme os últimos {$digitsRequired} dígitos do seu telefone para criar sua senha."
-                    ]);
-                }
-            }
-
-            // ❌ Dispositivo desconhecido E OTP Ligado: Enviar OTP
-            $otpCode = $this->generateAndSendOTP($customer->phone, $tenant->id);
+            // ✅ Login direto (Conforme solicitado para remover barreiras antes do checkout)
+            $request->session()->regenerate();
+            session([
+                'customer_id' => $customer->id,
+                'customer_tenant_id' => $customer->tenant_id,
+                'current_tenant_slug' => $tenantSlug
+            ]);
 
             return response()->json([
                 'exists' => true,
-                'trusted_device' => false,
-                'requires_otp' => true,
-                'message' => 'Código enviado via WhatsApp'
+                'trusted_device' => true, // Mentimos que é confiável para o Frontend logar direto
+                'customer' => [
+                    'id' => $customer->id,
+                    'name' => $customer->name,
+                    'loyalty_points' => $customer->loyalty_points,
+                    'loyalty_tier' => $customer->loyalty_tier,
+                ],
             ]);
         }
 
@@ -132,11 +88,21 @@ class CustomerAuthController extends Controller
      */
     public function completeRegistration(Request $request)
     {
-        $validated = $request->validate([
-            'phone' => 'required|string',
-            'name' => 'required|string|max:255',
-            'tenant_slug' => 'nullable|string', // Optional: pass from frontend
-        ]);
+        \Log::info('Complete Registration Request:', $request->all());
+
+        try {
+            $validated = $request->validate([
+                'phone' => 'required|string',
+                'name' => 'required|string|max:255',
+                'tenant_slug' => 'nullable|string', // Optional: pass from frontend
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Registration Validation Failed:', [
+                'errors' => $e->errors(),
+                'request' => $request->all()
+            ]);
+            throw $e;
+        }
 
         // Get tenant from slug or session
         $tenantSlug = $validated['tenant_slug'] ?? session('current_tenant_slug');
@@ -158,8 +124,9 @@ class CustomerAuthController extends Controller
         }
 
         // Check if customer already exists for this tenant
-        $existingCustomer = Customer::where('tenant_id', $tenant->id)
-            ->where('phone', $validated['phone'])
+        $existingCustomer = Customer::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->where('phone_hash', hash('sha256', $validated['phone']))
             ->first();
 
         if ($existingCustomer) {
@@ -197,19 +164,23 @@ class CustomerAuthController extends Controller
             }
         }
 
-        // Check if OTP is enabled for this tenant
-        $storeSettings = \App\Models\StoreSetting::where('tenant_id', $tenant->id)->first();
-        $otpEnabled = $storeSettings ? (bool) $storeSettings->enable_otp_verification : true;
+        // Initialize Session immediately
+        $request->session()->regenerate();
+        session([
+            'customer_id' => $customer->id,
+            'customer_tenant_id' => $customer->tenant_id,
+            'current_tenant_slug' => $tenant->slug
+        ]);
 
         return response()->json([
-            'message' => 'Cadastro inicial realizado!',
+            'success' => true,
+            'message' => 'Cadastro realizado com sucesso!',
             'customer' => [
                 'id' => $customer->id,
                 'name' => $customer->name,
                 'phone' => $validated['phone']
             ],
-            'requires_setup' => true,
-            'otp_enabled' => $otpEnabled,
+            'requires_setup' => false, // Bypass identity verification
         ]);
     }
 
@@ -270,8 +241,9 @@ class CustomerAuthController extends Controller
         ]);
 
         $tenant = Tenant::where('slug', $validated['tenant_slug'])->firstOrFail();
-        $customer = Customer::where('tenant_id', $tenant->id)
-            ->where('phone', $validated['phone'])
+        $customer = Customer::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->where('phone_hash', hash('sha256', $validated['phone']))
             ->firstOrFail();
 
         // Validar OTP
@@ -331,8 +303,9 @@ class CustomerAuthController extends Controller
         ]);
 
         $tenant = Tenant::where('slug', $validated['tenant_slug'])->firstOrFail();
-        $customer = Customer::where('tenant_id', $tenant->id)
-            ->where('phone', $validated['phone'])
+        $customer = Customer::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->where('phone_hash', hash('sha256', $validated['phone']))
             ->firstOrFail();
 
         if (!$customer->password || !\Illuminate\Support\Facades\Hash::check($validated['password'], $customer->password)) {
@@ -405,8 +378,9 @@ class CustomerAuthController extends Controller
         $storeSettings = \App\Models\StoreSetting::where('tenant_id', $tenant->id)->first();
         $otpEnabled = $storeSettings ? (bool) $storeSettings->enable_otp_verification : true;
 
-        $customer = Customer::where('tenant_id', $tenant->id)
-            ->where('phone', $validated['phone'])
+        $customer = Customer::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->where('phone_hash', hash('sha256', $validated['phone']))
             ->firstOrFail();
 
         if ($otpEnabled) {
@@ -472,6 +446,8 @@ class CustomerAuthController extends Controller
      */
     public function quickLoginSecure(Request $request)
     {
+        \Log::info('Quick Login Request:', $request->all());
+
         $validated = $request->validate([
             'phone_last_digits' => 'required|string|min:2|max:8',
             'phone' => 'nullable|string',
@@ -482,11 +458,11 @@ class CustomerAuthController extends Controller
 
         // Resolve customer by phone+tenant or by customer_id
         if (!empty($validated['customer_id'])) {
-            $customer = Customer::find($validated['customer_id']);
+            $customer = Customer::withoutGlobalScopes()->find($validated['customer_id']);
         } elseif (!empty($validated['phone']) && !empty($validated['tenant_slug'])) {
             $tenant = Tenant::where('slug', $validated['tenant_slug'])->first();
             $customer = $tenant
-                ? Customer::where('tenant_id', $tenant->id)->where('phone', $validated['phone'])->first()
+                ? Customer::withoutGlobalScopes()->where('tenant_id', $tenant->id)->where('phone_hash', hash('sha256', $validated['phone']))->first()
                 : null;
         } else {
             $customer = null;

@@ -20,6 +20,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Polyfill for mb_split if mbregex is missing
+        if (!function_exists('mb_split')) {
+            function mb_split($pattern, $string, $limit = -1)
+            {
+                // mb_split uses different regex syntax, but for common use cases like \s+ 
+                // we can bridge it to preg_split. 
+                // Note: mb_split doesn't use delimiters like /.../
+                return preg_split('/' . str_replace('/', '\/', $pattern) . '/u', $string, $limit);
+            }
+        }
         if ($this->app->environment('production')) {
             \Illuminate\Support\Facades\URL::forceScheme('https');
         }

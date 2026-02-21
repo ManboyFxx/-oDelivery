@@ -1,5 +1,5 @@
 import { Link, router, useForm } from '@inertiajs/react';
-import { Plus, Pencil, Trash2, Search, Image as ImageIcon, X, Upload, Check, Zap, Lock } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Image as ImageIcon, X, Check, Zap, Lock } from 'lucide-react';
 import { useState, useCallback } from 'react';
 import { useToast } from '@/Hooks/useToast';
 import Modal from '@/Components/Modal';
@@ -12,10 +12,12 @@ import InputError from '@/Components/InputError';
 import { Switch } from '@headlessui/react';
 import QuickEditField from '@/Components/QuickEditField';
 import UpgradeModal from '@/Components/UpgradeModal';
+import MediaPickerModal from '@/Components/MediaPickerModal';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
 import DraggableProductCard from '../Partials/DraggableProductCard';
 import BulkActionsBar from '../Partials/BulkActionsBar';
+
 
 // ... (interfaces remain same)
 interface Category {
@@ -64,8 +66,9 @@ export default function ProductsTab({ products: initialProducts, categories, com
     const [showModal, setShowModal] = useState(false);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
     const { success, error: showError, info } = useToast();
+
 
     // DND & Bulk Actions State
     const [activeId, setActiveId] = useState<string | null>(null);
@@ -85,13 +88,14 @@ export default function ProductsTab({ products: initialProducts, categories, com
         price: '',
         category_id: '',
         is_available: true,
-        image: null as File | null,
+        image_url: '' as string,
         complement_groups: [] as string[],
         track_stock: false,
         stock_quantity: '' as string | number,
         loyalty_redeemable: false,
         loyalty_points_cost: 0
     });
+
 
     // Filter products locally for instant search (if pagination allows, otherwise server search is better but this matches previous behavior)
     // Note: The products prop is paginated, so this filter only affects the current page.
@@ -224,14 +228,12 @@ export default function ProductsTab({ products: initialProducts, categories, com
     };
 
     const openCreateModal = useCallback(() => {
-        // Check if can add product
         if (!usage.canAdd) {
             setShowUpgradeModal(true);
             return;
         }
 
         setEditingProduct(null);
-        setImagePreview(null);
         reset();
         setData({
             name: '',
@@ -239,7 +241,7 @@ export default function ProductsTab({ products: initialProducts, categories, com
             price: '',
             category_id: '',
             is_available: true,
-            image: null,
+            image_url: '',
             complement_groups: [],
             track_stock: false,
             stock_quantity: '',
@@ -247,18 +249,18 @@ export default function ProductsTab({ products: initialProducts, categories, com
             loyalty_points_cost: 0
         });
         setShowModal(true);
-    }, [usage.canAdd]); // usage.canAdd dependency
+    }, [usage.canAdd]);
+
 
     const openEditModal = useCallback((product: Product) => {
         setEditingProduct(product);
-        setImagePreview(product.image_url || null);
         setData({
             name: product.name,
             description: product.description || '',
             price: product.price.toString(),
             category_id: product.category_id || '',
             is_available: product.is_available,
-            image: null,
+            image_url: product.image_url || '',
             complement_groups: product.complement_groups?.map(g => g.id) || [],
             track_stock: product.track_stock,
             stock_quantity: product.stock_quantity || '',
@@ -268,6 +270,7 @@ export default function ProductsTab({ products: initialProducts, categories, com
         setShowModal(true);
     }, []);
 
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (editingProduct) {
@@ -275,29 +278,17 @@ export default function ProductsTab({ products: initialProducts, categories, com
                 _method: 'put',
                 ...data,
             }, {
-                forceFormData: true,
-                onSuccess: () => {
-                    setShowModal(false);
-                },
+                onSuccess: () => setShowModal(false),
                 onError: () => showError('Erro', 'Erro ao atualizar produto.')
             });
         } else {
             post(route('products.store'), {
-                onSuccess: () => {
-                    setShowModal(false);
-                },
+                onSuccess: () => setShowModal(false),
                 onError: () => showError('Erro', 'Erro ao criar produto.')
             });
         }
     };
 
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setData('image', file);
-            setImagePreview(URL.createObjectURL(file));
-        }
-    };
 
     const handleDelete = useCallback((id: string) => {
         if (confirm('Tem certeza que deseja excluir este produto?')) {
@@ -452,30 +443,42 @@ export default function ProductsTab({ products: initialProducts, categories, com
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Left Column */}
                         <div className="space-y-4">
-                            {/* Image Upload */}
-                            <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-2xl p-4 hover:border-[#ff3d03] transition-colors cursor-pointer relative bg-gray-50 dark:bg-gray-800 h-48">
-                                <input
-                                    type="file"
-                                    id="image"
-                                    onChange={handleImageChange}
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                    accept="image/*"
-                                />
-                                {imagePreview ? (
-                                    <div className="relative w-full h-full">
-                                        <img src={imagePreview} alt="Preview" className="w-full h-full object-cover rounded-xl" />
-                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-xl">
-                                            <p className="text-white text-sm font-medium">Trocar Imagem</p>
+                            {/* Image - Media Bank Picker */}
+                            <div
+                                onClick={() => setMediaPickerOpen(true)}
+                                className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-2xl hover:border-[#ff3d03] transition-colors cursor-pointer relative bg-gray-50 dark:bg-gray-800 h-48 overflow-hidden"
+                            >
+                                {data.image_url ? (
+                                    <div className="relative w-full h-full group">
+                                        <img src={data.image_url} alt="Preview" className="w-full h-full object-cover rounded-xl" />
+                                        <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-xl gap-2">
+                                            <p className="text-white text-sm font-bold">Trocar Imagem</p>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); setData('image_url', ''); }}
+                                                className="text-xs text-red-300 hover:text-red-100"
+                                            >
+                                                Remover
+                                            </button>
                                         </div>
                                     </div>
                                 ) : (
                                     <div className="text-center p-4">
-                                        <Upload className="mx-auto h-8 w-8 text-gray-400" />
-                                        <p className="mt-2 text-sm text-gray-500">Clique para adicionar imagem</p>
+                                        <ImageIcon className="mx-auto h-8 w-8 text-gray-400" />
+                                        <p className="mt-2 text-sm font-medium text-gray-500">Banco de Imagens</p>
+                                        <p className="text-xs text-gray-400">Clique para selecionar</p>
                                     </div>
                                 )}
                             </div>
-                            <InputError message={errors.image} className="mt-2" />
+                            <InputError message={errors.image_url} className="mt-2" />
+
+                            <MediaPickerModal
+                                open={mediaPickerOpen}
+                                onClose={() => setMediaPickerOpen(false)}
+                                onSelect={(media) => { setData('image_url', media.url); setMediaPickerOpen(false); }}
+                                currentUrl={data.image_url}
+                            />
+
 
                             {/* Name */}
                             <div>

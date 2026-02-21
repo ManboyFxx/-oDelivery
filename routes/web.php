@@ -267,6 +267,12 @@ Route::middleware(['auth', 'subscription', 'role:admin,employee'])->group(functi
     Route::post('/cardapio/reorder', [MenuController::class, 'reorder'])->name('menu.reorder');
     Route::post('/cardapio/categories/{category}/toggle', [MenuController::class, 'toggleVisibility'])->name('menu.toggle');
     Route::post('/cardapio/settings', [MenuController::class, 'updateSettings'])->name('menu.update-settings');
+
+    // Media Library (Image Bank)
+    Route::get('/media', [\App\Http\Controllers\MediaController::class, 'index'])->name('media.index');
+    Route::get('/api/media', [\App\Http\Controllers\MediaController::class, 'list'])->name('media.list');
+    Route::post('/media', [\App\Http\Controllers\MediaController::class, 'store'])->name('media.store');
+    Route::delete('/media/{id}', [\App\Http\Controllers\MediaController::class, 'destroy'])->name('media.destroy');
 });
 
 // ============================================================================
@@ -302,7 +308,6 @@ Route::middleware(['auth', 'subscription', 'role:admin'])->group(function () {
     Route::post('/ingredients/reorder', [IngredientController::class, 'reorder'])->name('ingredients.reorder');
 
     // Coupons & Loyalty - Admin only
-    // Coupons & Loyalty - Admin only
     Route::middleware(['plan.limit:coupons'])->group(function () {
         Route::post('coupons', [CouponController::class, 'store'])->name('coupons.store');
     });
@@ -313,6 +318,9 @@ Route::middleware(['auth', 'subscription', 'role:admin'])->group(function () {
 
     // Financial Reports - Admin only
     Route::get('/financeiro', [FinancialController::class, 'index'])->name('financial.index');
+
+    // Customer Management - Admin only
+    Route::resource('customers', CustomerController::class);
 
     // Store Configuration - Admin only
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
@@ -329,9 +337,6 @@ Route::middleware(['auth', 'subscription', 'role:admin'])->group(function () {
     // Delivery Zones & Payment Methods - Admin only
     Route::resource('delivery-zones', \App\Http\Controllers\DeliveryZoneController::class);
     Route::resource('payment-methods', \App\Http\Controllers\PaymentMethodController::class);
-
-    // Customer Management - Admin only
-    Route::resource('customers', CustomerController::class);
 
     // Team Management - Admin only
     Route::middleware(['plan.limit:users'])->group(function () {

@@ -116,6 +116,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
             items: [
                 { name: 'Gestão de Cardápio', href: route('menu.index'), route: 'menu.index', icon: BookOpen, current: isCurrent('/cardapio') },
                 { name: 'Produtos', href: route('products.index'), route: 'products.index', icon: Package, current: isCurrent('/products') },
+                { name: 'Banco de Imagens', href: route('media.index'), route: 'media.index', icon: ImageIcon, current: isCurrent('/media') },
             ]
         },
     ];
