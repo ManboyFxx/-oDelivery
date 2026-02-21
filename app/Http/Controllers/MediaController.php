@@ -42,22 +42,36 @@ class MediaController extends Controller
         $tenantId = auth()->user()->tenant_id;
         $file = $request->file('file');
         $originalName = $file->getClientOriginalName();
-        $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $extension = 'webp'; // Converte sempre para webp
+        $filename = Str::uuid() . '.' . $extension;
         $path = "media/{$tenantId}/{$filename}";
 
         // Ensure directory exists
         Storage::disk('public')->makeDirectory("media/{$tenantId}");
 
-        // Store file
-        $file->storeAs("media/{$tenantId}", $filename, 'public');
+        // Process and save image as WebP
+        try {
+            $image = \Intervention\Image\Laravel\Facades\Image::read($file);
+            $encoded = $image->toWebp(80); // Encode as WebP with 80% quality
+
+            Storage::disk('public')->put($path, (string) $encoded);
+            $size = Storage::disk('public')->size($path);
+        } catch (\Exception $e) {
+            // Fallback if image processing fails (maybe incompatible image, though validated)
+            \Log::error('WebP conversion failed, falling back to original upload: ' . $e->getMessage());
+            $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+            $path = "media/{$tenantId}/{$filename}";
+            $file->storeAs("media/{$tenantId}", $filename, 'public');
+            $size = $file->getSize();
+        }
 
         $media = MediaFile::create([
             'tenant_id' => $tenantId,
             'original_name' => $originalName,
             'filename' => $filename,
             'path' => $path,
-            'size' => $file->getSize(),
-            'mime_type' => $file->getMimeType(),
+            'size' => $size,
+            'mime_type' => 'image/webp',
         ]);
 
         return response()->json($media, 201);
