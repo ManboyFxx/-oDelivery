@@ -95,6 +95,8 @@ class ProductController extends Controller implements HasMiddleware
         }
 
         if ($request->hasFile('image')) {
+            // Ensure the target directory exists (critical on Hostinger where it may be missing)
+            \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('products');
             // Store the relative key; Product model accessor generates the absolute URL
             $validated['image_url'] = $request->file('image')->store('products', 'public');
         }
@@ -164,6 +166,8 @@ class ProductController extends Controller implements HasMiddleware
         }
 
         if ($request->hasFile('image')) {
+            // Ensure the target directory exists (critical on Hostinger where it may be missing)
+            \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('products');
             // Store the relative key; Product model accessor generates the absolute URL
             $validated['image_url'] = $request->file('image')->store('products', 'public');
         }
