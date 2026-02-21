@@ -6,18 +6,20 @@ import clsx from 'clsx';
 interface ProductGridProps {
     categories: Category[];
     onAdd: (product: Product) => void;
+    viewMode?: 'grid' | 'list';
+    isStoreOpen?: boolean;
 }
 
-export default function ProductGrid({ categories, onAdd, viewMode = 'grid' }: ProductGridProps & { viewMode?: 'grid' | 'list' }) {
+export default function ProductGrid({ categories, onAdd, viewMode = 'grid', isStoreOpen = true }: ProductGridProps) {
     return (
-        <div className="max-w-7xl mx-auto px-4 py-8 space-y-12">
+        <div className="max-w-7xl mx-auto px-4 py-4 space-y-8">
             {categories.map((category) => {
                 if (!category.products || category.products.length === 0) return null;
 
                 return (
-                    <div key={category.id} id={category.id} className="scroll-mt-48 md:scroll-mt-56">
-                        <div className="flex items-center gap-3 mb-6">
-                            <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight transition-colors duration-300">
+                    <div key={category.id} id={category.id} className="scroll-mt-40 md:scroll-mt-48">
+                        <div className="flex items-center gap-3 mb-4">
+                            <h2 className="text-lg md:text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight transition-colors duration-300">
                                 {category.name}
                             </h2>
                             <div className="h-1 flex-1 bg-gray-100 dark:bg-white/5 rounded-full transition-colors duration-300" />
@@ -43,6 +45,7 @@ export default function ProductGrid({ categories, onAdd, viewMode = 'grid' }: Pr
                                     product={product}
                                     onAdd={onAdd}
                                     viewMode={viewMode}
+                                    isStoreOpen={isStoreOpen}
                                 />
                             ))}
                         </div>

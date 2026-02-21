@@ -6,21 +6,23 @@ interface ProductCardProps {
     product: Product;
     onAdd: (product: Product) => void;
     viewMode?: 'grid' | 'list';
+    isStoreOpen?: boolean;
 }
 
-export default function ProductCard({ product, onAdd, viewMode = 'grid' }: ProductCardProps) {
+export default function ProductCard({ product, onAdd, viewMode = 'grid', isStoreOpen = true }: ProductCardProps) {
     const hasDiscount = product.promotional_price && Number(product.promotional_price) > 0;
     const currentPrice = hasDiscount ? Number(product.promotional_price) : Number(product.price);
     const originalPrice = Number(product.price);
 
     return (
         <div
-            onClick={() => onAdd(product)}
+            onClick={() => isStoreOpen && onAdd(product)}
             className={clsx(
-                "group bg-gray-100 dark:bg-white/5 rounded-[24px] border border-gray-200 dark:border-white/5 shadow-sm hover:shadow-xl hover:border-primary/30 dark:hover:border-primary/30 transition-all duration-300 cursor-pointer relative overflow-hidden",
+                "group bg-gray-100 dark:bg-white/5 rounded-[20px] border border-gray-200 dark:border-white/5 shadow-sm transition-all duration-300 relative overflow-hidden",
+                isStoreOpen ? "hover:shadow-xl hover:border-primary/30 dark:hover:border-primary/30 cursor-pointer" : "opacity-80 grayscale-[20%] cursor-not-allowed",
                 viewMode === 'grid' 
-                    ? "flex flex-col h-full p-3 md:p-4 gap-4" 
-                    : "flex flex-row items-center p-3 gap-4 h-32 md:h-40"
+                    ? "flex flex-col h-full p-2.5 md:p-3 gap-3" 
+                    : "flex flex-row items-center p-2.5 gap-3 h-28 md:h-32"
             )}
         >
             {/* Discount/Status Badges */}
@@ -51,7 +53,7 @@ export default function ProductCard({ product, onAdd, viewMode = 'grid' }: Produ
             )}>
                 <div className={clsx(
                     "w-full h-full overflow-hidden bg-gray-50 dark:bg-white/5 relative",
-                    viewMode === 'grid' ? "rounded-[20px]" : "rounded-[16px]"
+                    viewMode === 'grid' ? "rounded-[14px]" : "rounded-[12px]"
                 )}>
                     {product.image_url ? (
                         <img
@@ -84,7 +86,7 @@ export default function ProductCard({ product, onAdd, viewMode = 'grid' }: Produ
                 <div>
                     <h3 className={clsx(
                         "font-bold text-gray-900 dark:text-white leading-tight mb-1 transition-colors duration-300",
-                        viewMode === 'grid' ? "text-base md:text-lg line-clamp-2" : "text-sm md:text-base line-clamp-1"
+                        viewMode === 'grid' ? "text-sm md:text-base line-clamp-2" : "text-xs md:text-sm line-clamp-1"
                     )}>
                         {product.name}
                     </h3>
@@ -105,7 +107,7 @@ export default function ProductCard({ product, onAdd, viewMode = 'grid' }: Produ
                         )}
                         <span className={clsx(
                             "font-black text-primary",
-                            viewMode === 'grid' ? "text-base md:text-xl" : "text-sm md:text-lg"
+                            viewMode === 'grid' ? "text-sm md:text-lg" : "text-xs md:text-base"
                         )}>
                             R$ {currentPrice.toFixed(2).replace('.', ',')}
                         </span>
@@ -114,12 +116,12 @@ export default function ProductCard({ product, onAdd, viewMode = 'grid' }: Produ
                     {/* Mobile/List Add Button */}
                     <button 
                         className={clsx(
-                            "h-8 w-8 text-white rounded-lg flex items-center justify-center shadow-md transition-all active:scale-95",
+                            "h-7 w-7 text-white rounded-lg flex items-center justify-center shadow-md transition-all active:scale-95",
                             viewMode === 'grid' && "md:hidden" // Hide on desktop grid (uses overlay)
                         )}
                         style={{ background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)' }}
                     >
-                        <Plus className="h-5 w-5" />
+                        <Plus className="h-4 w-4" />
                     </button>
                 </div>
             </div>

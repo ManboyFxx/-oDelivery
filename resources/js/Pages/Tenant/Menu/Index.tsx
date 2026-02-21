@@ -19,6 +19,8 @@ import AuthModal from './Components/AuthModal';
 import CustomerAreaModal from './Components/CustomerAreaModal';
 import CheckoutModal from './CheckoutModal';
 import MenuNavbar from './Components/MenuNavbar';
+import ProductCard from './Components/ProductCard';
+import FeaturedProductCard from './Components/FeaturedProductCard';
 
 interface PageProps {
     store: any;
@@ -177,6 +179,10 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
     };
 
     const handleProductAdd = (product: Product) => {
+        if (!store.is_open) {
+            toast.error('Desculpe, a loja está fechada no momento.');
+            return;
+        }
         setSelectedProduct(product);
         setInitialProductValues(null);
         setEditingCartIndex(null);
@@ -210,6 +216,11 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
     };
 
     const handleCheckout = () => {
+        if (!store.is_open) {
+            toast.error('Desculpe, a loja está fechada para novos pedidos.');
+            return;
+        }
+
         if (!customer) {
             toast.info('Para finalizar, indentifique-se primeiro.');
             setIsAuthModalOpen(true);
@@ -274,134 +285,43 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                 onOpenCart={() => setIsCartOpen(true)}
                 onOpenInfo={() => setShowStoreInfo(true)}
                 cartCount={cartCount}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                isDark={isDark}
+                toggleTheme={toggleTheme}
             />
 
             {/* Featured Products Section */}
             {!searchQuery && activeCategory === 'all' && categories.some((c: Category) => c.products.some((p: Product) => p.is_featured)) && (
                 <section className="max-w-7xl mx-auto px-4 md:px-8 py-8">
-                    <div className="mb-10">
-                        <div className="flex items-center gap-4">
-                            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 text-white flex items-center justify-center rotate-3 shadow-xl">
-                                <Flame className="h-6 w-6" />
+                    <div className="mb-6 flex flex-col items-center">
+                        <div className="flex items-center justify-center gap-3">
+                            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 text-white flex items-center justify-center rotate-3 shadow-lg">
+                                <Flame className="h-5 w-5" />
                             </div>
                             <div>
-                                <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
-                                    Destaques da Casa
+                                <h2 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white tracking-tight text-center">
+                                    Melhores da casa
                                 </h2>
-                                <p className="text-[10px] md:text-xs font-bold text-orange-500 uppercase tracking-[0.2em] mt-1">
-                                    Os favoritos dos clientes
-                                </p>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-6 mt-6">
+                        <div className="flex flex-wrap justify-center gap-6 md:gap-8 mt-10">
                             {categories
                                 .flatMap((c: Category) => c.products)
                                 .filter((p: Product) => p.is_featured)
                                 .map((product: Product) => (
-                                    <div
+                                    <FeaturedProductCard
                                         key={product.id}
-                                        onClick={() => handleProductAdd(product)}
-                                        className="group bg-gray-100 dark:bg-white/5 rounded-[24px] border border-gray-200 dark:border-white/5 shadow-sm hover:shadow-xl hover:border-primary/30 dark:hover:border-primary/30 transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col h-full p-3 md:p-4 gap-4"
-                                    >
-                                        {/* Badge de Destaque */}
-                                        <div className="absolute top-3 left-3 z-10">
-                                            <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl shadow-orange-500/50 flex items-center gap-1">
-                                                <Star className="h-3 w-3 fill-current" /> Destaque
-                                            </div>
-                                        </div>
-
-                                        {/* Image */}
-                                        <div className="shrink-0 relative w-full aspect-square rounded-[20px] overflow-hidden bg-gray-50 dark:bg-white/5">
-                                            {product.image_url ? (
-                                                <img
-                                                    src={product.image_url}
-                                                    alt={product.name}
-                                                    className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700"
-                                                />
-                                            ) : (
-                                                <div className="h-full w-full flex items-center justify-center text-4xl">🍕</div>
-                                            )}
-                                        </div>
-
-                                        {/* Content */}
-                                        <div className="flex flex-col flex-1 justify-between h-full">
-                                            <div>
-                                                <h3 className="font-bold text-base md:text-lg text-gray-900 dark:text-white leading-tight mb-1 transition-colors duration-300 line-clamp-2">
-                                                    {product.name}
-                                                </h3>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 transition-colors duration-300 leading-relaxed line-clamp-2">
-                                                    {product.description}
-                                                </p>
-                                            </div>
-
-                                            <div className="flex items-center justify-between mt-auto">
-                                                <div className="flex flex-col">
-                                                    {product.promotional_price && product.promotional_price < product.price ? (
-                                                        <>
-                                                            <span className="text-xs text-gray-400 line-through">
-                                                                R$ {Number(product.price).toFixed(2).replace('.', ',')}
-                                                            </span>
-                                                            <span className="text-base md:text-lg font-black text-green-500">
-                                                                R$ {Number(product.promotional_price).toFixed(2).replace('.', ',')}
-                                                            </span>
-                                                        </>
-                                                    ) : (
-                                                        <span className="text-base md:text-lg font-black text-gray-900 dark:text-white">
-                                                            R$ {Number(product.price).toFixed(2).replace('.', ',')}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <button
-                                                    className="h-8 w-8 md:h-9 md:w-9 rounded-full bg-gradient-to-br from-orange-500 to-red-500 text-white flex items-center justify-center hover:scale-110 active:scale-95 transition-transform shadow-lg shadow-primary/40"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleProductAdd(product);
-                                                    }}
-                                                >
-                                                    <Plus className="h-4 w-4 md:h-5 md:w-5" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
+                                        product={product}
+                                        onAdd={handleProductAdd}
+                                        isStoreOpen={store.is_open}
+                                    />
                                 ))}
                         </div>
                     </div>
                 </section>
             )}
-
-            {/* Sticky Search Header */}
-            <header className="sticky top-0 z-40 bg-white/80 dark:bg-premium-dark/80 backdrop-blur-md shadow-sm border-b border-gray-100 dark:border-white/5 transition-colors duration-300">
-                <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 flex items-center justify-center gap-6">
-                    <div className="flex-1 max-w-2xl">
-                        <div className="relative group">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-black transition-colors" />
-                            <input
-                                type="text"
-                                placeholder="O que vamos pedir agora?"
-                                value={searchQuery}
-                                onChange={e => setSearchQuery(e.target.value)}
-                                className="w-full bg-gray-50/50 dark:bg-white/5 border border-transparent rounded-xl py-2.5 pl-11 pr-4 focus:ring-0 focus:border-gray-200 dark:focus:border-white/10 focus:bg-white dark:focus:bg-white/10 transition-all outline-none font-medium text-sm text-gray-900 dark:text-white placeholder:text-gray-950 dark:placeholder:text-gray-400"
-                            />
-                        </div>
-                    </div>
-                    
-                    {/* View Mode Toggle Removed - Controlled by Admin */ }
-                    {/*
-                    <div className="hidden md:flex bg-gray-100 dark:bg-white/10 rounded-xl p-1 gap-1">
-                       ...
-                    </div>
-                    */}
-
-                    <button
-                        onClick={toggleTheme}
-                        aria-label={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
-                        className="h-10 w-10 rounded-xl bg-gray-100 dark:bg-white/10 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20 active:scale-90 transition-all shrink-0"
-                    >
-                        {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                    </button>
-                </div>
-            </header>
 
             {/* Navigation */}
             <CategoryNav
@@ -409,6 +329,19 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                 activeCategory={activeCategory}
                 onSelectCategory={handleCategorySelect}
             />
+
+            {!store.is_open && (
+                <div className="max-w-7xl mx-auto px-4 mt-6">
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-2xl p-4 flex items-center justify-center gap-3 text-red-600 dark:text-red-400">
+                        <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <span className="font-bold text-sm md:text-base">
+                            Loja Fechada. Pedidos temporariamente indisponíveis.
+                        </span>
+                    </div>
+                </div>
+            )}
 
             {/* Main Content */}
             <main>
@@ -425,6 +358,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                             })).filter(cat => cat.products.length > 0)}
                             onAdd={handleProductAdd}
                             viewMode={store.menu_view_mode || 'grid'}
+                            isStoreOpen={store.is_open}
                         />
                     </div>
                 </div>

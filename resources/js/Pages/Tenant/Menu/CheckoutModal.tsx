@@ -231,6 +231,11 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
     };
 
     const handleSubmit = async () => {
+        if (!store.is_open) {
+            setError('A loja está fechada no momento. Não é possível concluir o pedido.');
+            return;
+        }
+
         setLoading(true);
         setError('');
 
