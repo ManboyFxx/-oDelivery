@@ -44,9 +44,9 @@ build/
 !/public/build
 
 # AIOS Specific
-.aios-core/local/
-.claude/settings.local.json
-.aios/install-log.txt
+.aios-core/
+.claude/
+.agent/
 
 # Security Tools
 _dev_tools/
