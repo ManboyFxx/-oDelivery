@@ -29,25 +29,23 @@ class StorageController extends Controller
                 storage_path('app/public/' . $path),
                 base_path('storage/app/public/' . $path),
                 public_path('storage/' . $path),
+                // Hostinger/Shared hosting specific candidates
+                realpath(base_path('../storage/app/public/' . $path)),
+                realpath(base_path('../public_html/storage/' . $path)),
             ];
 
             $fullPath = null;
             foreach ($pathsToTry as $candidate) {
-                if (file_exists($candidate) && !is_dir($candidate)) {
+                if ($candidate && file_exists($candidate) && !is_dir($candidate)) {
                     $fullPath = $candidate;
                     break;
                 }
             }
 
-            \Log::info('Checking file candidates:', [
-                'paths' => $pathsToTry,
-                'found' => $fullPath ? true : false,
-                'resolved' => $fullPath
-            ]);
-
             if (!$fullPath) {
                 \Log::error('File not found in any candidate path:', [
                     'requested_path' => $path,
+                    'tried_paths' => array_filter($pathsToTry),
                     'storage_path' => storage_path(),
                     'base_path' => base_path(),
                     'public_path' => public_path()
