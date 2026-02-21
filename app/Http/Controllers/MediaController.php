@@ -47,7 +47,7 @@ class MediaController extends Controller
         $path = "media/{$tenantId}/{$filename}";
 
         // Ensure directory exists with correct permissions for shared hosting
-        $dirPath = storage_path("app/public/media/{$tenantId}");
+        $dirPath = Storage::disk('public')->path("media/{$tenantId}");
         if (!file_exists($dirPath)) {
             mkdir($dirPath, 0755, true);
         }
