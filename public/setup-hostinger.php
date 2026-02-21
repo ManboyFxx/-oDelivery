@@ -12,49 +12,58 @@ error_reporting(E_ALL);
 
 define('SECRET_TOKEN', 'oodelivery_setup_2026'); // Proteção simples
 
-echo "<h1>🚀 OoDelivery - Setup Hostinger</h1>";
+echo "<h1>🚀 OoDelivery - Setup Hostinger (Modo Interno)</h1>";
 
 if (!isset($_GET['token']) || $_GET['token'] !== SECRET_TOKEN) {
-    die("<p style='color:red'>ERRO: Token inválido. Use ?token=" . SECRET_TOKEN . " na URL.</p>");
+    die("<p style='color:red'>ERRO: Token inválido.</p>");
 }
 
-function run_command($command)
+// 1. Verificar .env
+if (!file_exists(__DIR__ . '/../.env')) {
+    die("<p style='color:orange'>AVISO: Arquivo .env não encontrado na raiz!</p>");
+}
+
+// 2. Bootstrapar Laravel
+try {
+    require __DIR__ . '/../vendor/autoload.php';
+    $app = require_once __DIR__ . '/../bootstrap/app.php';
+    $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+} catch (Exception $e) {
+    die("<p style='color:red'>Erro ao carregar o Laravel: " . $e->getMessage() . "</p>");
+}
+
+function run_artisan($kernel, $command, $params = [])
 {
-    echo "<h2>> Rodando: php ../artisan $command</h2>";
+    echo "<h2>> Rodando: php artisan $command</h2>";
     echo "<pre style='background:#000; color:#0f0; padding:10px; border-radius:5px;'>";
 
-    // Tenta rodar via shell_exec ou via Artisan::call se disponível
     try {
-        $output = shell_exec("php ../artisan $command 2>&1");
-        if ($output) {
-            echo $output;
+        $status = $kernel->call($command, $params);
+        echo Illuminate\Support\Facades\Artisan::output();
+        if ($status === 0) {
+            echo "\n[SUCESSO]";
         } else {
-            echo "Comando executado (sem saída direta). Verifique o banco.";
+            echo "\n[ERRO CODE: $status]";
         }
     } catch (Exception $e) {
-        echo "Erro ao executar: " . $e->getMessage();
+        echo "Exceção: " . $e->getMessage();
     }
 
     echo "</pre>";
 }
 
-// 1. Verificar .env
-if (!file_exists('../.env')) {
-    die("<p style='color:orange'>AVISO: Arquivo .env não encontrado. O arquivo deve estar na pasta raiz (acima da public)!</p>");
-}
-
-// 2. Executar Comandos
+// 3. Executar Comandos
 $step = isset($_GET['step']) ? $_GET['step'] : 'all';
 
 if ($step === 'all' || $step === 'key')
-    run_command('key:generate --force');
+    run_artisan($kernel, 'key:generate', ['--force' => true]);
 if ($step === 'all' || $step === 'migrate')
-    run_command('migrate --force');
+    run_artisan($kernel, 'migrate', ['--force' => true]);
 if ($step === 'all' || $step === 'link')
-    run_command('storage:link');
+    run_artisan($kernel, 'storage:link');
 if ($step === 'all' || $step === 'cache') {
-    run_command('config:cache');
-    run_command('view:cache');
+    run_artisan($kernel, 'config:cache');
+    run_artisan($kernel, 'view:cache');
 }
 
 echo "<h2 style='color:green'>✅ Setup concluído!</h2>";
