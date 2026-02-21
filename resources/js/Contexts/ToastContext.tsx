@@ -30,19 +30,24 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
             return;
         }
 
-        // Deduplication logic: ignore duplicates within 1.5 seconds
+        // Deduplication logic: ignore duplicates within 2 seconds
         const now = Date.now();
         const normalize = (str: string) => (str || '').toLowerCase().replace(/[!.?]/g, '').trim();
         
+        const currentTitle = normalize(toast.title);
         const currentDesc = normalize(toast.description);
+        
+        const lastTitle = lastToastRef.current ? normalize(lastToastRef.current.title) : '';
         const lastDesc = lastToastRef.current ? normalize(lastToastRef.current.description) : '';
 
+        // If title and description are effectively the same and happened within 2 seconds, skip
         if (
             lastToastRef.current &&
+            currentTitle === lastTitle &&
             currentDesc === lastDesc &&
-            now - lastToastRef.current.timestamp < 1500
+            now - lastToastRef.current.timestamp < 2000
         ) {
-            console.log('Duplicate toast suppressed (fuzzy match)');
+            console.log('Duplicate toast suppressed');
             return;
         }
 
