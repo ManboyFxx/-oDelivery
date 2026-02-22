@@ -1,337 +1,240 @@
 import { Head, Link } from '@inertiajs/react';
-import { ChefHat, Check, X, ArrowRight, HelpCircle, ShieldCheck } from 'lucide-react';
-import React, { useState } from 'react';
+import { 
+    Check, 
+    ArrowLeft, 
+    ShieldCheck, 
+    Zap, 
+    Monitor, 
+    Bike, 
+    LayoutDashboard, 
+    BarChart3, 
+    MousePointer2,
+    Bot,
+    Printer,
+    Users
+} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import GuaranteeSeals from '@/Components/GuaranteeSeals';
 
-export default function Pricing() {
+interface PlanProps {
+    plan: {
+        display_name: string;
+        price_monthly: number;
+        price_yearly: number;
+        features: any;
+    } | null;
+}
+
+export default function Pricing({ plan }: PlanProps) {
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
-    const plans = [
-        {
-            name: 'Gratuito',
-            price: { monthly: 0, yearly: 0 },
-            description: 'Comece com o essencial',
-            features: {
-                users: 'Ilimitados',
-                products: '100 produtos',
-                orders: '3.000/mês',
-                menu: true,
-                reports: true,
-                integrations: false,
-                loyalty: true,
-            },
-            cta: 'Começar Grátis',
-            popular: false,
-        },
-        {
-            name: 'Básico',
-            price: { monthly: 79.90, yearly: 838.80 },
-            description: 'Para crescer com tudo',
-            features: {
-                users: 'Ilimitados',
-                products: 'Ilimitados',
-                orders: 'Ilimitados',
-                menu: true,
-                reports: true,
-                integrations: true,
-                loyalty: true,
-            },
-            cta: 'Teste 14 Dias Grátis',
-            popular: true,
-            savings: '~2% off anual',
-        },
-        {
-            name: 'Pro',
-            price: { monthly: null, yearly: null },
-            description: 'Solução completa',
-            features: {
-                users: 'Ilimitados',
-                products: 'Ilimitados',
-                orders: 'Ilimitados',
-                menu: true,
-                reports: true,
-                integrations: true,
-                loyalty: true,
-            },
-            cta: 'Falar com Consultor',
-            popular: false,
-        },
-    ];
-
-    const allFeatures = [
-        {
-            category: 'Gestão', items: [
-                { name: 'Usuários', free: 'Ilimitados', pro: 'Ilimitados', enterprise: 'Ilimitados' },
-                { name: 'Produtos', free: '100', pro: 'Ilimitados', enterprise: 'Ilimitados' },
-                { name: 'Pedidos/Mês', free: '3.000', pro: 'Ilimitados', enterprise: 'Ilimitados' },
-                { name: 'Estoque', free: '25 itens', pro: 'Ilimitado', enterprise: 'Ilimitado' },
-                { name: 'Mesas', free: true, pro: true, enterprise: true },
-            ]
-        },
-        {
-            category: 'Recursos', items: [
-                { name: 'Cardápio Digital', free: true, pro: true, enterprise: true },
-                { name: 'PDV', free: true, pro: true, enterprise: true },
-                { name: 'Impressão Automática (ÓoPrint)', free: true, pro: true, enterprise: true },
-                { name: 'Relatórios Avançados', free: true, pro: true, enterprise: true },
-                { name: 'Programa de Fidelidade', free: true, pro: true, enterprise: true },
-                { name: 'Múltiplas Formas de Pagamento', free: true, pro: true, enterprise: true },
-            ]
-        },
-        {
-            category: 'Recursos Premium', items: [
-                { name: 'Robô WhatsApp (ÓoBot)', free: false, pro: true, enterprise: true },
-                { name: 'Sistema de Motoboys (ÓoMotoboy)', free: false, pro: true, enterprise: true },
-                { name: 'Integrações (iFood, Rappi)', free: false, pro: true, enterprise: true },
-                { name: 'API de Acesso', free: false, pro: true, enterprise: true },
-                { name: 'Domínio Personalizado', free: false, pro: true, enterprise: true },
-                { name: 'Suporte Prioritário', free: false, pro: true, enterprise: true },
-                { name: 'Remove Watermark', free: false, pro: true, enterprise: true },
-            ]
-        },
-    ];
-
-    const renderFeatureValue = (value: any) => {
-        if (typeof value === 'boolean') {
-            return value ? (
-                <Check className="h-5 w-5 text-gray-800 mx-auto" />
-            ) : (
-                <span className="text-gray-300">-</span>
-            );
+    // Load preference from localStorage
+    useEffect(() => {
+        const saved = localStorage.getItem('billingPreference');
+        if (saved === 'yearly') {
+            setBillingCycle('yearly');
         }
-        return <span className="text-sm text-gray-700 font-medium">{value}</span>;
+    }, []);
+
+    const handleBillingToggle = (cycle: 'monthly' | 'yearly') => {
+        setBillingCycle(cycle);
+        localStorage.setItem('billingPreference', cycle);
     };
 
+    // Fallback if plan not found in database
+    const planData = {
+        name: plan?.display_name || 'Plano Único Profissional',
+        description: 'Tudo o que você precisa para escalar sua operação sem limites.',
+        priceMonthly: plan?.price_monthly || 129.90,
+        priceYearly: plan?.price_yearly || 1299.00,
+    };
+
+    const monthlyTotal = planData.priceMonthly * 12;
+    const savings = monthlyTotal - planData.priceYearly;
+
+    const features = [
+        { icon: <Monitor className="w-5 h-5" />, title: 'PDV Completo', desc: 'Venda rápida em balcão ou comandos.' },
+        { icon: <Bot className="w-5 h-5" />, title: 'Robô WhatsApp', desc: 'Auto-atendimento (ÓoBot) incluso.' },
+        { icon: <Printer className="w-5 h-5" />, title: 'ÓoPrint', desc: 'Impressão automática sem complicações.' },
+        { icon: <Bike className="w-5 h-5" />, title: 'Painel do Motoboy', desc: 'Gestão de frotas e entregas em tempo real.' },
+        { icon: <LayoutDashboard className="w-5 h-5" />, title: 'KDS & Displays', desc: 'Telas de cozinha para controle total.' },
+        { icon: <BarChart3 className="w-5 h-5" />, title: 'Gestão Financeira', desc: 'DRE, fluxo de caixa e relatórios.' },
+        { icon: <Users className="w-5 h-5" />, title: 'Equipe Ilimitada', desc: 'Cadastre quantos funcionários precisar.' },
+        { icon: <ShieldCheck className="w-5 h-5" />, title: 'Criptografia de Dados', desc: 'Segurança bancária para seu negócio.' },
+    ];
+
+    const currentPriceDisplay = billingCycle === 'monthly' ? planData.priceMonthly : planData.priceYearly / 12;
+
     return (
-        <>
-            <Head title="Planos - ÓoDelivery" />
+        <div className="min-h-screen bg-[#f8f6f5] text-[#181210] selection:bg-[#FF3D03]/20 font-sans antialiased overflow-x-hidden">
+            <Head title={`${planData.name} - OoDelivery`} />
 
-            <div className="min-h-screen bg-[#e4e4e4] text-gray-800">
-                {/* Header */}
-                <nav className="fixed top-0 w-full bg-white border-b border-gray-200 z-50">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="flex justify-between items-center h-20">
-                            <Link href="/" className="flex items-center gap-3">
-                                <img src="/images/logo.png" alt="ÓoDelivery" className="h-10 w-auto" />
-                                <span className="text-xl font-bold tracking-tight text-[#ff3d03]">ÓoDelivery</span>
-                            </Link>
+            {/* Navbar / Header */}
+            <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-[#e7ddda]">
+                <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+                    <div className="flex items-center gap-6">
+                        <Link href="/" className="p-2 hover:bg-gray-100 rounded-full transition-colors flex items-center gap-2 group">
+                            <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+                            <span className="hidden sm:inline font-bold text-sm">Voltar</span>
+                        </Link>
+                        <img 
+                            src="/images/logo-main.png" 
+                            alt="OoDelivery Logo" 
+                            className="h-10 w-auto object-contain"
+                        />
+                    </div>
 
-                            <div className="flex items-center gap-4">
-                                <Link
-                                    href={route('login')}
-                                    className="text-gray-600 hover:text-[#ff3d03] font-bold transition-colors"
-                                >
-                                    Entrar
-                                </Link>
-                                <Link
-                                    href={route('register')}
-                                    className="bg-[#ff3d03] hover:bg-[#d13302] text-white px-5 py-2 rounded-lg font-bold transition-colors"
-                                >
-                                    Começar
-                                </Link>
+                    <div className="flex items-center gap-4">
+                        <Link href="/login" className="hidden sm:block text-sm font-bold px-5 py-2.5 rounded-xl bg-[#ede7e5] hover:bg-[#e7ddda] transition-all">
+                            Entrar
+                        </Link>
+                        <Link href="/register" className="text-sm font-bold px-6 py-2.5 rounded-xl bg-[#FF3D03] text-white hover:opacity-90 transition-all shadow-lg shadow-[#FF3D03]/20">
+                            Testar Grátis
+                        </Link>
+                    </div>
+                </div>
+            </header>
+
+            <main className="pt-12 pb-24 px-6">
+                <div className="max-w-5xl mx-auto">
+                    {/* Hero Section */}
+                    <div className="text-center mb-16">
+                        <h1 className="text-4xl lg:text-5xl font-black mb-6 tracking-tight">
+                            A única plataforma <br/>
+                            <span className="text-[#FF3D03]">que você já precisou.</span>
+                        </h1>
+                        <p className="text-lg text-[#8d695e] max-w-2xl mx-auto font-medium">
+                            Sem taxas ocultas, sem módulos à parte. Um único plano com todas as funcionalidades inclusas para seu delivery de alta performance.
+                        </p>
+                    </div>
+
+                    {/* Pricing Core */}
+                    <div className="flex flex-col lg:flex-row gap-12 items-stretch mb-20">
+                        {/* Left Side: Benefit List */}
+                        <div className="flex-1 space-y-8">
+                            <h2 className="text-2xl font-black tracking-tight">O que está incluso?</h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                {features.map((f, i) => (
+                                    <div key={i} className="flex gap-4 group">
+                                        <div className="w-10 h-10 shrink-0 rounded-xl bg-white border border-[#e7ddda] text-[#FF3D03] flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                                            {f.icon}
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-sm">{f.title}</h3>
+                                            <p className="text-[11px] text-[#8d695e] leading-tight mt-1">{f.desc}</p>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
-                    </div>
-                </nav>
 
-                {/* Hero */}
-                <section className="pt-40 pb-20 px-4 sm:px-6 lg:px-8 text-center">
-                    <div className="max-w-3xl mx-auto">
-                        <h1 className="text-4xl md:text-5xl font-black text-gray-900 mb-6 tracking-tight">
-                            Investimento Inteligente
-                        </h1>
-                        <p className="text-xl text-gray-600 mb-10 font-medium">
-                            Escolha a ferramenta certa para escalar seu negócio.
-                        </p>
-
-                        {/* Billing Toggle */}
-                        <div className="inline-flex items-center gap-1 bg-white p-1 rounded-lg border border-gray-200 shadow-sm">
-                            <button
-                                onClick={() => setBillingCycle('monthly')}
-                                className={`px-6 py-2 rounded-md font-bold text-sm transition-all ${billingCycle === 'monthly'
-                                    ? 'bg-gray-100 text-gray-900'
-                                    : 'text-gray-500 hover:text-gray-900'
-                                    }`}
-                            >
-                                Mensal
-                            </button>
-                            <button
-                                onClick={() => setBillingCycle('yearly')}
-                                className={`px-6 py-2 rounded-md font-bold text-sm transition-all ${billingCycle === 'yearly'
-                                    ? 'bg-gray-100 text-gray-900'
-                                    : 'text-gray-500 hover:text-gray-900'
-                                    }`}
-                            >
-                                Anual
-                            </button>
-                        </div>
-                    </div>
-                </section>
-
-                {/* Pricing Cards */}
-                <section className="pb-20 px-4 sm:px-6 lg:px-8">
-                    <div className="max-w-7xl mx-auto">
-                        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-                            {plans.map((plan, index) => (
-                                <div
-                                    key={index}
-                                    className={`relative p-8 bg-white rounded-xl ${plan.popular
-                                        ? 'border-2 border-[#ff3d03] shadow-lg'
-                                        : 'border border-gray-200 shadow-sm'
-                                        }`}
-                                >
-                                    {plan.popular && (
-                                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#ff3d03] text-white px-4 py-1 rounded-full text-xs font-bold uppercase">
-                                            Recomendado
+                        {/* Right Side: Pricing Card */}
+                        <div className="w-full lg:w-[400px] shrink-0">
+                            <div className="bg-[#181210] text-white rounded-[3rem] p-10 shadow-2xl relative overflow-hidden group">
+                                {/* Gradient Blur */}
+                                <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-[#FF3D03]/20 rounded-full blur-[60px] -mr-16 -mt-16"></div>
+                                
+                                <div className="relative z-10">
+                                    <div className="flex justify-center mb-10">
+                                        <div className="bg-white/5 p-1 rounded-2xl flex border border-white/10">
+                                            <button 
+                                                onClick={() => handleBillingToggle('monthly')}
+                                                className={`px-6 py-2 rounded-xl text-xs font-black transition-all ${billingCycle === 'monthly' ? 'bg-[#FF3D03] text-white shadow-lg shadow-[#FF3D03]/20' : 'text-gray-400 hover:text-white'}`}
+                                            >
+                                                MENSAL
+                                            </button>
+                                            <button 
+                                                onClick={() => handleBillingToggle('yearly')}
+                                                className={`px-6 py-2 rounded-xl text-xs font-black transition-all ${billingCycle === 'yearly' ? 'bg-[#FF3D03] text-white shadow-lg shadow-[#FF3D03]/20' : 'text-gray-400 hover:text-white'}`}
+                                            >
+                                                ANUAL
+                                            </button>
                                         </div>
-                                    )}
-                                    <div className="text-center mb-8">
-                                        <h3 className="text-xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-                                        <p className="text-sm text-gray-500 mb-6">{plan.description}</p>
-                                        <div className="flex items-end justify-center gap-1">
-                                            {plan.price[billingCycle] !== null ? (
-                                                <>
-                                                    <span className="text-4xl font-black text-gray-900 tracking-tight">
-                                                        R$ {plan.price[billingCycle].toFixed(2).replace('.', ',')}
-                                                    </span>
-                                                    <span className="text-gray-500 font-medium mb-1">
-                                                        /mês
-                                                    </span>
-                                                </>
-                                            ) : (
-                                                <span className="text-3xl font-black text-gray-900 tracking-tight">Consultar</span>
-                                            )}
-                                        </div>
-                                        {plan.savings && (
-                                            <p className="text-xs text-green-600 font-semibold mt-2">{plan.savings}</p>
-                                        )}
                                     </div>
 
-                                    <Link
-                                        href={route('register')}
-                                        className={`block w-full py-3 rounded-lg font-bold text-center transition-all mb-8 ${plan.popular
-                                            ? 'bg-[#ff3d03] hover:bg-[#d13302] text-white'
-                                            : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
-                                            }`}
-                                    >
-                                        {plan.cta}
+                                    <div className="text-center mb-8">
+                                        {billingCycle === 'yearly' && savings > 0 && (
+                                            <div className="text-[#FF3D03] text-[10px] font-black uppercase tracking-[0.2em] mb-4 bg-[#FF3D03]/10 py-1 px-3 rounded-full inline-block">
+                                                Economize R$ {savings.toFixed(2).replace('.', ',')} /ano
+                                            </div>
+                                        )}
+                                        <div className="flex items-center justify-center gap-1 group-hover:scale-105 transition-transform duration-500">
+                                            <span className="text-sm font-bold opacity-60 mt-2">R$</span>
+                                            <span className="text-6xl font-black tracking-tighter">
+                                                {currentPriceDisplay.toFixed(0)}
+                                            </span>
+                                            <div className="text-left mt-2">
+                                                <span className="block text-2xl font-black leading-none">
+                                                    ,{currentPriceDisplay.toFixed(2).split('.')[1]}
+                                                </span>
+                                                <span className="text-[10px] font-bold opacity-40 uppercase tracking-widest">/mês</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4 mb-10">
+                                        <div className="flex items-center gap-3 text-sm font-medium opacity-80">
+                                            <div className="w-4 h-4 rounded-full bg-[#FF3D03] flex items-center justify-center text-[10px]">✓</div>
+                                            Tudo ilimitado
+                                        </div>
+                                        <div className="flex items-center gap-3 text-sm font-medium opacity-80">
+                                            <div className="w-4 h-4 rounded-full bg-[#FF3D03] flex items-center justify-center text-[10px]">✓</div>
+                                            Suporte em menos de 2min
+                                        </div>
+                                        <div className="flex items-center gap-3 text-sm font-medium opacity-80">
+                                            <div className="w-4 h-4 rounded-full bg-[#FF3D03] flex items-center justify-center text-[10px]">✓</div>
+                                            Acesso total à plataforma
+                                        </div>
+                                    </div>
+
+                                    <Link href="/register" className="block w-full text-center py-5 rounded-2xl bg-[#FF3D03] text-white font-black text-xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-[#FF3D03]/30 uppercase tracking-widest mb-6">
+                                        Começar Agora
                                     </Link>
 
-                                    <div className="space-y-4 pt-6 border-t border-gray-100">
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-gray-600">Usuários</span>
-                                            <strong className="text-gray-900">{plan.features.users}</strong>
-                                        </div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-gray-600">Produtos</span>
-                                            <strong className="text-gray-900">{plan.features.products}</strong>
-                                        </div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-gray-600">Relatórios</span>
-                                            {plan.features.reports ? (
-                                                <Check className="h-4 w-4 text-green-600" />
-                                            ) : (
-                                                <X className="h-4 w-4 text-gray-300" />
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-
-                {/* Comparison Table */}
-                <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50 border-t border-gray-200">
-                    <div className="max-w-7xl mx-auto">
-                        <h2 className="text-3xl font-black text-gray-900 text-center mb-16 tracking-tight">
-                            Comparativo Detalhado
-                        </h2>
-
-                        <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm bg-white">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr>
-                                        <th className="py-6 px-6 bg-gray-50 text-sm font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 w-1/4">Recursos</th>
-                                        <th className="py-6 px-6 bg-white text-center text-xl font-bold text-gray-900 border-b border-gray-200 w-1/4">Gratuito</th>
-                                        <th className="py-6 px-6 bg-orange-50 text-center text-xl font-bold text-[#ff3d03] border-b border-gray-200 w-1/4 relative">
-                                            <div className="absolute top-0 left-0 w-full h-1 bg-[#ff3d03]"></div>
-                                            Básico
-                                        </th>
-                                        <th className="py-6 px-6 bg-white text-center text-xl font-bold text-gray-900 border-b border-gray-200 w-1/4">Pro</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                    {allFeatures.map((category, idx) => (
-                                        <React.Fragment key={idx}>
-                                            <tr>
-                                                <td colSpan={4} className="py-4 px-6 bg-gray-100 text-sm font-black text-gray-700 uppercase tracking-wider">
-                                                    {category.category}
-                                                </td>
-                                            </tr>
-                                            {category.items.map((item, itemIdx) => (
-                                                <tr key={itemIdx} className="hover:bg-gray-50 transition-colors group">
-                                                    <td className="py-4 px-6 text-sm font-medium text-gray-900 flex items-center gap-2">
-                                                        {item.name}
-                                                        <div className="group/tooltip relative">
-                                                            <HelpCircle className="h-4 w-4 text-gray-400 cursor-help opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-48 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10 pointer-events-none text-center">
-                                                                Mais detalhes sobre {item.name}
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="py-4 px-6 text-center">{renderFeatureValue(item.free)}</td>
-                                                    <td className="py-4 px-6 text-center bg-orange-50/30 font-bold text-gray-900 border-x border-orange-100">{renderFeatureValue(item.pro)}</td>
-                                                    <td className="py-4 px-6 text-center">{renderFeatureValue(item.enterprise)}</td>
-                                                </tr>
-                                            ))}
-                                        </React.Fragment>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {/* Guarantee Seal */}
-                        <div className="mt-16 flex justify-center">
-                            <div className="inline-flex items-center gap-4 bg-white p-6 rounded-2xl shadow-lg border border-gray-100 max-w-lg">
-                                <div className="p-3 bg-green-100 rounded-full shrink-0">
-                                    <ShieldCheck className="h-8 w-8 text-green-600" />
-                                </div>
-                                <div className="text-left">
-                                    <p className="font-bold text-lg text-gray-900">Garantia Incondicional de 7 Dias</p>
-                                    <p className="text-sm text-gray-600 leading-relaxed">
-                                        Assine o plano Básico ou Pro e teste por 7 dias. Se não gostar, devolvemos 100% do seu dinheiro. Sem perguntas, sem burocracia.
+                                    <p className="text-[10px] text-center opacity-40 font-bold uppercase tracking-widest">
+                                        Sem fidelidade. Cancele quando quiser.
                                     </p>
                                 </div>
                             </div>
+
+                            <GuaranteeSeals />
                         </div>
                     </div>
-                </section>
 
-                {/* FAQ */}
-                <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white border-t border-gray-200">
-                    <div className="max-w-3xl mx-auto">
-                        <h2 className="text-2xl font-black text-gray-900 text-center mb-10 tracking-tight">
-                            Dúvidas Comuns
-                        </h2>
-
-                        <div className="space-y-4">
-                            <div className="border border-gray-200 rounded-lg p-6">
-                                <h3 className="font-bold text-gray-900 mb-2">Preciso de cartão de crédito para testar?</h3>
-                                <p className="text-gray-600">Não. O teste de 14 dias é totalmente gratuito e sem compromisso.</p>
+                    {/* FAQ Mini */}
+                    <div className="bg-white border-2 border-[#e7ddda] rounded-[2rem] p-8 lg:p-12">
+                        <h2 className="text-2xl font-black mb-10 text-center tracking-tight">Dúvidas Frequentes</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-2">
+                                <h3 className="font-bold text-sm">Tem custo de ativação?</h3>
+                                <p className="text-xs text-[#8d695e] font-medium leading-relaxed">Não. Você mesmo ativa sua conta em segundos e já pode começar a cadastrar seus produtos.</p>
                             </div>
-                            <div className="border border-gray-200 rounded-lg p-6">
-                                <h3 className="font-bold text-gray-900 mb-2">Posso cancelar quando quiser?</h3>
-                                <p className="text-gray-600">Sim. Não exigimos fidelidade e você pode cancelar sua assinatura a qualquer momento.</p>
+                            <div className="space-y-2">
+                                <h3 className="font-bold text-sm">Cobram por pedido?</h3>
+                                <p className="text-xs text-[#8d695e] font-medium leading-relaxed">Não. Somos contra taxas abusivas. Você paga um valor fixo mensal ou anual, independente de quanto vender.</p>
+                            </div>
+                            <div className="space-y-2">
+                                <h3 className="font-bold text-sm">Posso cancelar qualquer dia?</h3>
+                                <p className="text-xs text-[#8d695e] font-medium leading-relaxed">Sim. Não temos contrato de fidelidade. Você pode cancelar sua assinatura com apenas um clique.</p>
+                            </div>
+                            <div className="space-y-2">
+                                <h3 className="font-bold text-sm">Oferecem suporte?</h3>
+                                <p className="text-xs text-[#8d695e] font-medium leading-relaxed">Com certeza. Temos uma equipe de especialistas pronta para te ajudar via WhatsApp.</p>
                             </div>
                         </div>
                     </div>
-                </section>
+                </div>
+            </main>
 
-                {/* Footer */}
-                <footer className="bg-[#e4e4e4] border-t border-gray-300 py-12 px-4 sm:px-6 lg:px-8 text-center">
-                    <p className="text-gray-500 text-sm">© 2026 ÓoDelivery. Todos os direitos reservados.</p>
-                </footer>
-            </div>
-        </>
+            {/* Footer */}
+            <footer className="bg-[#f8f6f5] py-12 px-6 border-t border-[#e7ddda]">
+                <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+                    <img src="/images/logo-main.png" alt="OoDelivery" className="h-8 w-auto object-contain grayscale opacity-60" />
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                        © 2026 ÓoDelivery
+                    </p>
+                </div>
+            </footer>
+        </div>
     );
 }

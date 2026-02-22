@@ -75,7 +75,7 @@ class EmployeeController extends Controller implements HasMiddleware
             'email' => [
                 'required',
                 'email',
-                Rule::unique('users')->where('tenant_id', $tenant->id),
+                Rule::unique('users'),
             ],
             'phone' => 'required|string|max:20',
             'role' => [
@@ -131,7 +131,7 @@ class EmployeeController extends Controller implements HasMiddleware
             'email' => [
                 'required',
                 'email',
-                Rule::unique('users')->ignore($employee->id)->where('tenant_id', $tenant->id),
+                Rule::unique('users')->ignore($employee->id),
             ],
             'phone' => 'required|string|max:20',
             'role' => [

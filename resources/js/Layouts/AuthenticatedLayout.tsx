@@ -10,6 +10,7 @@ import { useAudio } from '@/Hooks/useAudio';
 import { useEffect, useRef } from 'react';
 import { router } from '@inertiajs/react';
 import ImpersonationBanner from '@/Components/ImpersonationBanner';
+import { usePushNotifications } from '@/Hooks/usePushNotifications';
 
 import { PageProps } from '@/types';
 
@@ -20,6 +21,9 @@ export default function Authenticated({ user, header, children, tenant: propTena
     const authUser = auth.user;
     const [hasUnread, setHasUnread] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+    // Initialize Push Notifications
+    const { requestPermission } = usePushNotifications(authUser || user);
 
     const { success, error, info, soundEnabled } = useToast();
     const { play } = useAudio();

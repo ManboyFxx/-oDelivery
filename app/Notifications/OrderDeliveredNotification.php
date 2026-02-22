@@ -21,7 +21,7 @@ class OrderDeliveredNotification extends Notification implements ShouldQueue
 
     public function via($notifiable)
     {
-        return ['database', 'broadcast'];
+        return ['database', 'broadcast', \App\Channels\OneSignalChannel::class];
     }
 
     public function toDatabase($notifiable)
@@ -50,5 +50,17 @@ class OrderDeliveredNotification extends Notification implements ShouldQueue
             'order_id' => $this->order->id,
             'timestamp' => now()->toIso8601String(),
         ]);
+    }
+    public function toOneSignal($notifiable)
+    {
+        return [
+            'title' => "Entrega Concluída",
+            'message' => "Seu pedido #{$this->order->order_number} foi entregue!",
+            'url' => "/orders/{$this->order->id}",
+            'data' => [
+                'order_id' => $this->order->id,
+                'type' => 'order_delivered',
+            ],
+        ];
     }
 }

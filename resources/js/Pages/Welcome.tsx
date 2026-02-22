@@ -28,7 +28,7 @@ export default function WelcomeV5({ auth }: PageProps) {
     const navLinks = [
         { name: 'OoBot (WhatsApp)', href: '/oobot' },
         { name: 'OoPrint', href: '/ooprint' }, 
-        { name: 'Plano', href: '/register' },
+        { name: 'Plano', href: '/planos' },
     ];
 
     const mainFeatures = [

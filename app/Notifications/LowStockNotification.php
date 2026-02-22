@@ -17,10 +17,10 @@ class LowStockNotification extends Notification implements ShouldQueue
     /**
      * Create a new notification instance.
      */
-    public function __construct(Collection $ingredients, $tenant)
+    public function __construct($ingredients, $tenant = null)
     {
-        $this->ingredients = $ingredients;
-        $this->tenant = $tenant;
+        $this->ingredients = $ingredients instanceof Collection ? $ingredients : collect([$ingredients]);
+        $this->tenant = $tenant ?? ($ingredients instanceof Collection ? $ingredients->first()?->tenant : $ingredients->tenant);
     }
 
     /**
@@ -30,7 +30,7 @@ class LowStockNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', \App\Channels\OneSignalChannel::class];
     }
 
     /**
@@ -56,8 +56,25 @@ class LowStockNotification extends Notification implements ShouldQueue
                 ? "O ingrediente {$ingredientsList[0]['name']} está com estoque baixo."
                 : count($ingredientsList) . ' ingredientes estão com estoque baixo.',
             'ingredients' => $ingredientsList,
-            'tenant_id' => $this->tenant->id,
-            'tenant_name' => $this->tenant->name,
+            'tenant_id' => $this->tenant?->id,
+            'tenant_name' => $this->tenant?->name,
+        ];
+    }
+
+    public function toOneSignal($notifiable)
+    {
+        $ingredientsList = $this->ingredients->map(fn($i) => $i->name)->implode(', ');
+        $message = count($this->ingredients) === 1
+            ? "O ingrediente {$ingredientsList} está com estoque baixo."
+            : count($this->ingredients) . ' ingredientes estão com estoque baixo.';
+
+        return [
+            'title' => 'Alerta de Estoque Baixo',
+            'message' => $message,
+            'url' => '/inventory',
+            'data' => [
+                'type' => 'low_stock',
+            ],
         ];
     }
 }

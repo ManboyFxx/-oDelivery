@@ -23,7 +23,7 @@ class ArrivedAtDestinationNotification extends Notification implements ShouldQue
 
     public function via($notifiable)
     {
-        return ['database', 'broadcast'];
+        return ['database', 'broadcast', \App\Channels\OneSignalChannel::class];
     }
 
     public function toDatabase($notifiable)
@@ -51,5 +51,17 @@ class ArrivedAtDestinationNotification extends Notification implements ShouldQue
             'order_id' => $this->order->id,
             'timestamp' => now()->toIso8601String(),
         ]);
+    }
+    public function toOneSignal($notifiable)
+    {
+        return [
+            'title' => "Motoboy Chegou",
+            'message' => "{$this->motoboy->name} chegou no local de entrega!",
+            'url' => "/orders/{$this->order->id}",
+            'data' => [
+                'order_id' => $this->order->id,
+                'type' => 'motoboy_arrived',
+            ],
+        ];
     }
 }

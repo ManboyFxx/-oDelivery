@@ -23,7 +23,7 @@ class OrderAcceptedNotification extends Notification implements ShouldQueue
 
     public function via($notifiable)
     {
-        return ['database', 'broadcast'];
+        return ['database', 'broadcast', \App\Channels\OneSignalChannel::class];
     }
 
     public function toDatabase($notifiable)
@@ -54,5 +54,18 @@ class OrderAcceptedNotification extends Notification implements ShouldQueue
             'motoboy_id' => $this->motoboy->id,
             'timestamp' => now()->toIso8601String(),
         ]);
+    }
+
+    public function toOneSignal($notifiable)
+    {
+        return [
+            'title' => "Pedido Aceito",
+            'message' => "{$this->motoboy->name} aceitou seu pedido #{$this->order->order_number}",
+            'url' => "/orders/{$this->order->id}",
+            'data' => [
+                'order_id' => $this->order->id,
+                'type' => 'order_accepted',
+            ],
+        ];
     }
 }

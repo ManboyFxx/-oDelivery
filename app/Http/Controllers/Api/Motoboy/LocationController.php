@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\Motoboy;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Services\MotoboyLocationService;
+use App\Services\NotificationService;
+use App\Notifications\ArrivedAtDestinationNotification;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,10 +14,12 @@ use Illuminate\Http\Request;
 class LocationController extends Controller
 {
     protected $locationService;
+    protected $notificationService;
 
-    public function __construct(MotoboyLocationService $locationService)
+    public function __construct(MotoboyLocationService $locationService, NotificationService $notificationService)
     {
         $this->locationService = $locationService;
+        $this->notificationService = $notificationService;
     }
 
     /**
@@ -45,6 +49,29 @@ class LocationController extends Controller
                 $validated['heading'] ?? null,
                 $validated['order_id'] ?? null
             );
+
+            // Notify customer if arrived at destination
+            if ($validated['order_id']) {
+                $order = Order::find($validated['order_id']);
+                if ($order && $order->customer && $order->status === 'out_for_delivery') {
+                    // Check if arrived (radius 0.2km = 200m)
+                    $arrived = $this->locationService->arrivedAtDestination(
+                        $order->id,
+                        $order->customer->latitude ?? $validated['latitude'], // Fallback if customer lat/lng not set
+                        $order->customer->longitude ?? $validated['longitude'],
+                        0.2
+                    );
+
+                    if ($arrived) {
+                        // Check if already notified recently to avoid spam
+                        $cacheKey = "arrived_notified_{$order->id}";
+                        if (!\Illuminate\Support\Facades\Cache::has($cacheKey)) {
+                            $this->notificationService->sendArrivedAtDestination($order, auth()->user());
+                            \Illuminate\Support\Facades\Cache::put($cacheKey, true, now()->addMinutes(30));
+                        }
+                    }
+                }
+            }
 
             return response()->json([
                 'success' => true,

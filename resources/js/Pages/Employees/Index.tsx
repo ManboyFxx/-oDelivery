@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import PageHeader from '@/Components/PageHeader';
 import { Plus, Edit2, Trash2, X, Check } from 'lucide-react';
@@ -40,7 +40,7 @@ export default function EmployeesIndex({ employees, current_user_id, can_create_
     const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-    const [formData, setFormData] = useState({
+    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         name: '',
         email: '',
         phone: '',
@@ -49,7 +49,7 @@ export default function EmployeesIndex({ employees, current_user_id, can_create_
         password_confirmation: '',
     });
 
-    const [editFormData, setEditFormData] = useState({
+    const editForm = useForm({
         name: '',
         email: '',
         phone: '',
@@ -59,17 +59,10 @@ export default function EmployeesIndex({ employees, current_user_id, can_create_
 
     const handleCreateSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        router.post(route('employees.store'), formData, {
+        post(route('employees.store'), {
             onSuccess: () => {
                 setShowCreateModal(false);
-                setFormData({
-                    name: '',
-                    email: '',
-                    phone: '',
-                    role: 'employee',
-                    password: '',
-                    password_confirmation: '',
-                });
+                reset();
             },
         });
     };
@@ -78,7 +71,7 @@ export default function EmployeesIndex({ employees, current_user_id, can_create_
         e.preventDefault();
         if (!editingEmployee) return;
 
-        router.put(route('employees.update', { employee: editingEmployee.id }), editFormData, {
+        editForm.put(route('employees.update', { employee: editingEmployee.id }), {
             onSuccess: () => {
                 setShowEditModal(false);
                 setEditingEmployee(null);
@@ -88,13 +81,14 @@ export default function EmployeesIndex({ employees, current_user_id, can_create_
 
     const handleEdit = (employee: Employee) => {
         setEditingEmployee(employee);
-        setEditFormData({
+        editForm.setData({
             name: employee.name,
             email: employee.email,
             phone: employee.phone,
             role: employee.role,
             is_active: employee.is_active,
         });
+        editForm.clearErrors();
         setShowEditModal(true);
     };
 
@@ -241,44 +235,47 @@ export default function EmployeesIndex({ employees, current_user_id, can_create_
                                 <label className="block text-sm font-bold text-gray-900 dark:text-white mb-2">Nome *</label>
                                 <input
                                     type="text"
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#ff3d03]"
+                                    value={data.name}
+                                    onChange={(e) => setData('name', e.target.value)}
+                                    className={`w-full px-4 py-2.5 rounded-lg border bg-white dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#ff3d03] ${errors.name ? 'border-red-500' : 'border-gray-200 dark:border-white/10'}`}
                                     placeholder="Nome completo"
                                     required
                                 />
+                                {errors.name && <p className="mt-1 text-xs text-red-500 font-bold">{errors.name}</p>}
                             </div>
 
                             <div>
                                 <label className="block text-sm font-bold text-gray-900 dark:text-white mb-2">Email *</label>
                                 <input
                                     type="email"
-                                    value={formData.email}
-                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#ff3d03]"
+                                    value={data.email}
+                                    onChange={(e) => setData('email', e.target.value)}
+                                    className={`w-full px-4 py-2.5 rounded-lg border bg-white dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#ff3d03] ${errors.email ? 'border-red-500' : 'border-gray-200 dark:border-white/10'}`}
                                     placeholder="email@example.com"
                                     required
                                 />
+                                {errors.email && <p className="mt-1 text-xs text-red-500 font-bold">{errors.email}</p>}
                             </div>
 
                             <div>
                                 <label className="block text-sm font-bold text-gray-900 dark:text-white mb-2">Telefone *</label>
                                 <input
                                     type="tel"
-                                    value={formData.phone}
-                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#ff3d03]"
+                                    value={data.phone}
+                                    onChange={(e) => setData('phone', e.target.value)}
+                                    className={`w-full px-4 py-2.5 rounded-lg border bg-white dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#ff3d03] ${errors.phone ? 'border-red-500' : 'border-gray-200 dark:border-white/10'}`}
                                     placeholder="(11) 99999-9999"
                                     required
                                 />
+                                {errors.phone && <p className="mt-1 text-xs text-red-500 font-bold">{errors.phone}</p>}
                             </div>
 
                             <div>
                                 <label className="block text-sm font-bold text-gray-900 dark:text-white mb-2">Cargo *</label>
                                 <select
-                                    value={formData.role}
-                                    onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
-                                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1b1e] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#ff3d03] [&>option]:bg-white [&>option]:dark:bg-[#1a1b1e] [&>option]:text-gray-900 [&>option]:dark:text-white"
+                                    value={data.role}
+                                    onChange={(e) => setData('role', e.target.value as any)}
+                                    className={`w-full px-4 py-2.5 rounded-lg border bg-white dark:bg-[#1a1b1e] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#ff3d03] [&>option]:bg-white [&>option]:dark:bg-[#1a1b1e] [&>option]:text-gray-900 [&>option]:dark:text-white ${errors.role ? 'border-red-500' : 'border-gray-200 dark:border-white/10'}`}
                                     required
                                 >
                                     <option value="employee" className="bg-white dark:bg-[#1a1b1e] text-gray-900 dark:text-white">Funcionário</option>
@@ -291,6 +288,7 @@ export default function EmployeesIndex({ employees, current_user_id, can_create_
                                         Motoboy {!can_create_motoboy && '(Upgrade Necessário)'}
                                     </option>
                                 </select>
+                                {errors.role && <p className="mt-1 text-xs text-red-500 font-bold">{errors.role}</p>}
                                 {!can_create_motoboy && (
                                     <p className="mt-1 text-xs text-gray-500">
                                         Para cadastrar motoboys, seu plano precisa ter o recurso habilitado.
@@ -302,39 +300,45 @@ export default function EmployeesIndex({ employees, current_user_id, can_create_
                                 <label className="block text-sm font-bold text-gray-900 dark:text-white mb-2">Senha *</label>
                                 <input
                                     type="password"
-                                    value={formData.password}
-                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#ff3d03]"
+                                    value={data.password}
+                                    onChange={(e) => setData('password', e.target.value)}
+                                    className={`w-full px-4 py-2.5 rounded-lg border bg-white dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#ff3d03] ${errors.password ? 'border-red-500' : 'border-gray-200 dark:border-white/10'}`}
                                     placeholder="Mínimo 8 caracteres"
                                     required
                                 />
+                                {errors.password && <p className="mt-1 text-xs text-red-500 font-bold">{errors.password}</p>}
                             </div>
 
                             <div>
                                 <label className="block text-sm font-bold text-gray-900 dark:text-white mb-2">Confirmar Senha *</label>
                                 <input
                                     type="password"
-                                    value={formData.password_confirmation}
-                                    onChange={(e) => setFormData({ ...formData, password_confirmation: e.target.value })}
-                                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#ff3d03]"
+                                    value={data.password_confirmation}
+                                    onChange={(e) => setData('password_confirmation', e.target.value)}
+                                    className={`w-full px-4 py-2.5 rounded-lg border bg-white dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#ff3d03] ${errors.password_confirmation ? 'border-red-500' : 'border-gray-200 dark:border-white/10'}`}
                                     placeholder="Confirme a senha"
                                     required
                                 />
+                                {errors.password_confirmation && <p className="mt-1 text-xs text-red-500 font-bold">{errors.password_confirmation}</p>}
                             </div>
 
                             <div className="flex gap-3 pt-4">
                                 <button
                                     type="button"
-                                    onClick={() => setShowCreateModal(false)}
+                                    onClick={() => {
+                                        setShowCreateModal(false);
+                                        clearErrors();
+                                    }}
                                     className="flex-1 px-4 py-2.5 rounded-lg border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white font-bold hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 px-4 py-2.5 rounded-lg bg-[#ff3d03] hover:bg-[#e63700] text-white font-bold transition-colors"
+                                    disabled={processing}
+                                    className="flex-1 px-4 py-2.5 rounded-lg bg-[#ff3d03] hover:bg-[#e63700] text-white font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    Criar
+                                    {processing ? 'Criando...' : 'Criar'}
                                 </button>
                             </div>
                         </form>
@@ -364,44 +368,47 @@ export default function EmployeesIndex({ employees, current_user_id, can_create_
                                 <label className="block text-sm font-bold text-gray-900 dark:text-white mb-2">Nome *</label>
                                 <input
                                     type="text"
-                                    value={editFormData.name}
-                                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#ff3d03]"
+                                    value={editForm.data.name}
+                                    onChange={(e) => editForm.setData('name', e.target.value)}
+                                    className={`w-full px-4 py-2.5 rounded-lg border bg-white dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#ff3d03] ${editForm.errors.name ? 'border-red-500' : 'border-gray-200 dark:border-white/10'}`}
                                     placeholder="Nome completo"
                                     required
                                 />
+                                {editForm.errors.name && <p className="mt-1 text-xs text-red-500 font-bold">{editForm.errors.name}</p>}
                             </div>
 
                             <div>
                                 <label className="block text-sm font-bold text-gray-900 dark:text-white mb-2">Email *</label>
                                 <input
                                     type="email"
-                                    value={editFormData.email}
-                                    onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
-                                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#ff3d03]"
+                                    value={editForm.data.email}
+                                    onChange={(e) => editForm.setData('email', e.target.value)}
+                                    className={`w-full px-4 py-2.5 rounded-lg border bg-white dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#ff3d03] ${editForm.errors.email ? 'border-red-500' : 'border-gray-200 dark:border-white/10'}`}
                                     placeholder="email@example.com"
                                     required
                                 />
+                                {editForm.errors.email && <p className="mt-1 text-xs text-red-500 font-bold">{editForm.errors.email}</p>}
                             </div>
 
                             <div>
                                 <label className="block text-sm font-bold text-gray-900 dark:text-white mb-2">Telefone *</label>
                                 <input
                                     type="tel"
-                                    value={editFormData.phone}
-                                    onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
-                                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#ff3d03]"
+                                    value={editForm.data.phone}
+                                    onChange={(e) => editForm.setData('phone', e.target.value)}
+                                    className={`w-full px-4 py-2.5 rounded-lg border bg-white dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#ff3d03] ${editForm.errors.phone ? 'border-red-500' : 'border-gray-200 dark:border-white/10'}`}
                                     placeholder="(11) 99999-9999"
                                     required
                                 />
+                                {editForm.errors.phone && <p className="mt-1 text-xs text-red-500 font-bold">{editForm.errors.phone}</p>}
                             </div>
 
                             <div>
                                 <label className="block text-sm font-bold text-gray-900 dark:text-white mb-2">Cargo *</label>
                                 <select
-                                    value={editFormData.role}
-                                    onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value as any })}
-                                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1b1e] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#ff3d03] [&>option]:bg-white [&>option]:dark:bg-[#1a1b1e] [&>option]:text-gray-900 [&>option]:dark:text-white"
+                                    value={editForm.data.role}
+                                    onChange={(e) => editForm.setData('role', e.target.value as any)}
+                                    className={`w-full px-4 py-2.5 rounded-lg border bg-white dark:bg-[#1a1b1e] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#ff3d03] [&>option]:bg-white [&>option]:dark:bg-[#1a1b1e] [&>option]:text-gray-900 [&>option]:dark:text-white ${editForm.errors.role ? 'border-red-500' : 'border-gray-200 dark:border-white/10'}`}
                                     required
                                 >
                                     <option value="employee" className="bg-white dark:bg-[#1a1b1e] text-gray-900 dark:text-white">Funcionário</option>
@@ -414,14 +421,15 @@ export default function EmployeesIndex({ employees, current_user_id, can_create_
                                         Motoboy {!can_create_motoboy && '(Upgrade Necessário)'}
                                     </option>
                                 </select>
+                                {editForm.errors.role && <p className="mt-1 text-xs text-red-500 font-bold">{editForm.errors.role}</p>}
                             </div>
 
                             <div>
                                 <label className="flex items-center gap-3 cursor-pointer">
                                     <input
                                         type="checkbox"
-                                        checked={editFormData.is_active}
-                                        onChange={(e) => setEditFormData({ ...editFormData, is_active: e.target.checked })}
+                                        checked={editForm.data.is_active}
+                                        onChange={(e) => editForm.setData('is_active', e.target.checked)}
                                         className="w-5 h-5 rounded border-gray-200 dark:border-white/10 text-[#ff3d03] focus:ring-[#ff3d03]"
                                     />
                                     <span className="text-sm font-bold text-gray-900 dark:text-white">Funcionário Ativo</span>
@@ -441,9 +449,10 @@ export default function EmployeesIndex({ employees, current_user_id, can_create_
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 px-4 py-2.5 rounded-lg bg-[#ff3d03] hover:bg-[#e63700] text-white font-bold transition-colors"
+                                    disabled={editForm.processing}
+                                    className="flex-1 px-4 py-2.5 rounded-lg bg-[#ff3d03] hover:bg-[#e63700] text-white font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    Salvar
+                                    {editForm.processing ? 'Salvando...' : 'Salvar'}
                                 </button>
                             </div>
                         </form>

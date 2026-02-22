@@ -1,6 +1,7 @@
 import { Head, router } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import { useAudio } from '@/Hooks/useAudio';
+import { usePushNotifications } from '@/Hooks/usePushNotifications';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { Loader2, Search, Sun, Moon, LayoutGrid, List, Star, Flame, Plus } from 'lucide-react';
@@ -32,6 +33,9 @@ interface PageProps {
 }
 
 export default function PublicMenu({ store, categories, slug, authCustomer, activePromotion, availableCoupons }: PageProps) {
+    // Initialize Push Notifications
+    usePushNotifications(authCustomer);
+
     // --- State ---
     const [activeCategory, setActiveCategory] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');

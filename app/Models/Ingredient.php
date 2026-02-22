@@ -87,6 +87,20 @@ class Ingredient extends Model
     public function decrementStock(float $quantity, string $type = 'sale', ?string $description = null, ?string $orderId = null)
     {
         $this->decrement('stock', $quantity);
-        return $this->recordStockMovement($quantity * -1, $type, $description, $orderId);
+        $movement = $this->recordStockMovement($quantity * -1, $type, $description, $orderId);
+
+        // Check for low stock and notify admins
+        if ($this->stock <= $this->min_stock) {
+            $admins = User::where('tenant_id', $this->tenant_id)
+                ->whereIn('role', ['admin', 'employee'])
+                ->get();
+
+            foreach ($admins as $admin) {
+                /** @var User $admin */
+                $admin->notify(new \App\Notifications\LowStockNotification(collect([$this]), $this->tenant));
+            }
+        }
+
+        return $movement;
     }
 }

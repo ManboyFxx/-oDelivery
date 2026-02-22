@@ -25,6 +25,21 @@
             document.documentElement.classList.remove('dark');
         }
     </script>
+
+    <!-- OneSignal SDK -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignal.js" async=""></script>
+    <script>
+        window.OneSignal = window.OneSignal || [];
+        OneSignal.push(function () {
+            OneSignal.init({
+                appId: "{{ config('services.onesignal.app_id') }}",
+                safari_web_id: "{{ config('services.onesignal.safari_web_id') }}",
+                notifyButton: {
+                    enable: true,
+                },
+            });
+        });
+    </script>
 </head>
 
 <body class="font-sans antialiased">

@@ -47,6 +47,15 @@ Route::get('/ooprint', function () {
     return Inertia::render('OoPrint');
 })->name('ooprint');
 
+Route::get('/planos', function () {
+    return Inertia::render('Pricing/Index', [
+        'plan' => \App\Models\PlanLimit::where('plan', 'unified')->first()
+    ]);
+})->name('plans.public');
+
+// Push Notifications
+Route::post('/push/subscribe', [\App\Http\Controllers\PushNotificationController::class, 'subscribe'])->name('push.subscribe');
+
 Route::get('/termos', function () {
     return Inertia::render('Terms');
 })->name('terms');

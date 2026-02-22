@@ -4,6 +4,7 @@ import Sidebar from '@/Components/Motoboy/Sidebar';
 import TopBar from '@/Components/Motoboy/TopBar';
 import NotificationToast from '@/Components/Motoboy/NotificationToast';
 import { useWebSocketNotifications } from '@/Hooks/useWebSocketNotifications';
+import { usePushNotifications } from '@/Hooks/usePushNotifications';
 import { Notification } from '@/Hooks/useNotifications';
 import { Menu } from 'lucide-react';
 
@@ -19,6 +20,9 @@ export default function MotoboyLayout({ children, title = 'Dashboard', subtitle 
     const [toastNotifications, setToastNotifications] = useState<Notification[]>([]);
     const { auth } = usePage().props as any;
     const user = auth.user;
+
+    // Initialize Push Notifications
+    usePushNotifications(user);
 
     // Callback para novas notificações via WebSocket
     const handleNewNotification = useCallback((notification: Notification) => { // ... (same as before)

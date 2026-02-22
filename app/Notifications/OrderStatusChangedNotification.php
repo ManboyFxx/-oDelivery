@@ -25,7 +25,7 @@ class OrderStatusChangedNotification extends Notification implements ShouldQueue
 
     public function via($notifiable)
     {
-        return ['database', 'broadcast'];
+        return ['database', 'broadcast', \App\Channels\OneSignalChannel::class];
     }
 
     public function toDatabase($notifiable)
@@ -55,5 +55,17 @@ class OrderStatusChangedNotification extends Notification implements ShouldQueue
             'new_status' => $this->newStatus,
             'timestamp' => now()->toIso8601String(),
         ]);
+    }
+    public function toOneSignal($notifiable)
+    {
+        return [
+            'title' => "Status Atualizado",
+            'message' => "Pedido #{$this->order->order_number} agora está {$this->newStatus}",
+            'url' => "/orders/{$this->order->id}",
+            'data' => [
+                'order_id' => $this->order->id,
+                'type' => 'status_changed',
+            ],
+        ];
     }
 }

@@ -6,6 +6,10 @@ use App\Models\Order;
 use App\Services\OoBotService;
 use App\Services\LoyaltyService;
 use App\Services\TenantPollService;
+use App\Services\NotificationService;
+use App\Notifications\NewOrderNotification;
+use App\Notifications\OrderStatusChangedNotification;
+use App\Models\User;
 
 class OrderObserver
 {
@@ -13,15 +17,18 @@ class OrderObserver
     protected $ooBotService;
     protected $loyaltyService;
     protected $tenantPollService;
+    protected $notificationService;
 
     public function __construct(
         OoBotService $ooBotService,
         LoyaltyService $loyaltyService,
-        TenantPollService $tenantPollService
+        TenantPollService $tenantPollService,
+        NotificationService $notificationService
     ) {
         $this->ooBotService = $ooBotService;
         $this->loyaltyService = $loyaltyService;
         $this->tenantPollService = $tenantPollService;
+        $this->notificationService = $notificationService;
     }
 
     /**
@@ -30,6 +37,16 @@ class OrderObserver
     public function created(Order $order): void
     {
         $this->tenantPollService->touch($order->tenant_id);
+
+        // Notify Merchants (Admins/Employees) of the tenant
+        $merchants = User::where('tenant_id', $order->tenant_id)
+            ->whereIn('role', ['admin', 'employee'])
+            ->get();
+
+        foreach ($merchants as $merchant) {
+            /** @var User $merchant */
+            $merchant->notify(new NewOrderNotification($order));
+        }
     }
 
     /**
@@ -41,7 +58,19 @@ class OrderObserver
         $this->tenantPollService->touch($order->tenant_id);
 
         if ($order->isDirty('status')) {
-            switch ($order->status) {
+            $oldStatus = $order->getOriginal('status');
+            $newStatus = $order->status;
+
+            // Handle specific notifications vs generic status change
+            if ($newStatus === 'motoboy_accepted') {
+                $this->notificationService->sendOrderAccepted($order, $order->motoboy);
+            } elseif ($newStatus === 'delivered') {
+                $this->notificationService->sendOrderDelivered($order);
+            } else {
+                $this->notificationService->sendOrderStatusChanged($order, $oldStatus, $newStatus);
+            }
+
+            switch ($newStatus) {
                 case 'preparing': // Confirmed
                     $order->decrementIngredientsStock();
                     $this->ooBotService->sendOrderConfirmation($order);

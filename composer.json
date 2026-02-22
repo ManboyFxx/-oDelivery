@@ -99,7 +99,7 @@
         },
         "disable-tls": true,
         "secure-http": false,
-        "cafile": "cacert.pem"
+        "cafile": "c:\\Users\\Vertinho\\Documents\\Sistemas\\OoDelivery\\-oDelivery\\cacert.pem"
     },
     "repositories": {
         "packagist": {
