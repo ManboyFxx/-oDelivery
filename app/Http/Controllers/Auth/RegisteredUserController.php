@@ -180,52 +180,64 @@ class RegisteredUserController extends Controller
             'trial_ends_at' => null,
         ];
 
-        // Usar transação para garantir consistência
-        $user = DB::transaction(function () use ($request, $planConfig) {
-            // 1. Criar o Tenant com configuração baseada no plano selecionado
-            $tenant = Tenant::create(array_merge([
-                'name' => $request->store_name,
-                'slug' => $request->slug,
-                'email' => $request->email,
-                'phone' => $request->whatsapp,
-                'whatsapp' => $request->whatsapp,
-                'is_active' => true,
-                'is_open' => false,
-                'printer_token' => hash('sha256', Str::random(60)),
-            ], $planConfig));
-            // 2. Criar o User associado ao Tenant
-            $user = User::create([
-                'tenant_id' => $tenant->id,
-                'name' => $request->name,
-                'email' => $request->email,
-                'phone' => $request->whatsapp,
-                'password' => Hash::make($request->password),
-                'role' => 'admin',
-                'is_active' => true,
+        try {
+            // Usar transação para garantir consistência
+            $user = DB::transaction(function () use ($request, $planConfig) {
+                // 1. Criar o Tenant com configuração baseada no plano selecionado
+                $tenant = Tenant::create(array_merge([
+                    'name' => $request->store_name,
+                    'slug' => $request->slug,
+                    'email' => $request->email,
+                    'phone' => $request->whatsapp,
+                    'whatsapp' => $request->whatsapp,
+                    'is_active' => true,
+                    'is_open' => false,
+                    'printer_token' => hash('sha256', Str::random(60)),
+                ], $planConfig));
+                // 2. Criar o User associado ao Tenant
+                $user = User::create([
+                    'tenant_id' => $tenant->id,
+                    'name' => $request->name,
+                    'email' => $request->email,
+                    'phone' => $request->whatsapp,
+                    'password' => Hash::make($request->password),
+                    'role' => 'admin',
+                    'is_active' => true,
+                ]);
+
+                // 3. Criar as configurações iniciais da loja
+                StoreSetting::create([
+                    'tenant_id' => $tenant->id,
+                    'store_name' => $request->store_name,
+                    'phone' => $request->whatsapp,
+                    'whatsapp' => $request->whatsapp,
+                    'theme_color' => '#ff3d03',
+                    'loyalty_enabled' => false,
+                    'auto_print_on_confirm' => false,
+                    'print_copies' => 1,
+                    'printer_paper_width' => 80,
+                ]);
+
+                return $user;
+            });
+
+            event(new Registered($user));
+
+            Auth::login($user);
+
+            // Sempre redirecionar para o checkout do plano unificado
+            return redirect()->route('subscription.checkout', 'unified')
+                ->with('success', 'Conta criada! Complete o pagamento para liberar seu acesso ilimitado.');
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Registration Error: ' . $e->getMessage(), [
+                'request' => $request->except(['password', 'password_confirmation']),
+                'trace' => $e->getTraceAsString()
             ]);
 
-            // 3. Criar as configurações iniciais da loja
-            StoreSetting::create([
-                'tenant_id' => $tenant->id,
-                'store_name' => $request->store_name,
-                'phone' => $request->whatsapp,
-                'whatsapp' => $request->whatsapp,
-                'theme_color' => '#ff3d03',
-                'loyalty_enabled' => false,
-                'auto_print_on_confirm' => false,
-                'print_copies' => 1,
-                'printer_paper_width' => 80,
+            return back()->withInput()->withErrors([
+                'error' => 'Ocorreu um erro ao processar seu cadastro. Por favor, tente novamente em instantes.'
             ]);
-
-            return $user;
-        });
-
-        event(new Registered($user));
-
-        Auth::login($user);
-
-        // Sempre redirecionar para o checkout do plano unificado
-        return redirect()->route('subscription.checkout', 'unified')
-            ->with('success', 'Conta criada! Complete o pagamento para liberar seu acesso ilimitado.');
+        }
     }
 }
