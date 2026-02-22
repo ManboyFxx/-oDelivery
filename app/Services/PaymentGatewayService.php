@@ -110,7 +110,6 @@ class PaymentGatewayService
             try {
                 $session = \Stripe\Checkout\Session::create([
                     'customer' => $customerId,
-                    'payment_method_types' => ['card', 'pix', 'boleto'],
                     'line_items' => [
                         [
                             'price' => $priceId,
