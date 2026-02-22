@@ -139,9 +139,16 @@ const AlertToast = React.forwardRef<HTMLDivElement, AlertToastProps>(
                 animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
                 exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
                 transition={{
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 25,
+                    default: {
+                        type: "spring",
+                        stiffness: 300,
+                        damping: 25,
+                    },
+                    filter: {
+                        type: "tween",
+                        duration: 0.3,
+                        ease: "easeOut",
+                    },
                 }}
                 className={cn(
                     "relative w-full max-w-[400px] overflow-hidden rounded-[32px] border-2 shadow-2xl backdrop-blur-xl flex items-center p-4 pl-5 gap-4 pointer-events-auto",
