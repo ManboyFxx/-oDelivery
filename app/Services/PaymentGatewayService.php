@@ -94,6 +94,48 @@ class PaymentGatewayService
     }
 
     /**
+     * Create a Stripe Checkout Session
+     */
+    public function createCheckoutSession(
+        string $customerId,
+        string $planId,
+        string $billingCycle = 'monthly',
+        array $metadata = [],
+        string $successUrl = null,
+        string $cancelUrl = null
+    ): string {
+        if ($this->gateway === 'stripe') {
+            $priceId = $this->getStripePriceId($planId, $billingCycle);
+
+            try {
+                $session = \Stripe\Checkout\Session::create([
+                    'customer' => $customerId,
+                    'payment_method_types' => ['card', 'pix', 'boleto'],
+                    'line_items' => [
+                        [
+                            'price' => $priceId,
+                            'quantity' => 1,
+                        ]
+                    ],
+                    'mode' => 'subscription',
+                    'success_url' => $successUrl ?? route('dashboard'),
+                    'cancel_url' => $cancelUrl ?? route('subscription.checkout', ['plan' => $planId]),
+                    'metadata' => $metadata,
+                    'subscription_data' => [
+                        'metadata' => $metadata,
+                    ],
+                ]);
+
+                return $session->url;
+            } catch (\Stripe\Exception\ApiErrorException $e) {
+                throw new Exception("Stripe API Error: " . $e->getMessage(), $e->getCode(), $e);
+            }
+        }
+
+        throw new Exception("Gateway {$this->gateway} not implemented");
+    }
+
+    /**
      * Create a Pix payment (one-time)
      */
     public function createPixPayment(float $amount, string $description, Tenant $tenant, array $metadata = []): array

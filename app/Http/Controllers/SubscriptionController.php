@@ -53,7 +53,7 @@ class SubscriptionController extends Controller
         ]);
     }
 
-    public function checkout(string $plan)
+    public function checkout(string $plan, PaymentGatewayService $paymentService)
     {
         // Se tentar acessar outro plano, redireciona para unified
         if ($plan !== 'unified') {
@@ -65,12 +65,40 @@ class SubscriptionController extends Controller
             return back()->with('error', 'Plano não encontrado.');
         }
 
-        return Inertia::render('Subscription/Checkout', [
-            'plan' => 'unified',
-            'price' => $planModel->price_monthly,
-            'planName' => $planModel->display_name,
-            'features' => collect($planModel->formatted_features)->where('included', true)->pluck('text')->toArray()
-        ]);
+        $tenant = auth()->user()->tenant;
+        $user = auth()->user();
+
+        // 1. Ensure Customer exists
+        if (!$tenant->stripe_customer_id) {
+            try {
+                $customerId = $paymentService->createCustomer($tenant, $user->email, $tenant->name);
+                $tenant->update(['stripe_customer_id' => $customerId]);
+                $tenant->refresh();
+            } catch (\Exception $e) {
+                return back()->with('error', 'Erro ao preparar o checkout: ' . $e->getMessage());
+            }
+        }
+
+        try {
+            // Include user details directly if billing cycle applies. Assuming monthly for now.
+            $sessionUrl = $paymentService->createCheckoutSession(
+                $tenant->stripe_customer_id,
+                'unified',
+                'monthly', // Default to monthly on direct checkout navigation
+                [
+                    'tenant_id' => $tenant->id,
+                    'user_id' => $user->id,
+                ],
+                route('dashboard'), // Success URL
+                route('dashboard') // Cancel URL
+            );
+
+            // Using Inertia::location to do a full page redirect away from the Vue app
+            return Inertia::location($sessionUrl);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Erro ao gerar Stripe Checkout: ' . $e->getMessage());
+            return back()->with('error', 'Erro ao redirecionar para o pagamento.');
+        }
     }
 
     public function validateCoupon(Request $request)

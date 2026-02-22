@@ -225,9 +225,8 @@ class RegisteredUserController extends Controller
 
             Auth::login($user);
 
-            // Sempre redirecionar para o checkout do plano unificado
-            return redirect()->route('subscription.checkout', 'unified')
-                ->with('success', 'Conta criada! Complete o pagamento para liberar seu acesso ilimitado.');
+            // Redirecionar para o dashboard (onde verá o modal de pagamento)
+            return redirect()->route('dashboard');
 
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Registration Error: ' . $e->getMessage(), [

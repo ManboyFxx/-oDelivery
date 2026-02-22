@@ -55,7 +55,8 @@ export default function Register() {
         email: '',
         password: '',
         password_confirmation: '',
-        plan: 'unified',
+        plan: route().params.plan || 'unified',
+        error: '', // Add generic error field for TS
     });
 
     const [slugStatus, setSlugStatus] = useState<SlugStatus>({
@@ -212,6 +213,21 @@ export default function Register() {
                             Etapa {step} de 2: {step === 1 ? 'Dados do Estabelecimento' : 'Dados de Acesso'}
                         </p>
 
+                        {errors.error && (
+                            <div className="bg-red-50 border-l-4 border-red-500 p-4 mt-6 rounded-r-lg">
+                                <div className="flex items-center">
+                                    <div className="flex-shrink-0">
+                                        <X className="h-5 w-5 text-red-500" aria-hidden="true" />
+                                    </div>
+                                    <div className="ml-3">
+                                        <p className="text-sm text-red-700 font-medium">
+                                            {errors.error}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {step === 1 && (
                             <div className="bg-gradient-to-r from-[#ff3d03]/10 to-orange-50 border-2 border-[#ff3d03] rounded-2xl p-4 text-center mt-6">
                                 <div className="flex items-center justify-center gap-2 mb-1">
@@ -226,6 +242,7 @@ export default function Register() {
                     <form onSubmit={submit} className="space-y-5 text-left">
                         {/* Step 1: Store Info */}
                         {step === 1 && (
+
                             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                                 <div>
                                     <InputLabel htmlFor="store_name" value="Nome do Estabelecimento" className="text-xs font-bold uppercase tracking-widest text-gray-700 mb-1.5" />

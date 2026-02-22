@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import { useAudio } from '@/Hooks/useAudio';
-import { Volume2 } from 'lucide-react';
+import { useToast } from '@/Hooks/useToast';
+import { Lock, Volume2 } from 'lucide-react';
 import {
     Award,
     BookOpen,
@@ -58,6 +59,8 @@ interface Group {
 export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }) {
     const { url, props } = usePage();
     const user = (props.auth as any).user;
+    const tenant = (props.tenant as any);
+    const { info } = useToast();
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -91,7 +94,19 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
         onClose?.();
     }, [url]);
 
-    const handleLinkClick = () => {
+    const handleLinkClick = (e: React.MouseEvent, routeName?: string) => {
+        // Se a assinatura está pendente, bloqueia qualquer rota que não seja My Subscription ou Logout
+        if (tenant?.subscription_status === 'pending') {
+            const allowedRoutes = ['subscription.index', 'logout'];
+            const targetedRoute = routeName || '';
+
+            if (targetedRoute && !allowedRoutes.includes(targetedRoute)) {
+                e.preventDefault();
+                info('Acesso Bloqueado', 'Conclua o pagamento para liberar todas as funcionalidades.');
+                return;
+            }
+        }
+
         setIsMobileOpen(false);
         onClose?.();
     };
@@ -264,7 +279,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
                                             <Link
                                                 key={link.name}
                                                 href={link.href}
-                                                onClick={handleLinkClick}
+                                                onClick={(e) => handleLinkClick(e, link.route)}
                                                 className={clsx(
                                                     'group relative flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition-all duration-200',
                                                     link.current
@@ -359,7 +374,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
                 <div className="flex-none p-4 bg-[#0a0a0a] border-t border-white/5">
                     <Link
                         href={route('logout')}
-                        onClick={handleLinkClick}
+                        onClick={(e) => handleLinkClick(e, 'logout')}
                         method="post"
                         as="button"
                         className="group flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-gray-400 hover:bg-red-500/10 hover:text-red-500 transition-all duration-200"

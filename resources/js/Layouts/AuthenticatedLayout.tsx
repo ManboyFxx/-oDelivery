@@ -4,6 +4,7 @@ import Sidebar from '@/Components/Sidebar';
 import TopBar from '@/Components/TopBar';
 // Trial components removed
 import { NotificationSettingsSync } from '@/Components/Toast/NotificationSettingsSync';
+import { Lock } from 'lucide-react';
 import { useToast } from '@/Hooks/useToast';
 import { useAudio } from '@/Hooks/useAudio';
 import { useEffect, useRef } from 'react';
@@ -13,7 +14,8 @@ import ImpersonationBanner from '@/Components/ImpersonationBanner';
 import { PageProps } from '@/types';
 
 export default function Authenticated({ user, header, children, tenant: propTenant }: { user?: any, header?: ReactNode, children: ReactNode, tenant?: any }) {
-    const { auth, tenant: contextTenant } = usePage<PageProps>().props;
+    const { props, url } = usePage<PageProps>();
+    const { auth, tenant: contextTenant } = props;
     const tenant = propTenant || contextTenant;
     const authUser = auth.user;
     const [hasUnread, setHasUnread] = useState(false);
@@ -155,9 +157,29 @@ export default function Authenticated({ user, header, children, tenant: propTena
                         {children}
                     </div>
                 </main>
+            {/* Pending Payment Blocking Modal */}
+            {tenant?.subscription_status === 'pending' && !url.startsWith('/subscription') && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/80 backdrop-blur-sm p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-md w-full p-8 text-center animate-in zoom-in-95 duration-300">
+                        <div className="mx-auto w-16 h-16 bg-orange-100 dark:bg-[#ff3d03]/20 text-[#ff3d03] rounded-full flex items-center justify-center mb-6">
+                            <Lock className="w-8 h-8" />
+                        </div>
+                        <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-2">
+                            Quase lá!
+                        </h2>
+                        <p className="text-gray-600 dark:text-gray-400 mb-8">
+                            Seu estabelecimento foi criado com sucesso. Para liberar seu acesso ilimitado ao painel, conclua o pagamento da sua assinatura.
+                        </p>
+                        <button
+                            onClick={() => router.get(route('subscription.checkout', 'unified'))}
+                            className="w-full flex justify-center items-center py-4 px-6 border border-transparent rounded-xl shadow-sm text-lg font-medium text-white bg-[#ff3d03] hover:bg-[#e63700] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#ff3d03] transition-colors"
+                        >
+                            Finalizar Pagamento
+                        </button>
+                    </div>
+                </div>
+            )}
             </div>
-
-            {/* Trial Expiring Modal Removed */}
         </div>
     );
 }

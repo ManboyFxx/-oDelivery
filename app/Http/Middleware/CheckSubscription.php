@@ -81,9 +81,9 @@ class CheckSubscription
                 ], 403);
             }
 
-            // Se for novo cadastro (pending), manda direto pro checkout
+            // Se for novo cadastro (pending), permite o acesso para que o modal de bloqueio do AuthenticatedLayout seja exibido.
             if ($tenant->subscription_status === 'pending') {
-                return redirect()->route('subscription.checkout', 'unified');
+                return $next($request);
             }
 
             return redirect()->route('subscription.expired');
