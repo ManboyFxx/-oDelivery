@@ -48,6 +48,7 @@ class MotoboysController extends Controller
             'pendingOrders' => $pendingOrders,
             'recentDeliveries' => $recentDeliveries,
             'notificationCount' => $notificationCount,
+            'googleMapsApiKey' => config('services.google_maps.key'),
         ]);
     }
 

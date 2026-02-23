@@ -6,6 +6,7 @@ import DashboardCard from '@/Components/Motoboy/DashboardCard';
 import OrderCard from '@/Components/Motoboy/OrderCard';
 import EmptyState from '@/Components/Motoboy/EmptyState';
 import LocationTracker from '@/Components/Motoboy/LocationTracker';
+import MapComponent from '@/Components/Motoboy/MapComponent';
 import { Zap, MapPin, TrendingUp, Star, Clock, Package, CheckCircle, Navigation, Map, History } from 'lucide-react';
 
 interface DashboardProps {
@@ -22,6 +23,7 @@ interface DashboardProps {
     pendingOrders: any[];
     recentDeliveries: any[];
     notificationCount: number;
+    googleMapsApiKey?: string;
 }
 
 export default function Dashboard({
@@ -31,10 +33,12 @@ export default function Dashboard({
     pendingOrders,
     recentDeliveries,
     notificationCount,
+    googleMapsApiKey,
 }: DashboardProps) {
     const [isOnline, setIsOnline] = useState(summary.is_online);
     const [loadingOrders, setLoadingOrders] = useState<string | null>(null);
     const [toggleError, setToggleError] = useState<string | null>(null);
+    const [currentLocation, setCurrentLocation] = useState<any>(null);
 
     const handleStatusToggle = useCallback(async (newStatus: boolean) => {
         setIsOnline(newStatus); // optimistic update
@@ -83,7 +87,7 @@ export default function Dashboard({
     const [locationTracking, setLocationTracking] = useState(false);
 
     return (
-        <MotoboyLayout title="Dashboard" subtitle="Bem-vindo ao seu painel">
+        <MotoboyLayout title="Dashboard" subtitle={`Olá, ${user.name}`} isOnline={isOnline}>
             <Head title="Dashboard - ÓoDelivery Motoboy" />
 
             {/* Toggle error toast */}
@@ -96,20 +100,65 @@ export default function Dashboard({
 
             {/* Location Tracker em background */}
             <LocationTracker
-                enabled={locationTracking && isOnline}
+                enabled={isOnline}
                 orderId={pendingOrders[0]?.id}
-                interval={30}
+                interval={15}
+                onLocationUpdate={setCurrentLocation}
             />
 
             <div className="space-y-6">
-                {/* 1. STATUS TOGGLE (TOPO) */}
-                <section>
-                    <StatusToggle
-                        isOnline={isOnline}
-                        status={summary.status}
-                        onToggle={handleStatusToggle}
-                    />
-                </section>
+                {/* 1. STATUS TOGGLE & MAPA (TOPO) */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <section className="lg:col-span-1">
+                        <StatusToggle
+                            isOnline={isOnline}
+                            status={summary.status}
+                            onToggle={handleStatusToggle}
+                        />
+                        
+                        {isOnline && currentLocation && (
+                            <div className="mt-4 bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-2">
+                                    <MapPin className="w-3 h-3 text-blue-500" /> Sua Posição
+                                </h4>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs text-gray-500 font-bold">LAT/LNG</span>
+                                        <span className="text-xs font-mono font-bold text-gray-900">
+                                            {currentLocation.latitude.toFixed(5)}, {currentLocation.longitude.toFixed(5)}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center pt-2 border-t border-gray-50">
+                                        <span className="text-xs text-gray-500 font-bold">PRECISÃO</span>
+                                        <span className="text-xs font-bold text-gray-900">
+                                            ±{Math.round(currentLocation.accuracy)}m
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </section>
+
+                    <section className="lg:col-span-2">
+                        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm h-[300px] relative">
+                            {isOnline && googleMapsApiKey ? (
+                                <MapComponent
+                                    currentLocation={currentLocation ? { lat: currentLocation.latitude, lng: currentLocation.longitude } : undefined}
+                                    apiKey={googleMapsApiKey}
+                                    height="300px"
+                                    zoom={15}
+                                />
+                            ) : (
+                                <div className="absolute inset-0 bg-gray-50 flex flex-col items-center justify-center text-center p-6">
+                                    <Map className="w-12 h-12 text-gray-200 mb-3" />
+                                    <p className="text-sm font-bold text-gray-400">
+                                        {!isOnline ? 'Fique Online para ativar o mapa' : 'Mapa indisponível'}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </section>
+                </div>
 
                 {/* 2. PEDIDOS DISPONÍVEIS (PRIORIDADE MÁXIMA) */}
                 <section>

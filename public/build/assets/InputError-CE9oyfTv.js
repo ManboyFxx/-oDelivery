@@ -1,1 +1,0 @@
-import{j as s}from"./app-CfsA_FAB.js";function n({message:e,className:r="",...t}){return e?s.jsxDEV("p",{...t,className:"text-sm text-red-600 dark:text-red-400 "+r,children:e},void 0,!1,{fileName:"C:/Users/Vertinho/Documents/Sistemas/OoDelivery/-oDelivery/resources/js/Components/InputError.tsx",lineNumber:9,columnNumber:9},this):null}export{n as I};

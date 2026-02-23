@@ -12,9 +12,10 @@ interface MotoboyLayoutProps {
     children: ReactNode;
     title?: string;
     subtitle?: string;
+    isOnline?: boolean;
 }
 
-export default function MotoboyLayout({ children, title = 'Dashboard', subtitle }: MotoboyLayoutProps) {
+export default function MotoboyLayout({ children, title = 'Dashboard', subtitle, isOnline = false }: MotoboyLayoutProps) {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
     const [toastNotifications, setToastNotifications] = useState<Notification[]>([]);
@@ -65,24 +66,29 @@ export default function MotoboyLayout({ children, title = 'Dashboard', subtitle 
             <div className="flex-1 flex flex-col overflow-hidden relative">
 
                 {/* Mobile Header / Sandwich Button (Visible only on mobile) */}
-                <div className="md:hidden flex items-center p-4 bg-white border-b border-gray-200">
+                <div className="md:hidden flex items-center p-4 bg-white border-b border-gray-200 shadow-sm">
                     <button
                         onClick={() => setMobileSidebarOpen(true)}
                         className="p-2 -ml-2 text-gray-600 rounded-lg hover:bg-gray-100"
                     >
                         <Menu size={24} />
                     </button>
-                    <span className="ml-3 font-bold text-gray-900 text-lg uppercase tracking-wide">
-                        {title}
-                    </span>
-                    <div className="ml-auto w-8 h-8 bg-[#ff3d03] rounded-full flex items-center justify-center text-white text-xs font-bold">
+                    <div className="ml-3 flex flex-col">
+                        <span className="font-black text-gray-900 text-sm uppercase tracking-wider leading-none">
+                            {title}
+                        </span>
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
+                            {user.name.split(' ')[0]} • {isOnline ? 'Online' : 'Offline'}
+                        </span>
+                    </div>
+                    <div className={`ml-auto w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`}>
                         {user.name.charAt(0)}
                     </div>
                 </div>
 
                 {/* TopBar (Hidden on mobile to save space, or kept if needed for other actions) */}
                 <div className="hidden md:block">
-                    <TopBar title={title} subtitle={subtitle} user={user} />
+                    <TopBar title={title} subtitle={subtitle} user={user} isOnline={isOnline} />
                 </div>
 
                 {/* Content */}

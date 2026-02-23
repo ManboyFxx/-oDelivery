@@ -88,13 +88,13 @@ export default function OrderShow({ order }: OrderShowProps) {
                                 <div>
                                     <p className="font-bold text-gray-900">{item.quantity}x {item.name}</p>
                                 </div>
-                                <p className="font-black text-gray-900">R$ {parseFloat(item.price).toFixed(2)}</p>
+                                <p className="font-black text-gray-900">R$ {Number(item.price).toFixed(2)}</p>
                             </div>
                         ))}
                     </div>
                     <div className="mt-4 pt-4 border-t-2 border-dashed border-gray-100 flex justify-between items-center">
                         <p className="text-sm font-bold text-gray-500">Total a receber</p>
-                        <p className="text-2xl font-black text-gray-900">R$ {parseFloat(order.total).toFixed(2)}</p>
+                        <p className="text-2xl font-black text-gray-900">R$ {Number(order.total).toFixed(2)}</p>
                     </div>
                 </section>
 
@@ -102,11 +102,11 @@ export default function OrderShow({ order }: OrderShowProps) {
                 <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/80 backdrop-blur-md border-t border-gray-200 lg:relative lg:bg-transparent lg:border-0 lg:p-0">
                     {order.status === 'motoboy_accepted' && (
                         <button
-                            onClick={() => handleAction('motoboy.orders.start')}
+                            onClick={() => handleAction('motoboy.orders.start-delivery')}
                             disabled={!!loading}
                             className="w-full bg-[#ff3d03] text-white p-5 rounded-2xl font-black text-lg uppercase tracking-widest shadow-xl shadow-orange-500/30 hover:bg-[#e63700] transition-all"
                         >
-                            {loading === 'motoboy.orders.start' ? 'Iniciando...' : 'Coletar e Iniciar Entrega'}
+                            {loading === 'motoboy.orders.start-delivery' ? 'Iniciando...' : 'Coletar e Iniciar Entrega'}
                         </button>
                     )}
 

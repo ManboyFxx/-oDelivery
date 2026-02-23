@@ -59,3 +59,19 @@ _dev_docs/
 # Electron Build
 óoprint/dist-electron/
 óoprint/dist/
+
+# Environment & Secrets (AIOS)
+*.key
+*.pem
+
+# Build & Logs (AIOS)
+logs/
+
+# IDE & OS (AIOS)
+.idea/
+*.swp
+
+# AIOS Local (AIOS)
+.aios-core/local/
+.claude/settings.local.json
+.aios/install-log.txt
