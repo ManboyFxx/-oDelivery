@@ -44,6 +44,7 @@ import type { ElementType } from 'react';
 import { useState, useEffect, useRef } from 'react';
 
 interface LinkItem {
+    id?: string;
     name: string;
     href: string;
     icon: ElementType;
@@ -120,8 +121,8 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
         {
             title: 'Operação',
             items: [
-                { name: 'PDV / Caixa', href: route('pdv.index'), route: 'pdv.index', icon: Monitor, current: isCurrent('/pdv') },
-                { name: 'Pedidos', href: route('orders.index'), route: 'orders.index', icon: ShoppingBag, current: isCurrent('/orders') },
+                { id: 'sidebar-pdv', name: 'PDV / Caixa', href: route('pdv.index'), route: 'pdv.index', icon: Monitor, current: isCurrent('/pdv') },
+                { id: 'sidebar-orders', name: 'Pedidos', href: route('orders.index'), route: 'orders.index', icon: ShoppingBag, current: isCurrent('/orders') },
                 { name: 'Cozinha (KDS)', href: route('kitchen.index'), route: 'kitchen.index', icon: ChefHat, current: isCurrent('/kitchen') },
                 { name: 'Estoque', href: route('stock.index'), route: 'stock.index', icon: Box, current: isCurrent('/estoque') },
             ]
@@ -129,7 +130,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
         {
             title: 'Cardápio',
             items: [
-                { name: 'Gestão de Cardápio', href: route('menu.index'), route: 'menu.index', icon: BookOpen, current: isCurrent('/cardapio') },
+                { id: 'sidebar-menu', name: 'Gestão de Cardápio', href: route('menu.index'), route: 'menu.index', icon: BookOpen, current: isCurrent('/cardapio') },
                 { name: 'Produtos', href: route('products.index'), route: 'products.index', icon: Package, current: isCurrent('/products') },
                 { name: 'Banco de Imagens', href: route('media.index'), route: 'media.index', icon: ImageIcon, current: isCurrent('/media') },
             ]
@@ -141,7 +142,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
         {
             title: 'Visão Geral',
             items: [
-                { name: 'Dashboard', href: route('dashboard'), route: 'dashboard', icon: LayoutDashboard, current: isCurrent('/dashboard') },
+                { id: 'sidebar-dashboard', name: 'Dashboard', href: route('dashboard'), route: 'dashboard', icon: LayoutDashboard, current: isCurrent('/dashboard') },
                 { name: 'Minha Assinatura', href: route('subscription.index'), route: 'subscription.index', icon: CreditCard, current: isCurrent('/subscription') },
             ]
         },
@@ -164,7 +165,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
         {
             title: 'Configurações',
             items: [
-                { name: 'Loja', href: route('settings.index'), route: 'settings.index', icon: Store, current: isCurrent('/settings') },
+                { id: 'sidebar-settings', name: 'Loja', href: route('settings.index'), route: 'settings.index', icon: Store, current: isCurrent('/settings') },
             ]
         },
         {
@@ -277,6 +278,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
                                         const isSystem = link.name === 'Apps & Downloads';
                                         return (
                                             <Link
+                                                id={link.id}
                                                 key={link.name}
                                                 href={link.href}
                                                 onClick={(e) => handleLinkClick(e, link.route)}

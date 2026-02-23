@@ -39,6 +39,36 @@ Route::get('/', function () {
     ]);
 });
 
+// Demo Access Route
+Route::get('/demo-access', function () {
+    // Generate a unique demo ID
+    $demoId = substr(md5(uniqid(mt_rand(), true)), 0, 8);
+
+    // 1. Create unique Tenant
+    $tenant = \App\Models\Tenant::create([
+        'slug' => 'demo-' . $demoId,
+        'name' => 'OoDelivery Demo #' . strtoupper($demoId),
+        'email' => "demo_{$demoId}@oodelivery.online",
+        'is_active' => true,
+        'plan' => 'unified',
+        'subscription_status' => 'active',
+        'subscription_ends_at' => now()->addDays(2),
+    ]);
+
+    // 2. Seed this specific tenant
+    $seeder = new \Database\Seeders\DemoSeeder();
+    $seeder->seedTenant($tenant);
+
+    // 3. Login the generated admin
+    $user = \App\Models\User::where('email', $tenant->email)->first();
+    if ($user) {
+        \Illuminate\Support\Facades\Auth::login($user);
+        return redirect()->route('dashboard');
+    }
+
+    return redirect()->route('login')->with('error', 'Erro ao configurar ambiente de teste.');
+})->name('demo.access');
+
 Route::get('/oobot', function () {
     return Inertia::render('OoBot');
 })->name('oobot');

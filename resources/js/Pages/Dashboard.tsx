@@ -1,6 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, usePage } from '@inertiajs/react'; // Add usePage
-import ActivationChecklist from '@/Components/ActivationChecklist'; // Import Checklist
+import { Head, usePage } from '@inertiajs/react';
+import ActivationChecklist from '@/Components/ActivationChecklist';
+import ResultCalculator from '@/Components/Demo/ResultCalculator';
+import WhatsAppSimulator from '@/Components/Demo/WhatsAppSimulator';
 import {
     TrendingUp,
     ShoppingBag,
@@ -22,6 +24,9 @@ import {
     XCircle,
     CreditCard
 } from 'lucide-react';
+import { useState } from 'react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { motion } from 'framer-motion';
 
 interface MetricProps {
     metrics: {
@@ -39,6 +44,7 @@ interface MetricProps {
 export default function Dashboard({ auth, metrics }: any) {
     const { props } = usePage();
     const tenant = (props as any).tenant;
+    const isDemo = tenant?.slug?.startsWith('demo-');
     const limits = tenant?.limits;
 
     // Checklist Data
@@ -143,6 +149,7 @@ export default function Dashboard({ auth, metrics }: any) {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {stats.map((stat, index) => (
                         <div
+                            id={index === 0 ? 'dashboard-revenue' : undefined}
                             key={index}
                             className={`group relative overflow-hidden rounded-2xl p-5 transition-all duration-300 hover:shadow-lg bg-white dark:bg-[#1a1b1e] border border-gray-100 dark:border-white/5 shadow-sm`}
                         >
@@ -177,7 +184,7 @@ export default function Dashboard({ auth, metrics }: any) {
                     {/* Left Column (Chart & Orders) */}
                     <div className="lg:col-span-2 space-y-6">
                         {/* Revenue Chart Section */}
-                        <div className="bg-white dark:bg-[#1a1b1e] rounded-3xl p-6 border border-gray-100 dark:border-white/5 shadow-sm">
+                        <div id="dashboard-chart" className="bg-white dark:bg-[#1a1b1e] rounded-3xl p-6 border border-gray-100 dark:border-white/5 shadow-sm">
                             <div className="flex items-center justify-between mb-8">
                                 <div>
                                     <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center gap-2">
@@ -283,7 +290,7 @@ export default function Dashboard({ auth, metrics }: any) {
                         </div>
 
                         {/* Top Products */}
-                        <div className="bg-[#ff3d03] rounded-3xl p-6 text-white shadow-xl shadow-[#ff3d03]/20 relative overflow-hidden">
+                        <div id="dashboard-bestsellers" className="bg-[#ff3d03] rounded-3xl p-6 text-white shadow-xl shadow-[#ff3d03]/20 relative overflow-hidden">
                             <div className="absolute -top-12 -right-12 w-48 h-48 bg-white opacity-10 rounded-full blur-3xl"></div>
 
                             <h3 className="font-bold text-lg flex items-center gap-2 mb-6 relative z-10">
@@ -308,6 +315,26 @@ export default function Dashboard({ auth, metrics }: any) {
                             </div>
                         </div>
                     </div>
+
+                    {/* Demo Phase 3: Calculators and Simulators */}
+                    {isDemo && (
+                        <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.5 }}
+                            >
+                                <ResultCalculator />
+                            </motion.div>
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.6 }}
+                            >
+                                <WhatsAppSimulator />
+                            </motion.div>
+                        </div>
+                    )}
                 </div>
             </div>
         </AuthenticatedLayout>

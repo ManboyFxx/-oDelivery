@@ -11,8 +11,9 @@ import { useEffect, useRef } from 'react';
 import { router } from '@inertiajs/react';
 import ImpersonationBanner from '@/Components/ImpersonationBanner';
 import { usePushNotifications } from '@/Hooks/usePushNotifications';
-
 import { PageProps } from '@/types';
+import DemoBanner from '@/Components/Demo/DemoBanner';
+import DemoTour from '@/Components/Demo/DemoTour';
 
 export default function Authenticated({ user, header, children, tenant: propTenant }: { user?: any, header?: ReactNode, children: ReactNode, tenant?: any }) {
     const { props, url } = usePage<PageProps>();
@@ -21,6 +22,9 @@ export default function Authenticated({ user, header, children, tenant: propTena
     const authUser = auth.user;
     const [hasUnread, setHasUnread] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isTourOpen, setIsTourOpen] = useState(false);
+
+    const isDemo = tenant?.slug?.startsWith('demo-');
 
     // Initialize Push Notifications
     const { requestPermission } = usePushNotifications(authUser || user);
@@ -135,11 +139,22 @@ export default function Authenticated({ user, header, children, tenant: propTena
     return (
         <div className="flex h-screen bg-gray-50 dark:bg-premium-dark transition-colors">
             <NotificationSettingsSync />
+            
+            {/* Demo Components */}
+            {isDemo && (
+                <>
+                    <DemoTour isOpen={isTourOpen} onClose={() => setIsTourOpen(false)} />
+                    <div className="fixed top-0 left-0 right-0 z-[60]">
+                        <DemoBanner onStartTour={() => setIsTourOpen(true)} />
+                    </div>
+                </>
+            )}
+
             {/* Sidebar */}
             <Sidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
 
             {/* Main Content */}
-            <div className="flex flex-1 flex-col overflow-hidden lg:pl-72 transition-all duration-300">
+            <div className={`flex flex-1 flex-col overflow-hidden lg:pl-72 transition-all duration-300 ${isDemo ? 'pt-16 md:pt-12' : ''}`}>
                 {/* Impersonation Banner */}
                 {auth.is_impersonating && (
                     <ImpersonationBanner />

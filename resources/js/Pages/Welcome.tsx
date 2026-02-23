@@ -156,9 +156,9 @@ export default function WelcomeV5({ auth }: PageProps) {
                                 Começar Vender Hoje
                                 <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                             </Link>
-                            <Link href="#" className="h-14 px-8 rounded-xl bg-white border-2 border-[#e7ddda] font-bold text-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
-                                <PlayCircle size={20} />
-                                Falar com Especialista
+                            <Link href={route('demo.access')} className="h-14 px-8 rounded-xl bg-white border-2 border-[#e7ddda] font-bold text-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+                                <LayoutDashboard size={20} />
+                                Ver Demo ao Vivo
                             </Link>
                         </div>
                     </div>
