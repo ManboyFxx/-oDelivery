@@ -52,7 +52,7 @@ Route::get('/demo-access', function () {
         'is_active' => true,
         'plan' => 'unified',
         'subscription_status' => 'active',
-        'subscription_ends_at' => now()->addDays(2),
+        'subscription_ends_at' => now()->addHours(5),
     ]);
 
     // 2. Seed this specific tenant

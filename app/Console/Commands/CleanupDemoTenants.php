@@ -20,16 +20,16 @@ class CleanupDemoTenants extends Command
      * @var string
      */
     protected $signature = 'demo:cleanup';
-    protected $description = 'Remove temporary demo tenants and their data after 24 hours';
+    protected $description = 'Remove temporary demo tenants and their data after 5 hours';
 
     public function handle()
     {
         $this->info('🚀 Iniciando limpeza de ambientes demo antigos...');
 
-        // Query tenants with demo- prefix created more than 24h ago
+        // Query tenants with demo- prefix created more than 5h ago
         $tenants = Tenant::where('slug', 'like', 'demo-%')
             ->where('slug', '!=', 'demo-oo-delivery') // Keep the main demo if it exists
-            ->where('created_at', '<', now()->subHours(24))
+            ->where('created_at', '<', now()->subHours(5))
             ->withTrashed()
             ->get();
 

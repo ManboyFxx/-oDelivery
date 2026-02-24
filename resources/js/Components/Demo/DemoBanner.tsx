@@ -33,7 +33,7 @@ export default function DemoBanner({ onStartTour }: DemoBannerProps) {
                                 <h4 className="font-black text-sm uppercase tracking-[0.2em]">Ambiente de Demonstração</h4>
                                 <span className="bg-white/20 text-[10px] px-2 py-0.5 rounded-md font-black uppercase tracking-tighter">Sandbox v1.0</span>
                             </div>
-                            <p className="text-white/80 text-[11px] font-bold uppercase tracking-wide">Explore o OoDelivery sem limites. Dados resetados diariamente às 00:00.</p>
+                            <p className="text-white/80 text-[11px] font-bold uppercase tracking-wide">Ambiente temporário de 5h. Após esse período, os dados serão resetados e a conta encerrada.</p>
                         </div>
                     </div>
 

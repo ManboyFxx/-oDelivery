@@ -18,6 +18,9 @@ class Kernel extends ConsoleKernel
 
         // Expire loyalty points daily at 4 AM
         $schedule->job(new \App\Jobs\ExpireLoyaltyPoints())->dailyAt('04:00');
+
+        // Cleanup demo tenants hourly
+        $schedule->command('demo:cleanup')->hourly();
     }
 
     /**

@@ -27,6 +27,16 @@ import { useState } from 'react';
 export default function WelcomeV5({ auth }: PageProps) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+    // Savings Calculator State
+    const [ordersCount, setOrdersCount] = useState(300);
+    const [avgTicket, setAvgTicket] = useState(50);
+    const [commissionRate, setCommissionRate] = useState(18);
+
+    const totalRevenue = ordersCount * avgTicket;
+    const marketplaceLoss = totalRevenue * (commissionRate / 100);
+    const fixedFee = 129.90;
+    const savings = marketplaceLoss - fixedFee;
+
     const navLinks = [
         { name: 'OoBot (WhatsApp)', href: route('oobot') },
         { name: 'OoPrint', href: route('ooprint') },
@@ -163,12 +173,19 @@ export default function WelcomeV5({ auth }: PageProps) {
                         
                         <div className="flex flex-col sm:flex-row gap-4 pt-4">
                             <Link href={route('register')} className="h-16 px-10 rounded-2xl bg-[#FF3D03] text-white font-black text-xl hover:translate-y-[-4px] hover:shadow-[0_20px_40px_-10px_rgba(255,61,3,0.4)] transition-all flex items-center justify-center gap-3 group">
-                                Quero minha plataforma
+                                Começar Agora
                                 <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform" />
                             </Link>
-                            <Link href={route('demo.access')} className="h-16 px-10 rounded-2xl bg-white border-2 border-[#e7ddda] font-bold text-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+                            <button 
+                                onClick={() => document.getElementById('calculator')?.scrollIntoView({ behavior: 'smooth' })}
+                                className="h-16 px-10 rounded-2xl bg-white border-2 border-[#e7ddda] text-[#181210] font-black text-lg hover:bg-gray-50 transition-all flex items-center justify-center gap-3 group"
+                            >
+                                Calcular Economia
+                                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform text-[#FF3D03]" />
+                            </button>
+                            <Link href={route('demo.access')} className="h-16 px-10 rounded-2xl bg-white/50 backdrop-blur-sm border-2 border-[#e7ddda] font-bold text-lg hover:bg-white transition-colors flex items-center justify-center gap-2">
                                 <PlayCircle size={22} />
-                                Ver demonstração
+                                Demo
                             </Link>
                         </div>
                     </div>
@@ -222,64 +239,121 @@ export default function WelcomeV5({ auth }: PageProps) {
                     </div>
                 </section>
 
-                {/* Section 3: A CONTA (The Math) */}
-                <section className="py-24 px-6 bg-[#f8f6f5]">
-                    <div className="max-w-4xl mx-auto text-center">
-                        <h2 className="text-3xl lg:text-5xl font-black tracking-tighter mb-12">
-                            A conta que <span className="text-[#FF3D03]">ninguém te mostra.</span>
-                        </h2>
-                        
-                        <div className="grid md:grid-cols-2 gap-8 items-stretch">
-                            <div className="p-8 rounded-[2rem] bg-white border-2 border-[#e7ddda] flex flex-col justify-between">
-                                <div>
-                                    <h3 className="text-xl font-black mb-6 uppercase tracking-wider text-gray-400">Cenário Marketplaces</h3>
-                                    <div className="space-y-4">
-                                        <div className="flex justify-between text-lg font-bold">
-                                            <span>300 pedidos × R$50</span>
-                                            <span>R$ 15.000</span>
-                                        </div>
-                                        <div className="flex justify-between text-lg font-bold text-red-500">
-                                            <span>Taxa média (18%)</span>
-                                            <span>- R$ 2.700</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="mt-8 pt-6 border-t border-gray-100 flex justify-between items-center">
-                                    <span className="font-bold text-gray-500">Você recebe:</span>
-                                    <span className="text-2xl font-black text-gray-900">R$ 12.300</span>
-                                </div>
-                            </div>
-
-                            <div className="p-8 rounded-[2rem] bg-white border-4 border-[#FF3D03] shadow-2xl shadow-[#FF3D03]/10 relative flex flex-col justify-between">
-                                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-6 py-2 bg-[#FF3D03] text-white text-xs font-black uppercase tracking-[0.2em] rounded-full">
-                                    Sua Independência
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-black mb-6 uppercase tracking-wider text-[#FF3D03]">Com ÓoDelivery</h3>
-                                    <div className="space-y-4">
-                                        <div className="flex justify-between text-lg font-bold">
-                                            <span>300 pedidos × R$50</span>
-                                            <span>R$ 15.000</span>
-                                        </div>
-                                        <div className="flex justify-between text-lg font-bold text-green-500">
-                                            <span>Mensalidade Fixa</span>
-                                            <span>- R$ 129,90</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="mt-8 pt-6 border-t border-gray-100 flex justify-between items-center">
-                                    <span className="font-bold text-gray-500">Você recebe:</span>
-                                    <span className="text-3xl font-black text-[#FF3D03]">R$ 14.870,10</span>
-                                </div>
-                            </div>
+                {/* Section 3: A CONTA (The Math / Calculator) */}
+                <section id="calculator" className="py-24 px-6 bg-[#f8f6f5]">
+                    <div className="max-w-6xl mx-auto">
+                        <div className="text-center mb-16">
+                            <h2 className="text-3xl lg:text-5xl font-black tracking-tighter mb-4 uppercase">
+                                A conta que <span className="text-[#FF3D03]">ninguém te mostra.</span>
+                            </h2>
+                            <p className="text-[#8d695e] font-medium max-w-2xl mx-auto">
+                                Use os controles abaixo para calcular o impacto real das taxas no seu bolso hoje.
+                            </p>
                         </div>
+                        
+                        <div className="grid lg:grid-cols-12 gap-12 items-start">
+                            {/* Left: Interactive Controls */}
+                            <div className="lg:col-span-7 space-y-12 bg-white p-8 lg:p-12 rounded-[3rem] border-2 border-[#e7ddda] shadow-sm">
+                                <div className="space-y-6">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-lg font-black uppercase tracking-tight">Pedidos por mês</label>
+                                        <span className="text-2xl font-black text-[#FF3D03]">{ordersCount}</span>
+                                    </div>
+                                    <input 
+                                        type="range" 
+                                        min="50" 
+                                        max="2000" 
+                                        step="50"
+                                        value={ordersCount}
+                                        onChange={(e) => setOrdersCount(parseInt(e.target.value))}
+                                        className="w-full h-3 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-[#FF3D03]"
+                                    />
+                                    <div className="flex justify-between text-xs font-bold text-gray-400">
+                                        <span>50 PEDIDOS</span>
+                                        <span>2.000+ PEDIDOS</span>
+                                    </div>
+                                </div>
 
-                        <div className="mt-16 inline-flex flex-col items-center gap-6">
-                            <p className="text-xl font-bold text-[#8d695e]">Quanto você quer economizar este mês?</p>
-                            <Link href={route('register')} className="h-16 px-12 rounded-2xl bg-[#181210] text-white font-black text-lg hover:scale-105 transition-all shadow-xl shadow-black/20 flex items-center gap-3">
-                                Calcular minha economia
-                                <ArrowRight size={20} className="text-[#FF3D03]" />
-                            </Link>
+                                <div className="space-y-6">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-lg font-black uppercase tracking-tight">Ticket Médio</label>
+                                        <span className="text-2xl font-black text-[#FF3D03]">R$ {avgTicket}</span>
+                                    </div>
+                                    <input 
+                                        type="range" 
+                                        min="20" 
+                                        max="200" 
+                                        step="5"
+                                        value={avgTicket}
+                                        onChange={(e) => setAvgTicket(parseInt(e.target.value))}
+                                        className="w-full h-3 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-[#FF3D03]"
+                                    />
+                                    <div className="flex justify-between text-xs font-bold text-gray-400">
+                                        <span>R$ 20</span>
+                                        <span>R$ 200</span>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-lg font-black uppercase tracking-tight">Taxa de Comissão (%)</label>
+                                        <span className="text-2xl font-black text-red-500">{commissionRate}%</span>
+                                    </div>
+                                    <input 
+                                        type="range" 
+                                        min="10" 
+                                        max="30" 
+                                        step="1"
+                                        value={commissionRate}
+                                        onChange={(e) => setCommissionRate(parseInt(e.target.value))}
+                                        className="w-full h-3 bg-red-50 rounded-lg appearance-none cursor-pointer accent-red-500"
+                                    />
+                                    <div className="flex justify-between text-xs font-bold text-gray-400">
+                                        <span>MÍNIMO (10%)</span>
+                                        <span>MÁXIMO (30%)</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Right: Results Display */}
+                            <div className="lg:col-span-5 space-y-6">
+                                <div className="p-8 rounded-[3rem] bg-[#181210] text-white shadow-2xl relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-[#FF3D03] opacity-10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                                    
+                                    <h3 className="text-sm font-black uppercase tracking-[0.2em] text-gray-500 mb-8">Sua Economia Mensal</h3>
+                                    
+                                    <div className="space-y-6">
+                                        <div className="flex justify-between items-baseline">
+                                            <span className="text-gray-400 font-bold">Hoje você perde:</span>
+                                            <span className="text-xl font-bold text-red-400">R$ {marketplaceLoss.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                        </div>
+                                        <div className="flex justify-between items-baseline">
+                                            <span className="text-gray-400 font-bold">Investimento Óo:</span>
+                                            <span className="text-xl font-bold text-green-400">R$ 129,90</span>
+                                        </div>
+                                        
+                                        <div className="pt-6 border-t border-white/10">
+                                            <p className="text-xs font-black text-[#FF3D03] uppercase tracking-widest mb-2">Sobram no seu bolso:</p>
+                                            <div className="text-5xl lg:text-6xl font-black tracking-tighter text-white">
+                                                R$ {savings.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                            </div>
+                                            <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-4">Calculados sobre R$ {totalRevenue.toLocaleString('pt-BR')} de venda</p>
+                                        </div>
+                                    </div>
+
+                                    <Link href={route('register')} className="mt-10 w-full h-16 rounded-2xl bg-[#FF3D03] text-white font-black text-lg hover:scale-105 transition-all shadow-xl shadow-[#FF3D03]/20 flex items-center justify-center gap-3">
+                                        Quero economizar agora
+                                        <ArrowRight size={20} />
+                                    </Link>
+                                </div>
+
+                                <div className="p-6 bg-white border-2 border-[#e7ddda] rounded-[2rem] flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center text-green-600 shrink-0">
+                                        <CheckCircle2 size={24} />
+                                    </div>
+                                    <p className="text-sm font-bold text-[#8d695e]">Venda ilimitado. Nossa taxa é zero independente do seu faturamento.</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -506,11 +580,19 @@ export default function WelcomeV5({ auth }: PageProps) {
                         </h2>
                         
                         <p className="text-xl text-gray-400 font-medium mb-12">A decisão é sua.</p>
-                        
-                        <Link href={route('register')} className="inline-flex h-20 px-12 rounded-[2rem] bg-[#FF3D03] text-white font-black text-2xl hover:translate-y-[-4px] transition-all shadow-2xl shadow-[#FF3D03]/30 items-center gap-4 group">
-                            Quero vender mais e pagar menos
-                            <ArrowRight size={28} className="group-hover:translate-x-2 transition-transform" />
-                        </Link>
+                        <div className="flex flex-col sm:flex-row justify-center gap-6">
+                            <Link href={route('register')} className="h-20 px-12 rounded-[2rem] bg-[#FF3D03] text-white font-black text-2xl hover:translate-y-[-4px] transition-all shadow-2xl shadow-[#FF3D03]/30 flex items-center gap-4 group">
+                                Começar Agora
+                                <ArrowRight size={28} className="group-hover:translate-x-2 transition-transform" />
+                            </Link>
+                            <button 
+                                onClick={() => document.getElementById('calculator')?.scrollIntoView({ behavior: 'smooth' })}
+                                className="h-20 px-12 rounded-[2rem] border-2 border-white/20 text-white font-black text-2xl hover:bg-white/10 transition-all flex items-center gap-4 group"
+                            >
+                                Recalcular Economia
+                                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform text-[#FF3D03]" />
+                            </button>
+                        </div>
                     </div>
                 </section>
             </main>
