@@ -216,7 +216,7 @@ Route::middleware(['auth', \App\Http\Middleware\SuperAdminMiddleware::class])->p
     Route::get('/financial', [\App\Http\Controllers\Admin\AdminFinancialController::class, 'index'])->name('financial.index');
 });
 
-Route::post('/admin/impersonate/leave', [\App\Http\Controllers\Admin\AdminImpersonateController::class, 'leave'])
+Route::post(config('platform.admin_path') . '/impersonate/leave', [\App\Http\Controllers\Admin\AdminImpersonateController::class, 'leave'])
     ->middleware('auth')
     ->name('admin.impersonate.leave');
 

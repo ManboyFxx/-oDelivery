@@ -11,5 +11,5 @@ return [
     | management entry point from automated attacks.
     |
     */
-    'admin_path' => env('ADMIN_PATH', 'admin'),
+    'admin_path' => env('ADMIN_PATH', 'platform'),
 ];
