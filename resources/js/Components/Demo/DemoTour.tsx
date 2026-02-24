@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, X, Star, Zap, ShoppingBag, BookOpen, UserCog, Settings } from 'lucide-react';
+import { ChevronRight, X, Star, Zap, ShoppingBag, BookOpen, UserCog, Monitor, MessageSquare, Calculator, PartyPopper } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 interface Step {
@@ -26,6 +26,13 @@ const steps: Step[] = [
         icon: ShoppingBag
     },
     {
+        title: "PDV / Caixa",
+        content: "Venda em Segundos. Nosso PDV é otimizado para velocidade. Registre pedidos no balcão de forma intuitiva e integrada.",
+        target: "sidebar-pdv",
+        position: "right",
+        icon: Monitor
+    },
+    {
         title: "Cardápio Digital",
         content: "Gerencie seus produtos, categorias e preços de forma ultra-rápida. Suas alterações aparecem na hora para os clientes.",
         target: "sidebar-menu",
@@ -40,6 +47,20 @@ const steps: Step[] = [
         icon: UserCog
     },
     {
+        title: "Automação Inteligente",
+        content: "Veja o ÓoBot em ação! Atendimento automático no WhatsApp que entende seus clientes e vende por você.",
+        target: "dashboard-whatsapp-simulator",
+        position: "left",
+        icon: MessageSquare
+    },
+    {
+        title: "Economia Real",
+        content: "Simule seus ganhos! Veja na ponta do lápis quanto você economiza eliminando as taxas dos marketplaces.",
+        target: "dashboard-result-calculator",
+        position: "top",
+        icon: Calculator
+    },
+    {
         title: "O Futuro é Agora",
         content: "O OoDelivery foi feito para escalar seu negócio sem taxas abusivas. Pronto para começar sua jornada?",
         target: "dashboard-bestsellers",
@@ -50,18 +71,20 @@ const steps: Step[] = [
 
 export default function DemoTour({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
     const [currentStep, setCurrentStep] = useState(0);
+    const [isFinished, setIsFinished] = useState(false);
     const [coords, setCoords] = useState({ top: 0, left: 0, width: 0, height: 0 });
 
     useEffect(() => {
-        if (isOpen) {
+        if (isOpen && !isFinished) {
             updateCoords();
             window.addEventListener('resize', updateCoords);
         }
         return () => window.removeEventListener('resize', updateCoords);
-    }, [isOpen, currentStep]);
+    }, [isOpen, currentStep, isFinished]);
 
     const updateCoords = () => {
-        const element = document.getElementById(steps[currentStep].target);
+        const targetId = steps[currentStep].target;
+        const element = document.getElementById(targetId);
         if (element) {
             const rect = element.getBoundingClientRect();
             setCoords({
@@ -75,6 +98,36 @@ export default function DemoTour({ isOpen, onClose }: { isOpen: boolean; onClose
     };
 
     if (!isOpen) return null;
+
+    if (isFinished) {
+        return (
+            <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+                <motion.div 
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="bg-white dark:bg-[#1a1b1e] rounded-[2.5rem] p-10 max-w-md w-full text-center border border-white/10 shadow-2xl"
+                >
+                    <div className="w-20 h-20 bg-[#FF3D03]/10 text-[#FF3D03] rounded-3xl flex items-center justify-center mx-auto mb-6">
+                        <PartyPopper className="w-10 h-10" />
+                    </div>
+                    <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-4 tracking-tight">Tutorial Finalizado!</h2>
+                    <p className="text-gray-600 dark:text-gray-400 mb-8 font-medium leading-relaxed">
+                        Parabéns! Você concluiu o tour básico. Agora você está pronto para explorar todo o potencial do ÓoDelivery e transformar sua operação.
+                    </p>
+                    <button
+                        onClick={() => {
+                            setIsFinished(false);
+                            setCurrentStep(0);
+                            onClose();
+                        }}
+                        className="w-full bg-[#FF3D03] text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-[#FF3D03]/30"
+                    >
+                        Começar Agora
+                    </button>
+                </motion.div>
+            </div>
+        );
+    }
 
     const step = steps[currentStep];
 
@@ -106,7 +159,7 @@ export default function DemoTour({ isOpen, onClose }: { isOpen: boolean; onClose
                     className="absolute pointer-events-auto bg-white dark:bg-[#1a1b1e] rounded-3xl shadow-2xl p-6 w-80 border border-white/10"
                     style={{
                         top: step.position === 'bottom' ? coords.top + coords.height + 20 : 
-                             step.position === 'top' ? coords.top - 250 :
+                             step.position === 'top' ? coords.top - 280 :
                              coords.top + (coords.height / 2) - 100,
                         left: step.position === 'right' ? coords.left + coords.width + 20 :
                               step.position === 'left' ? coords.left - 340 :
@@ -148,7 +201,7 @@ export default function DemoTour({ isOpen, onClose }: { isOpen: boolean; onClose
                                     if (currentStep < steps.length - 1) {
                                         setCurrentStep(prev => prev + 1);
                                     } else {
-                                        onClose();
+                                        setIsFinished(true);
                                     }
                                 }}
                                 className="bg-[#FF3D03] text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[#FF3D03]/20"
@@ -170,6 +223,7 @@ export default function DemoTour({ isOpen, onClose }: { isOpen: boolean; onClose
 
             {/* Pulsing Highlight */}
             <motion.div
+                key={`highlight-${currentStep}`}
                 animate={{
                     boxShadow: ["0 0 0 0px rgba(255, 61, 3, 0.4)", "0 0 0 20px rgba(255, 61, 3, 0)"]
                 }}

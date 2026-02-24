@@ -26,7 +26,7 @@ export default function ResultCalculator() {
         new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
     return (
-        <div className="bg-white dark:bg-[#1a1b1e] rounded-[2.5rem] p-8 border border-gray-100 dark:border-white/5 shadow-2xl shadow-black/5 relative overflow-hidden group">
+        <div id="dashboard-result-calculator" className="bg-white dark:bg-[#1a1b1e] rounded-[2.5rem] p-8 border border-gray-100 dark:border-white/5 shadow-2xl shadow-black/5 relative overflow-hidden group">
             {/* Background Gradient */}
             <div className="absolute top-0 right-0 w-1/3 h-1/3 bg-[#FF3D03]/5 blur-[80px] rounded-full -translate-y-1/2 translate-x-1/2 group-hover:bg-[#FF3D03]/10 transition-colors" />
             

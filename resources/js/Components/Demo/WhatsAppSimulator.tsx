@@ -56,7 +56,7 @@ export default function WhatsAppSimulator() {
     }, []);
 
     return (
-        <div className="bg-[#E5DDD5] dark:bg-[#0b141a] rounded-[2.5rem] w-full h-[600px] flex flex-col shadow-2xl relative overflow-hidden border-[8px] border-white dark:border-[#202c33]">
+        <div id="dashboard-whatsapp-simulator" className="bg-[#E5DDD5] dark:bg-[#0b141a] rounded-[2.5rem] w-full h-[600px] flex flex-col shadow-2xl relative overflow-hidden border-[8px] border-white dark:border-[#202c33]">
             {/* Header */}
             <div className="bg-[#075E54] dark:bg-[#202c33] text-white p-4 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">
