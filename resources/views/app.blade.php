@@ -6,7 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <title inertia>{{ config('app.name', 'ÓoDelivery') }}</title>
+    <meta name="description"
+        content="Sua própria plataforma de delivery. Tudo o que você precisa para lucrar mais sem pagar taxas por pedido.">
     <link rel="icon" type="image/png" href="/images/logo-main.png">
+
+    <!-- Social Media Previews (Default) -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="ÓoDelivery | Sua própria plataforma de delivery.">
+    <meta property="og:description"
+        content="Tenha controle total do seu delivery com PDV, WhatsApp Automático, Gestão de Motoboys e muito mais.">
+    <meta property="og:image" content="{{ asset('images/logo-main.png') }}">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -23,7 +32,7 @@
             document.documentElement.classList.add('dark');
         } else {
             document.documentElement.classList.remove('dark');
-        }
+    }
     </script>
 
     <!-- OneSignal SDK -->
@@ -38,7 +47,7 @@
                     enable: true,
                 },
             });
-        });
+    });
     </script>
 </head>
 

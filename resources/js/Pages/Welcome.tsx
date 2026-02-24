@@ -35,7 +35,24 @@ export default function WelcomeV5({ auth }: PageProps) {
 
     return (
         <div className="relative min-h-screen bg-[#f8f6f5] text-[#181210] selection:bg-[#FF3D03]/20 font-sans antialiased overflow-x-hidden">
-            <Head title="OoDelivery | Gestão de Alta Performance para Delivery" />
+            <Head>
+                <title>ÓoDelivery | Sua própria plataforma de delivery.</title>
+                <meta name="description" content="Tenha controle total do seu delivery com PDV, WhatsApp Automático, Gestão de Motoboys e muito mais. Pare de pagar taxas por pedido." />
+                
+                {/* Facebook / Standard Open Graph */}
+                <meta property="og:type" content="website" />
+                <meta property="og:url" content={window.location.origin} />
+                <meta property="og:title" content="ÓoDelivery | Sua própria plataforma de delivery." />
+                <meta property="og:description" content="Tenha controle total do seu delivery com PDV, WhatsApp Automático, Gestão de Motoboys e muito mais. Pare de pagar taxas por pedido." />
+                <meta property="og:image" content={`${window.location.origin}/images/logo-main.png`} />
+
+                {/* Twitter */}
+                <meta property="twitter:card" content="summary_large_image" />
+                <meta property="twitter:url" content={window.location.origin} />
+                <meta property="twitter:title" content="ÓoDelivery | Sua própria plataforma de delivery." />
+                <meta property="twitter:description" content="Tenha controle total do seu delivery com PDV, WhatsApp Automático, Gestão de Motoboys e muito mais. Pare de pagar taxas por pedido." />
+                <meta property="twitter:image" content={`${window.location.origin}/images/logo-main.png`} />
+            </Head>
             
             {/* SVG Noise Texture Overlay */}
             <div className="fixed inset-0 pointer-events-none z-[100] opacity-[0.03] mix-blend-overlay">
