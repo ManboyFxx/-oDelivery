@@ -23,6 +23,9 @@ O sistema é um **SaaS Multi-tenant** construído com:
 - `/demo-access`: Acesso instantâneo a ambiente de teste isolado.
 - `/login` / `/register`: Portais de entrada para parceiros.
 - `/planos`: Vitrine de assinaturas.
+- `/termos`: Termos de uso e licenciamento SaaS.
+- `/privacidade`: Política de privacidade e tratamento de dados.
+- `/suporte`: Central de ajuda e suporte técnico.
 
 ### 2. Painel Administrativo (Parceiro)
 

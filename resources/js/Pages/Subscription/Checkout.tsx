@@ -222,7 +222,7 @@ export default function Checkout({ plan, price, planName, features }: CheckoutPr
                                     <div className="flex justify-between items-start mb-2">
                                         <span className="font-medium text-gray-700 dark:text-gray-300">{planName}</span>
                                         <span className="font-bold text-xl text-gray-900 dark:text-white">
-                                            R$ {price.toFixed(2)}
+                                            R$ {price.toFixed(2).replace('.', ',')}
                                         </span>
                                     </div>
                                     <span className="text-xs text-gray-500 dark:text-gray-400">Cobrança mensal</span>
@@ -321,7 +321,7 @@ export default function Checkout({ plan, price, planName, features }: CheckoutPr
                                                 </span>
                                             )}
                                             <span className="font-black text-2xl text-gray-900 dark:text-white">
-                                                R$ {calculateTotal().toFixed(2)}
+                                                R$ {calculateTotal().toFixed(2).replace('.', ',')}
                                             </span>
                                         </div>
                                     </div>

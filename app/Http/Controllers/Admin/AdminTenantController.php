@@ -11,8 +11,16 @@ class AdminTenantController extends Controller
 {
     public function index(Request $request)
     {
+        $tab = $request->input('tab', 'real');
+
         $tenants = Tenant::query()
             ->withCount(['products', 'users', 'orders', 'motoboys'])
+            // Tab Filter (Demo vs Real)
+            ->when($tab === 'demo', function ($q) {
+                $q->demo();
+            }, function ($q) {
+                $q->real();
+            })
             // Search Filter
             ->when($request->search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
@@ -52,7 +60,6 @@ class AdminTenantController extends Controller
                 'email' => $tenant->email,
                 'plan' => $tenant->plan,
                 'subscription_status' => $tenant->subscription_status,
-                'subscription_status' => $tenant->subscription_status,
                 // 'trial_ends_at' => null, // Removed
                 // 'trial_days_remaining' => 0, // Removed
                 // 'is_trial_active' => false, // Removed
@@ -73,7 +80,7 @@ class AdminTenantController extends Controller
 
         return Inertia::render('Admin/Tenants/Index', [
             'tenants' => $tenants,
-            'filters' => $request->only(['search', 'status', 'plan', 'sort_by', 'sort_desc']),
+            'filters' => $request->only(['search', 'status', 'plan', 'sort_by', 'sort_desc', 'tab']),
             'plans' => $plans,
         ]);
     }

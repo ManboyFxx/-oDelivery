@@ -238,7 +238,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
                     <div className="flex items-center gap-4 px-2">
                         <div className="flex flex-col w-full gap-1">
                             <img
-                                src="/images/logo.png"
+                                src="/images/logo-main.png"
                                 alt="ÓoDelivery"
                                 className="h-14 w-auto object-contain mx-auto mb-2"
                             />

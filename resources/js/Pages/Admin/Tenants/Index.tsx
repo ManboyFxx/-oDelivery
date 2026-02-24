@@ -46,6 +46,7 @@ interface IndexProps {
         plan?: string;
         sort_by?: string;
         sort_desc?: string;
+        tab?: string;
     };
     plans: Array<{ plan: string; display_name: string }>;
 }
@@ -54,6 +55,7 @@ export default function AdminTenantsIndex({ tenants, filters, plans }: IndexProp
     const [search, setSearch] = useState(filters.search || '');
     const [status, setStatus] = useState(filters.status || 'all');
     const [plan, setPlan] = useState(filters.plan || 'all');
+    const [activeTab, setActiveTab] = useState(filters.tab || 'real');
     const [extendingTrial, setExtendingTrial] = useState<string | null>(null);
 
     // Debounce search
@@ -63,7 +65,8 @@ export default function AdminTenantsIndex({ tenants, filters, plans }: IndexProp
                 router.get(route('admin.tenants.index'), {
                     search,
                     status: status !== 'all' ? status : undefined,
-                    plan: plan !== 'all' ? plan : undefined
+                    plan: plan !== 'all' ? plan : undefined,
+                    tab: activeTab
                 }, {
                     preserveState: true,
                     preserveScroll: true,
@@ -82,7 +85,21 @@ export default function AdminTenantsIndex({ tenants, filters, plans }: IndexProp
         router.get(route('admin.tenants.index'), {
             search,
             status: key === 'status' && value !== 'all' ? value : (status !== 'all' ? status : undefined),
-            plan: key === 'plan' && value !== 'all' ? value : (plan !== 'all' ? plan : undefined)
+            plan: key === 'plan' && value !== 'all' ? value : (plan !== 'all' ? plan : undefined),
+            tab: activeTab
+        }, {
+            preserveState: true,
+            preserveScroll: true
+        });
+    };
+
+    const handleTabChange = (newTab: string) => {
+        setActiveTab(newTab);
+        router.get(route('admin.tenants.index'), {
+            search,
+            status: status !== 'all' ? status : undefined,
+            plan: plan !== 'all' ? plan : undefined,
+            tab: newTab
         }, {
             preserveState: true,
             preserveScroll: true
@@ -153,6 +170,33 @@ export default function AdminTenantsIndex({ tenants, filters, plans }: IndexProp
                             Nova Loja
                         </Link>
                     </div>
+                </div>
+
+                <div className="flex border-b border-gray-100 dark:border-white/5">
+                    <button
+                        onClick={() => handleTabChange('real')}
+                        className={`px-6 py-4 text-sm font-black transition-all border-b-2 ${activeTab === 'real'
+                            ? 'border-[#ff3d03] text-[#ff3d03]'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                            }`}
+                    >
+                        <div className="flex items-center gap-2">
+                            <Store className="h-4 w-4" />
+                            Lojas Reais
+                        </div>
+                    </button>
+                    <button
+                        onClick={() => handleTabChange('demo')}
+                        className={`px-6 py-4 text-sm font-black transition-all border-b-2 ${activeTab === 'demo'
+                            ? 'border-[#ff3d03] text-[#ff3d03]'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                            }`}
+                    >
+                        <div className="flex items-center gap-2">
+                            <Zap className="h-4 w-4" />
+                            Lojas de Demonstração
+                        </div>
+                    </button>
                 </div>
 
                 {/* Filters */}

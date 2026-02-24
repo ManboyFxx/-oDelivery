@@ -94,6 +94,18 @@ Route::get('/suporte', function () {
     return Inertia::render('Support');
 })->name('support');
 
+Route::get('/oobot', function () {
+    return Inertia::render('OoBot');
+})->name('oobot');
+
+Route::get('/ooprint', function () {
+    return Inertia::render('OoPrint');
+})->name('ooprint');
+
+Route::get('/privacidade', function () {
+    return Inertia::render('Privacy');
+})->name('privacy');
+
 // Customer Auth Routes (Public - Phone Only) - ✅ COM RATE LIMITING
 Route::post('/check-slug', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'checkSlug'])->name('check-slug');
 

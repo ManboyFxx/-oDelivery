@@ -1,91 +1,17 @@
+import PublicLayout from '@/Layouts/PublicLayout';
 import { PageProps } from '@/types';
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import { 
     ShoppingBag, 
-    Menu, 
-    X, 
     Printer, 
-    Zap, 
-    CheckCircle2,
-    Download
+    Zap
 } from 'lucide-react';
-import { useState } from 'react';
 
 export default function OoPrint({ auth }: PageProps) {
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-    const navLinks = [
-        { name: 'OoBot (WhatsApp)', href: '/oobot' },
-        { name: 'OoPrint', href: '/ooprint' }, 
-        { name: 'Plano', href: '/register' },
-    ];
-
     return (
-        <div className="relative min-h-screen bg-[#f8f6f5] text-[#181210] selection:bg-[#FF3D03]/20 font-sans antialiased overflow-x-hidden">
+        <PublicLayout>
             <Head title="OoPrint | Impressão Térmica Automática para Delivery" />
             
-            <div className="fixed inset-0 pointer-events-none z-[100] opacity-[0.03] mix-blend-overlay">
-                <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                    <filter id="noiseFilter">
-                        <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/>
-                    </filter>
-                    <rect width="100%" height="100%" filter="url(#noiseFilter)"/>
-                </svg>
-            </div>
-
-            <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-[#e7ddda]">
-                <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-                    <Link href="/" className="flex items-center gap-2 group cursor-pointer">
-                        <ShoppingBag className="text-[#FF3D03] transition-transform group-hover:scale-110" size={28} strokeWidth={2.5} />
-                        <span className="text-2xl font-black tracking-tighter text-[#181210]">
-                            Oo<span className="text-[#FF3D03]">Delivery</span>
-                        </span>
-                    </Link>
-
-                    <nav className="hidden md:flex items-center gap-10">
-                        {navLinks.map((link) => (
-                            <Link
-                                key={link.name}
-                                href={link.href}
-                                className={`text-sm font-semibold transition-colors ${link.name.includes('OoPrint') ? 'text-[#FF3D03]' : 'text-gray-700 hover:text-[#FF3D03]'}`}
-                            >
-                                {link.name}
-                            </Link>
-                        ))}
-                    </nav>
-
-                    <div className="flex items-center gap-4">
-                        <Link href="/login" className="hidden sm:block text-sm font-bold px-5 py-2.5 rounded-xl bg-[#ede7e5] hover:bg-[#e7ddda] transition-all">
-                            Entrar
-                        </Link>
-                        <Link href="/register" className="text-sm font-bold px-6 py-2.5 rounded-xl bg-[#FF3D03] text-white hover:opacity-90 transition-all shadow-lg shadow-[#FF3D03]/20">
-                            Criar Minha Loja
-                        </Link>
-                        <button 
-                            className="md:hidden text-gray-700"
-                            onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        >
-                            {isMenuOpen ? <X /> : <Menu />}
-                        </button>
-                    </div>
-                </div>
-
-                {isMenuOpen && (
-                    <div className="md:hidden bg-white border-b border-[#e7ddda] px-6 py-6 flex flex-col gap-4">
-                        {navLinks.map((link) => (
-                            <Link
-                                key={link.name}
-                                href={link.href}
-                                className="text-base font-semibold text-gray-700 hover:text-[#FF3D03]"
-                                onClick={() => setIsMenuOpen(false)}
-                            >
-                                {link.name}
-                            </Link>
-                        ))}
-                    </div>
-                )}
-            </header>
-
             <main>
                 <section className="relative pt-20 lg:pt-32 pb-24 px-6 overflow-hidden">
                     <div className="max-w-7xl mx-auto flex flex-col items-center gap-12">
@@ -147,7 +73,7 @@ export default function OoPrint({ auth }: PageProps) {
                                 </div>
 
                                 {/* Main Content */}
-                                <div className="flex-1 p-8 bg-[#0f0f0f] text-white overflow-y-auto">
+                                <div className="flex-1 p-8 bg-[#0f0f0f] text-white overflow-y-auto custom-scrollbar">
                                     {/* Header Status */}
                                     <div className="flex justify-between items-center mb-8">
                                         <div className="flex items-center gap-4 text-xs text-gray-500">
@@ -221,29 +147,22 @@ export default function OoPrint({ auth }: PageProps) {
                                         <div className="flex flex-col items-center">
                                             <h3 className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-4 self-end">Prévia de Impressão</h3>
                                             <div className="relative w-full max-w-[340px] bg-[#fff] px-6 py-8 shadow-2xl skew-y-0 font-mono text-xs border border-gray-200 transform scale-[0.85] origin-top md:origin-top">
-                                                {/* Paper Texture Effect */}
-                                                <div className="absolute inset-0 bg-[#fff] opacity-80 z-0"></div>
                                                 <div className="relative z-10 text-[#181210]">
-                                                    
-                                                    {/* Header */}
                                                     <div className="text-center mb-4">
                                                         <h3 className="font-bold text-base uppercase tracking-wider">Pedido Impresso</h3>
                                                         <p className="text-[9px] text-gray-500 uppercase">Sistema de Impressão Automático</p>
                                                         <div className="w-full border-b border-dashed border-gray-300 my-2"></div>
                                                     </div>
 
-                                                    {/* Order Number */}
                                                     <div className="text-center mb-4">
                                                         <h2 className="text-3xl font-black tracking-tighter">PEDIDO #9281</h2>
                                                         <div className="w-full border-b-2 border-black mt-2"></div>
                                                     </div>
 
-                                                    {/* Meta Data */}
                                                     <div className="mb-4 text-[10px] space-y-1">
                                                         <p>DATA: 25/05/2024 20:15:33</p>
                                                     </div>
 
-                                                    {/* Customer */}
                                                     <div className="mb-4 text-[10px] space-y-1">
                                                         <p className="font-bold">CLIENTE: RICARDO OLIVEIRA</p>
                                                         <p>TEL: (11) 98765-4321</p>
@@ -252,7 +171,6 @@ export default function OoPrint({ auth }: PageProps) {
                                                         <div className="w-full border-b border-dashed border-gray-300 mt-2"></div>
                                                     </div>
                                                     
-                                                    {/* Items */}
                                                     <div className="space-y-3 mb-4 text-[10px]">
                                                         <div>
                                                             <div className="flex justify-between font-bold text-xs">
@@ -268,7 +186,6 @@ export default function OoPrint({ auth }: PageProps) {
                                                         <div className="w-full border-b border-dashed border-gray-300 mt-2"></div>
                                                     </div>
 
-                                                    {/* Totals */}
                                                     <div className="space-y-1 mb-4 text-[10px]">
                                                         <div className="flex justify-between">
                                                             <span className="font-bold">SUBTOTAL:</span>
@@ -284,7 +201,6 @@ export default function OoPrint({ auth }: PageProps) {
                                                         </div>
                                                     </div>
 
-                                                    {/* Grand Total */}
                                                     <div className="border-t-2 border-black pt-2 mb-4">
                                                         <div className="flex justify-between items-end">
                                                             <span className="font-black text-lg">TOTAL GERAL:</span>
@@ -292,12 +208,10 @@ export default function OoPrint({ auth }: PageProps) {
                                                         </div>
                                                     </div>
 
-                                                    {/* Payment Box */}
                                                     <div className="border border-black p-2 text-center mb-6">
                                                         <p className="font-bold text-[10px] uppercase">Pagto: Cartão de Crédito</p>
                                                     </div>
 
-                                                    {/* Footer */}
                                                     <div className="text-center space-y-2">
                                                         <p className="font-bold text-[10px] italic">OBRIGADO PELA COMPRA!</p>
                                                         <div className="w-full border-b border-gray-200"></div>
@@ -305,7 +219,6 @@ export default function OoPrint({ auth }: PageProps) {
                                                     </div>
                                                 </div>
                                                 
-                                                {/* Tear effect at bottom */}
                                                 <div className="absolute -bottom-3 left-0 w-full h-4 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMCAxMCIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSI+PHBhdGggZD0iTTAgMTBMMTAgMEwyMCAxMFoiIGZpbGw9IiNmZmZmZmYiLz48L3N2Zz4=')] bg-repeat-x bg-[length:20px_10px]"></div>
                                             </div>
                                         </div>
@@ -316,25 +229,6 @@ export default function OoPrint({ auth }: PageProps) {
                     </div>
                 </section>
             </main>
-
-            <footer className="bg-[#f8f6f5] py-12 px-6 border-t border-[#e7ddda]">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-[#FF3D03] rounded-lg flex items-center justify-center text-white font-black text-lg italic shadow-md shadow-[#FF3D03]/20">O</div>
-                        <span className="text-lg font-black tracking-tighter text-[#181210]">OoDelivery</span>
-                    </div>
-
-                    <div className="flex flex-wrap justify-center gap-8 text-[11px] font-bold text-[#8d695e] uppercase tracking-widest">
-                        <Link href="/termos" className="hover:text-[#FF3D03] transition-colors">Termos de Uso</Link>
-                        <Link href="#" className="hover:text-[#FF3D03] transition-colors">Privacidade</Link>
-                        <Link href="/suporte" className="hover:text-[#FF3D03] transition-colors">Suporte</Link>
-                    </div>
-
-                    <p className="text-[10px] font-black text-gray-400/50 uppercase tracking-[0.2em] text-center md:text-right">
-                        © 2026 OoDelivery Systems.
-                    </p>
-                </div>
-            </footer>
-        </div>
+        </PublicLayout>
     );
 }

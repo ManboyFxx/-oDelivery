@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <title inertia>{{ config('app.name', 'ÓoDelivery') }}</title>
-    <link rel="icon" type="image/png" href="/images/logo-icon.png">
+    <link rel="icon" type="image/png" href="/images/logo-main.png">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">

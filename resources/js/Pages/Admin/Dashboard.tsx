@@ -1,11 +1,12 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     Users, Store, ShoppingBag, TrendingUp, AlertTriangle,
-    CheckCircle, XCircle, Activity, Server, Printer, MessageCircle
+    CheckCircle, XCircle, Activity, Server, Printer, MessageCircle, Zap
 } from 'lucide-react';
 import { Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import { useState } from 'react';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -31,9 +32,23 @@ interface DashboardProps {
         motoboy: { status: string; latency: string };
         print: { status: string; latency: string };
     };
+    filters?: {
+        tab?: string;
+    };
 }
 
-export default function AdminDashboard({ metrics, recent_tenants, system_health }: DashboardProps) {
+export default function AdminDashboard({ metrics, recent_tenants, system_health, filters }: DashboardProps) {
+    const [activeTab, setActiveTab] = useState(filters?.tab || 'real');
+
+    const handleTabChange = (newTab: string) => {
+        setActiveTab(newTab);
+        router.get(route('admin.dashboard'), {
+            tab: newTab
+        }, {
+            preserveState: true,
+            preserveScroll: true
+        });
+    };
     const pieData = {
         labels: ['Ativos', 'Trial', 'Inativos'],
         datasets: [
@@ -84,6 +99,34 @@ export default function AdminDashboard({ metrics, recent_tenants, system_health 
                     <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
                         Monitoramento global da plataforma
                     </p>
+                </div>
+
+                {/* Tabs */}
+                <div className="flex border-b border-gray-100 dark:border-white/5">
+                    <button
+                        onClick={() => handleTabChange('real')}
+                        className={`px-6 py-4 text-sm font-black transition-all border-b-2 ${activeTab === 'real'
+                                ? 'border-[#ff3d03] text-[#ff3d03]'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                            }`}
+                    >
+                        <div className="flex items-center gap-2">
+                            <Store className="h-4 w-4" />
+                            Painel Real
+                        </div>
+                    </button>
+                    <button
+                        onClick={() => handleTabChange('demo')}
+                        className={`px-6 py-4 text-sm font-black transition-all border-b-2 ${activeTab === 'demo'
+                                ? 'border-[#ff3d03] text-[#ff3d03]'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                            }`}
+                    >
+                        <div className="flex items-center gap-2">
+                            <Zap className="h-4 w-4" />
+                            Painel Demo
+                        </div>
+                    </button>
                 </div>
 
                 {/* KPI Grid */}

@@ -161,7 +161,7 @@ export default function Pricing({ plan }: PlanProps) {
                                         <div className="flex items-center justify-center gap-1 group-hover:scale-105 transition-transform duration-500">
                                             <span className="text-sm font-bold opacity-60 mt-2">R$</span>
                                             <span className="text-6xl font-black tracking-tighter">
-                                                {currentPriceDisplay.toFixed(0)}
+                                                {Math.floor(currentPriceDisplay)}
                                             </span>
                                             <div className="text-left mt-2">
                                                 <span className="block text-2xl font-black leading-none">

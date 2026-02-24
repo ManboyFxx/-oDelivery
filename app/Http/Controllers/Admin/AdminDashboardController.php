@@ -18,19 +18,35 @@ class AdminDashboardController extends Controller
     ) {
     }
 
-    public function index()
+    public function index(Request $request)
     {
+        $tab = $request->input('tab', 'real');
+
         // ✅ Cache Metrics (30 minutes)
         // High cost calculations: MRR, Global Orders, Active Tenants
-        $metrics = Cache::remember('admin_dashboard_metrics', 1800, function () {
-            $totalTenants = Tenant::count();
-            $activeTenants = Tenant::where('is_active', true)->count();
-            $newTenants = Tenant::where('created_at', '>=', now()->subDays(30))->count();
+        $metrics = Cache::remember("admin_dashboard_metrics_{$tab}", 1800, function () use ($tab) {
+            $tenantQuery = Tenant::query();
+            if ($tab === 'demo') {
+                $tenantQuery->demo();
+            } else {
+                $tenantQuery->real();
+            }
 
-            // Total Global Orders
-            $totalOrders = \App\Models\Order::withoutGlobalScope(\App\Scopes\TenantScope::class)->count();
+            $totalTenants = $tenantQuery->clone()->count();
+            $activeTenants = $tenantQuery->clone()->where('is_active', true)->count();
+            $newTenants = $tenantQuery->clone()->where('created_at', '>=', now()->subDays(30))->count();
 
-            $trialTenants = Tenant::where(function ($q) {
+            // Total Global Orders (filtered by tenant type)
+            $totalOrders = \App\Models\Order::withoutGlobalScope(\App\Scopes\TenantScope::class)
+                ->whereHas('tenant', function ($q) use ($tab) {
+                    if ($tab === 'demo') {
+                        $q->demo();
+                    } else {
+                        $q->real();
+                    }
+                })->count();
+
+            $trialTenants = $tenantQuery->clone()->where(function ($q) {
                 $q->where('plan', 'trial')
                     ->orWhere(function ($sub) {
                         $sub->whereNotNull('trial_ends_at')
@@ -41,7 +57,7 @@ class AdminDashboardController extends Controller
             // Calculate MRR
             $plans = \App\Models\PlanLimit::all()->keyBy('plan');
 
-            $mrr = Tenant::where('is_active', true)
+            $mrr = $tenantQuery->clone()->where('is_active', true)
                 ->where('plan', '!=', 'free')
                 ->where(function ($q) {
                     $q->where('subscription_status', 'active')
@@ -72,9 +88,15 @@ class AdminDashboardController extends Controller
 
         // ✅ Cache Recent Tenants (5 minutes)
         // Fast query, but good to cache for high traffic
-        $recentTenants = Cache::remember('admin_dashboard_recent_tenants', 300, function () {
-            return Tenant::latest()
-                ->take(5)
+        $recentTenants = Cache::remember("admin_dashboard_recent_tenants_{$tab}", 300, function () use ($tab) {
+            $query = Tenant::latest();
+            if ($tab === 'demo') {
+                $query->demo();
+            } else {
+                $query->real();
+            }
+
+            return $query->take(5)
                 ->get()
                 ->map(function ($tenant) {
                     return [
@@ -91,6 +113,7 @@ class AdminDashboardController extends Controller
         // ✅ Cache Health Checks (2 minutes)
         // Critical for performance. Prevents blocking if external API (Evolution) is slow.
         $systemHealth = Cache::remember('admin_dashboard_health', 120, function () {
+            // ... (rest of the health check logic remains the same)
             // 1. Evolution API (WhatsApp)
             $evolutionStatus = 'disconnected';
             $evolutionLatency = 'N/A';
@@ -156,7 +179,10 @@ class AdminDashboardController extends Controller
         return Inertia::render('Admin/Dashboard', [
             'metrics' => $metrics,
             'recent_tenants' => $recentTenants,
-            'system_health' => $systemHealth
+            'system_health' => $systemHealth,
+            'filters' => [
+                'tab' => $tab
+            ]
         ]);
     }
 }

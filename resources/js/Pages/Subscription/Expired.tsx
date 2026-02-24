@@ -129,8 +129,8 @@ export default function Expired({ tenant, plans, downgradeRisks }: Props) {
                     {/* Header */}
                     <div className="flex items-center justify-between mb-16">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-[#ff3d03] rounded-xl flex items-center justify-center shadow-lg shadow-[#ff3d03]/20">
-                                <img src="/images/logo-icon.png" alt="" className="w-6 h-6 invert brightness-0" />
+                            <div className="w-10 h-10 bg-[#ff3d03] rounded-xl flex items-center justify-center shadow-lg shadow-[#ff3d03]/20 p-2">
+                                <img src="/images/logo-main.png" alt="" className="w-full h-full object-contain brightness-0 invert" />
                             </div>
                             <span className="text-xl font-black text-gray-900 dark:text-white tracking-tighter uppercase">ÓoDelivery</span>
                         </div>
@@ -203,7 +203,7 @@ export default function Expired({ tenant, plans, downgradeRisks }: Props) {
                                         <div className="text-right">
                                             <div className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter">
                                                 {plan.price_monthly > 0 ? (
-                                                    `R$ ${Math.floor(plan.price_monthly)}`
+                                                    `R$ ${plan.price_monthly.toFixed(2).replace('.', ',')}`
                                                 ) : 'Grátis'}
                                                 <span className="text-sm text-gray-400 font-medium ml-1">/mês</span>
                                             </div>
@@ -251,7 +251,7 @@ export default function Expired({ tenant, plans, downgradeRisks }: Props) {
                             transition={{ duration: 1, ease: "backOut" }}
                             className="mb-12"
                         >
-                            <img src="/images/logo-hq.png" alt="ÓoDelivery" className="w-72 h-72 object-contain drop-shadow-[0_0_50px_rgba(255,61,3,0.3)]" />
+                            <img src="/images/logo-main.png" alt="ÓoDelivery" className="w-72 h-auto object-contain drop-shadow-[0_0_50px_rgba(255,61,3,0.3)]" />
                         </motion.div>
                         
                         <h2 className="text-3xl font-black text-white tracking-tight mb-4 uppercase">Sua operação não pode parar</h2>

@@ -138,6 +138,16 @@ class Tenant extends Model
         return $this->hasMany(WhatsAppInstance::class);
     }
 
+    public function scopeReal($query)
+    {
+        return $query->where('slug', 'not like', 'demo-%');
+    }
+
+    public function scopeDemo($query)
+    {
+        return $query->where('slug', 'like', 'demo-%');
+    }
+
     // ==========================================
     // Subscription Status Helpers
     // ==========================================

@@ -1,12 +1,13 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     TrendingUp, DollarSign, ShoppingBag, PieChart,
     ArrowUpRight, ArrowDownRight, Store, Calendar,
-    CreditCard, CheckCircle, Clock, Search
+    CreditCard, CheckCircle, Clock, Search, Zap
 } from 'lucide-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { PageProps } from '@/types';
 import { formatCurrency } from '@/Utils/format';
+import { useState } from 'react';
 
 interface MetricCardProps {
     title: string;
@@ -37,7 +38,18 @@ const MetricCard = ({ title, value, icon: Icon, trend, description }: MetricCard
     </div>
 );
 
-export default function FinancialIndex({ auth, metrics, chartData, topTenants, recentTransactions }: any) {
+export default function FinancialIndex({ auth, metrics, chartData, topTenants, recentTransactions, filters }: any) {
+    const [activeTab, setActiveTab] = useState(filters?.tab || 'real');
+
+    const handleTabChange = (newTab: string) => {
+        setActiveTab(newTab);
+        router.get(route('admin.financial.index'), {
+            tab: newTab
+        }, {
+            preserveState: true,
+            preserveScroll: true
+        });
+    };
     return (
         <AuthenticatedLayout
             user={auth.user}
@@ -46,6 +58,33 @@ export default function FinancialIndex({ auth, metrics, chartData, topTenants, r
             <Head title="Finanças Globais" />
 
             <div className="space-y-6">
+                {/* Tabs */}
+                <div className="flex border-b border-gray-100 dark:border-white/5">
+                    <button
+                        onClick={() => handleTabChange('real')}
+                        className={`px-6 py-4 text-sm font-black transition-all border-b-2 ${activeTab === 'real'
+                                ? 'border-[#ff3d03] text-[#ff3d03]'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                            }`}
+                    >
+                        <div className="flex items-center gap-2">
+                            <Store className="h-4 w-4" />
+                            Finanças Reais
+                        </div>
+                    </button>
+                    <button
+                        onClick={() => handleTabChange('demo')}
+                        className={`px-6 py-4 text-sm font-black transition-all border-b-2 ${activeTab === 'demo'
+                                ? 'border-[#ff3d03] text-[#ff3d03]'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                            }`}
+                    >
+                        <div className="flex items-center gap-2">
+                            <Zap className="h-4 w-4" />
+                            Finanças Demo
+                        </div>
+                    </button>
+                </div>
                 {/* Metrics Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <MetricCard

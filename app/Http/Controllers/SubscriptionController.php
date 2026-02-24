@@ -248,19 +248,30 @@ class SubscriptionController extends Controller
         $tenant = auth()->user()->tenant;
         $unifiedPlan = PlanLimit::findByPlan('unified');
 
+        if (!$unifiedPlan) {
+            abort(404, 'Plano unificado não configurado.');
+        }
+
         $planData = [
-            'id' => $unifiedPlan->plan,
+            'plan' => $unifiedPlan->plan,
             'name' => $unifiedPlan->display_name,
             'price' => $unifiedPlan->price_monthly,
+            'price_monthly' => $unifiedPlan->price_monthly,
+            'price_yearly' => $unifiedPlan->price_yearly,
             'interval' => 'mês',
             'features' => $unifiedPlan->formatted_features,
-            'current' => true, // Única opção
+            'max_products' => $unifiedPlan->max_products,
+            'max_users' => $unifiedPlan->max_users,
+            'current' => true,
         ];
 
         return Inertia::render('Subscription/Expired', [
-            'tenant' => $tenant,
-            'plans' => [$planData], // Array com 1 elemento para compatibilidade da view Expired se não for reescrita agora
-            'downgradeRisks' => [] // Sem riscos
+            'tenant' => [
+                'name' => $tenant->name,
+                'plan' => $tenant->plan,
+            ],
+            'plans' => [$planData],
+            'downgradeRisks' => []
         ]);
     }
 
