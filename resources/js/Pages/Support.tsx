@@ -45,14 +45,14 @@ export default function Support({ auth }: PageProps) {
                         <span className="text-[#FF3D03] font-bold text-sm flex items-center gap-2">Iniciar Conversa <ArrowLeft size={16} className="rotate-180" /></span>
                     </div>
 
-                    <div className="bg-white p-8 rounded-[2rem] border-2 border-[#e7ddda] hover:border-[#FF3D03] transition-all group cursor-pointer hover:shadow-xl">
+                    <a href="mailto:contato@oodelivery.online" className="bg-white p-8 rounded-[2rem] border-2 border-[#e7ddda] hover:border-[#FF3D03] transition-all group cursor-pointer hover:shadow-xl">
                         <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                             <Mail size={24} />
                         </div>
                         <h3 className="text-xl font-black mb-2">Email / Ticket</h3>
                         <p className="text-[#8d695e] text-sm font-medium mb-4">Para questões financeiras ou complexas.</p>
-                        <span className="text-[#FF3D03] font-bold text-sm flex items-center gap-2">Abrir Ticket <ArrowLeft size={16} className="rotate-180" /></span>
-                    </div>
+                        <span className="text-[#FF3D03] font-bold text-sm flex items-center gap-2">contato@oodelivery.online <ArrowLeft size={16} className="rotate-180" /></span>
+                    </a>
                 </div>
 
                 <h2 className="text-3xl font-black text-[#181210] mb-8 text-center uppercase tracking-tight">Dúvidas Frequentes</h2>

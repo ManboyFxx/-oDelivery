@@ -53,7 +53,7 @@ export default function Suspended({ tenant }: Props) {
 
                         <div className="flex flex-col gap-3">
                             <a
-                                href="mailto:suporte@oodelivery.com.br"
+                                href="mailto:contato@oodelivery.online"
                                 className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all"
                             >
                                 <div className="w-10 h-10 bg-[#ff3d03]/10 rounded-lg flex items-center justify-center">
@@ -61,7 +61,7 @@ export default function Suspended({ tenant }: Props) {
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-900">E-mail</p>
-                                    <p className="text-xs text-gray-500">suporte@oodelivery.com.br</p>
+                                    <p className="text-xs text-gray-500">contato@oodelivery.online</p>
                                 </div>
                             </a>
 
