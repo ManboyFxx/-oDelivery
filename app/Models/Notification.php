@@ -16,6 +16,8 @@ class Notification extends Model
     protected $table = 'notifications';
 
     protected $fillable = [
+        'notifiable_id',
+        'notifiable_type',
         'user_id',
         'customer_id',
         'title',
@@ -26,6 +28,11 @@ class Notification extends Model
         'data',
         'action_url',
         'read_at',
+    ];
+
+    protected $appends = [
+        'title',
+        'message',
     ];
 
     protected function casts(): array
@@ -46,6 +53,28 @@ class Notification extends Model
     public function customer()
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function notifiable()
+    {
+        return $this->morphTo();
+    }
+
+    // Accessors for fallback compatibility
+    public function getTitleAttribute($value)
+    {
+        if ($value)
+            return $value;
+
+        return $this->data['title'] ?? 'Notificação';
+    }
+
+    public function getMessageAttribute($value)
+    {
+        if ($value)
+            return $value;
+
+        return $this->data['message'] ?? 'Você tem uma nova mensagem.';
     }
 
     public function isRead(): bool

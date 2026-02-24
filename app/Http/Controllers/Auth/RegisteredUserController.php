@@ -20,53 +20,57 @@ use Inertia\Response;
 class RegisteredUserController extends Controller
 {
     /**
-     * Slugs reservados que não podem ser usados
+     * Obter slugs reservados
      */
-    private const RESERVED_SLUGS = [
-        'admin',
-        'api',
-        'app',
-        'www',
-        'blog',
-        'help',
-        'support',
-        'pricing',
-        'terms',
-        'privacy',
-        'login',
-        'register',
-        'dashboard',
-        'settings',
-        'menu',
-        'pedidos',
-        'orders',
-        'checkout',
-        'cart',
-        'null',
-        'undefined',
-        'planos',
-        'plans',
-        'customer',
-        'customers',
-        'profile',
-        'account',
-        'kitchen',
-        'pdv',
-        'products',
-        'categories',
-        'coupons',
-        'tables',
-        'motoboys',
-        'financial',
-        'financeiro',
-        'fidelidade',
-        'loyalty',
-        'cardapio',
-        'estoque',
-        'stock',
-        'ingredients',
-        'complements',
-    ];
+    private function getReservedSlugs(): array
+    {
+        return [
+            'admin',
+            'api',
+            'app',
+            'www',
+            'blog',
+            'help',
+            'support',
+            'pricing',
+            'terms',
+            'privacy',
+            'login',
+            'register',
+            'dashboard',
+            'settings',
+            'menu',
+            'pedidos',
+            'orders',
+            'checkout',
+            'cart',
+            'null',
+            'undefined',
+            'planos',
+            'plans',
+            'customer',
+            'customers',
+            'profile',
+            'account',
+            'kitchen',
+            'pdv',
+            'products',
+            'categories',
+            'coupons',
+            'tables',
+            'motoboys',
+            'financial',
+            'financeiro',
+            'fidelidade',
+            'loyalty',
+            'cardapio',
+            'estoque',
+            'stock',
+            'ingredients',
+            'complements',
+            config('platform.admin_path', 'admin'),
+        ];
+    }
 
     /**
      * Display the registration view.
@@ -91,7 +95,7 @@ class RegisteredUserController extends Controller
             ]);
         }
 
-        if (in_array($slug, self::RESERVED_SLUGS)) {
+        if (in_array($slug, $this->getReservedSlugs())) {
             return response()->json([
                 'available' => false,
                 'message' => 'Este link é reservado do sistema.',
@@ -124,7 +128,7 @@ class RegisteredUserController extends Controller
         $counter = 1;
         $suggested = $baseSlug . '-' . $counter;
 
-        while (Tenant::where('slug', $suggested)->exists() || in_array($suggested, self::RESERVED_SLUGS)) {
+        while (Tenant::where('slug', $suggested)->exists() || in_array($suggested, $this->getReservedSlugs())) {
             $counter++;
             $suggested = $baseSlug . '-' . $counter;
 
@@ -154,7 +158,7 @@ class RegisteredUserController extends Controller
                 'regex:/^[a-z0-9]+(-[a-z0-9]+)*$/',
                 'unique:tenants,slug',
                 function ($attribute, $value, $fail) {
-                    if (in_array($value, self::RESERVED_SLUGS)) {
+                    if (in_array($value, $this->getReservedSlugs())) {
                         $fail('Este link é reservado do sistema.');
                     }
                 },

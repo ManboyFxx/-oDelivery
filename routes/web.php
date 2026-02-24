@@ -145,7 +145,7 @@ Route::middleware(['throttle:30,1'])->group(function () {
 Route::middleware(['auth', 'throttle:60,1'])->get('/api/orders/status-check', \App\Http\Controllers\Api\OrderStatusCheckController::class)->name('api.orders.status-check');
 
 // Super Admin Routes
-Route::middleware(['auth', \App\Http\Middleware\SuperAdminMiddleware::class])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', \App\Http\Middleware\SuperAdminMiddleware::class])->prefix(config('platform.admin_path'))->name('admin.')->group(function () {
 
     Route::get('/dashboard', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])->name('dashboard');
 

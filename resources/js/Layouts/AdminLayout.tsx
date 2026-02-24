@@ -6,11 +6,11 @@ export default function AdminLayout({ children }: PropsWithChildren) {
     const { url } = usePage();
 
     const navigation = [
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, current: url === '/dashboard' },
-        { name: 'Estabelecimentos', href: '/admin/tenants', icon: Building2, current: url.startsWith('/admin/tenants') },
-        { name: 'Chaves de API', href: '/admin/api-keys', icon: Key, current: url.startsWith('/admin/api-keys') },
-        { name: 'Logs de Segurança', href: '/admin/logs/security', icon: Shield, current: url.startsWith('/admin/logs/security') },
-        { name: 'Logs de Auditoria', href: '/admin/logs/audit', icon: FileText, current: url.startsWith('/admin/logs/audit') },
+        { name: 'Dashboard', href: route('admin.dashboard'), icon: LayoutDashboard, current: url.includes('/dashboard') },
+        { name: 'Estabelecimentos', href: route('admin.tenants.index'), icon: Building2, current: url.includes('/tenants') },
+        { name: 'Chaves de API', href: route('admin.api-keys.index'), icon: Key, current: url.includes('/api-keys') },
+        { name: 'Logs de Segurança', href: route('admin.logs.security'), icon: Shield, current: url.includes('/logs/security') },
+        { name: 'Logs de Auditoria', href: route('admin.logs.audit'), icon: FileText, current: url.includes('/logs/audit') },
     ];
 
     return (

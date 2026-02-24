@@ -194,19 +194,19 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
         {
             title: 'Administração',
             items: [
-                { name: 'Dashboard', href: route('admin.dashboard'), route: 'admin.dashboard', icon: LayoutDashboard, current: isCurrent('/admin/dashboard') },
-                { name: 'Tenants', href: route('admin.tenants.index'), route: 'admin.tenants.index', icon: Store, current: isCurrent('/admin/tenants') },
-                { name: 'Finanças', href: route('admin.financial.index'), route: 'admin.financial.index', icon: DollarSign, current: isCurrent('/admin/financial') },
-                { name: 'Cupons de Plano', href: route('admin.plan-coupons.index'), route: 'admin.plan-coupons.index', icon: Ticket, current: isCurrent('/admin/plan-coupons') },
+                { name: 'Dashboard', href: route('admin.dashboard'), route: 'admin.dashboard', icon: LayoutDashboard, current: url.includes('/dashboard') && user.role === 'super_admin' },
+                { name: 'Tenants', href: route('admin.tenants.index'), route: 'admin.tenants.index', icon: Store, current: url.includes('/tenants') },
+                { name: 'Finanças', href: route('admin.financial.index'), route: 'admin.financial.index', icon: DollarSign, current: url.includes('/financial') },
+                { name: 'Cupons de Plano', href: route('admin.plan-coupons.index'), route: 'admin.plan-coupons.index', icon: Ticket, current: url.includes('/plan-coupons') },
             ]
         },
         {
             title: 'Sistema',
             items: [
-                { name: 'API Keys', href: route('admin.api-keys.index'), route: 'admin.api-keys.index', icon: Key, current: isCurrent('/admin/api-keys') },
-                { name: 'WhatsApp Master', href: route('admin.whatsapp.index'), route: 'admin.whatsapp.index', icon: MessageSquare, current: isCurrent('/admin/whatsapp') && !isCurrent('/admin/whatsapp/templates') },
-                { name: 'Templates Padrão', href: route('admin.whatsapp.templates.index'), route: 'admin.whatsapp.templates.index', icon: BookOpen, current: isCurrent('/admin/whatsapp/templates') },
-                { name: 'Logs de Segurança', href: route('admin.logs.security'), route: 'admin.logs.security', icon: ShieldCheck, current: isCurrent('/admin/logs') },
+                { name: 'API Keys', href: route('admin.api-keys.index'), route: 'admin.api-keys.index', icon: Key, current: url.includes('/api-keys') },
+                { name: 'WhatsApp Master', href: route('admin.whatsapp.index'), route: 'admin.whatsapp.index', icon: MessageSquare, current: url.includes('/whatsapp') && !url.includes('/whatsapp/templates') },
+                { name: 'Templates Padrão', href: route('admin.whatsapp.templates.index'), route: 'admin.whatsapp.templates.index', icon: BookOpen, current: url.includes('/whatsapp/templates') },
+                { name: 'Logs de Segurança', href: route('admin.logs.security'), route: 'admin.logs.security', icon: ShieldCheck, current: url.includes('/logs') },
             ]
         }
     ];
