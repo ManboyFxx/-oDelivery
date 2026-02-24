@@ -32,13 +32,13 @@ class DemoSeeder extends Seeder
                 'plan' => 'unified',
                 'subscription_status' => 'active',
                 'subscription_ends_at' => now()->addYears(10),
-                'features' => json_encode([
+                'features' => [
                     'motoboy_management' => true,
                     'whatsapp_integration' => true,
                     'auto_print' => true,
                     'loyalty_basic' => true,
                     'digital_menu' => true,
-                ]),
+                ],
             ]
         );
 
@@ -56,18 +56,16 @@ class DemoSeeder extends Seeder
         );
 
         // 3. Usuário Demo Admin
-        $user = User::withoutEvents(function () use ($tenant) {
-            return User::updateOrCreate(
-                ['email' => $tenant->email],
-                [
-                    'name' => 'Carlos (Demo Admin)',
-                    'password' => Hash::make('demo123456'),
-                    'role' => 'admin',
-                    'tenant_id' => $tenant->id,
-                    'email_verified_at' => now(),
-                ]
-            );
-        });
+        $user = User::updateOrCreate(
+            ['email' => $tenant->email],
+            [
+                'name' => 'Carlos (Demo Admin)',
+                'password' => Hash::make('demo123456'),
+                'role' => 'admin',
+                'tenant_id' => $tenant->id,
+                'email_verified_at' => now(),
+            ]
+        );
 
         // Atribuir Role (Admin) se necessário na tabela pivo
         $adminRole = DB::table('roles')->where('slug', 'admin')->first();
@@ -85,32 +83,28 @@ class DemoSeeder extends Seeder
             ['name' => '🥤 Bebidas Geladas', 'sort_order' => 4],
         ];
 
-        Product::withoutEvents(function () use ($tenant, $categories) {
-            foreach ($categories as $catData) {
-                $category = Category::updateOrCreate(
-                    ['tenant_id' => $tenant->id, 'name' => $catData['name']],
-                    ['sort_order' => $catData['sort_order'], 'is_active' => true]
-                );
+        foreach ($categories as $catData) {
+            $category = Category::updateOrCreate(
+                ['tenant_id' => $tenant->id, 'name' => $catData['name']],
+                ['sort_order' => $catData['sort_order'], 'is_active' => true]
+            );
 
-                // 5. Produtos para cada categoria
-                if ($catData['name'] === '🍕 Pizzas Artesanais') {
-                    $this->createProducts($tenant->id, $category->id, [
-                        ['name' => 'Margherita Especial', 'price' => 45.90, 'desc' => 'Molho de tomate italiano, mozzarella de búfala e manjericão fresco.'],
-                        ['name' => 'Calabresa Premium', 'price' => 42.00, 'desc' => 'Calabresa artesanal, cebola roxa e azeitonas pretas.'],
-                    ]);
-                } elseif ($catData['name'] === '🍔 Smash Burgers') {
-                    $this->createProducts($tenant->id, $category->id, [
-                        ['name' => 'OoClassic Burger', 'price' => 28.50, 'desc' => 'Dois smash burgers de 80g, cheddar, picles e molho especial.'],
-                        ['name' => 'Bacon Blast', 'price' => 32.00, 'desc' => 'Pão brioche, burger 160g, muito bacon crocante e maionese verde.'],
-                    ]);
-                }
+            // 5. Produtos para cada categoria
+            if ($catData['name'] === '🍕 Pizzas Artesanais') {
+                $this->createProducts($tenant->id, $category->id, [
+                    ['name' => 'Margherita Especial', 'price' => 45.90, 'desc' => 'Molho de tomate italiano, mozzarella de búfala e manjericão fresco.'],
+                    ['name' => 'Calabresa Premium', 'price' => 42.00, 'desc' => 'Calabresa artesanal, cebola roxa e azeitonas pretas.'],
+                ]);
+            } elseif ($catData['name'] === '🍔 Smash Burgers') {
+                $this->createProducts($tenant->id, $category->id, [
+                    ['name' => 'OoClassic Burger', 'price' => 28.50, 'desc' => 'Dois smash burgers de 80g, cheddar, picles e molho especial.'],
+                    ['name' => 'Bacon Blast', 'price' => 32.00, 'desc' => 'Pão brioche, burger 160g, muito bacon crocante e maionese verde.'],
+                ]);
             }
-        });
+        }
 
         // 6. Criar Pedidos Fictícios para o Dashboard
-        Order::withoutEvents(function () use ($tenant, $user) {
-            $this->createDemoOrders($tenant->id, $user->id);
-        });
+        $this->createDemoOrders($tenant->id, $user->id);
 
         $this->command?->info('✅ Ambiente de demonstração configurado com sucesso!');
         $this->command?->info('📧 Login: ' . $tenant->email);
@@ -148,7 +142,6 @@ class DemoSeeder extends Seeder
             $total = rand(45, 120);
 
             $order = Order::create([
-                'id' => \Illuminate\Support\Str::uuid()->toString(),
                 'tenant_id' => $tenantId,
                 'order_number' => 8000 + $i,
                 'status' => $status,
@@ -163,7 +156,6 @@ class DemoSeeder extends Seeder
 
             // Criar Registro de Pagamento
             \App\Models\Payment::create([
-                'id' => \Illuminate\Support\Str::uuid()->toString(),
                 'order_id' => $order->id,
                 'method' => 'credit_card',
                 'amount' => $total,
