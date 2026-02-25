@@ -109,7 +109,7 @@ class AdminWhatsAppController extends Controller
 
             // Try to sync status from API immediately
             $apiStatus = $this->evolutionApi->getInstanceStatus($instanceName);
-            $isAlreadyConnected = ($apiStatus['state'] ?? '') === 'open';
+            $isAlreadyConnected = isset($apiStatus['instance']['state']) && $apiStatus['instance']['state'] === 'open';
             $owerPhone = $apiStatus['instance']['owner'] ?? null;
 
             if ($instance) {
@@ -182,7 +182,7 @@ class AdminWhatsAppController extends Controller
         try {
             $status = $this->evolutionApi->getInstanceStatus($instance->instance_name);
 
-            if (($status['state'] ?? '') === 'open') {
+            if (isset($status['instance']['state']) && $status['instance']['state'] === 'open') {
                 $instance->markAsConnected($status['instance']['owner'] ?? '');
             } else {
                 // Always update to disconnected when state is not 'open'
