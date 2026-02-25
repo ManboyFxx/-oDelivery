@@ -33,6 +33,13 @@ class OrderController extends Controller
             ->map(function ($order) {
                 // Ensure computed attributes are included in JSON
                 $order->append(['is_late', 'elapsed_minutes', 'preparation_elapsed_minutes', 'time_status']);
+
+                // Explicitly resolve customer_phone (plain text field on order, or decrypted from customer)
+                // This is needed because the Customer model encrypts the phone field
+                if (empty($order->customer_phone) && $order->customer_id) {
+                    $order->customer_phone = $order->customer?->phone;
+                }
+
                 return $order;
             });
 
