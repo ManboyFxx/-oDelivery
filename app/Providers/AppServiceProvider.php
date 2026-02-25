@@ -12,7 +12,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(
+            \Illuminate\Notifications\Channels\DatabaseChannel::class,
+            \App\Channels\DatabaseChannel::class
+        );
     }
 
     /**
