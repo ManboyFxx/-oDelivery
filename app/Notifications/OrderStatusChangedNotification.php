@@ -30,9 +30,21 @@ class OrderStatusChangedNotification extends Notification implements ShouldQueue
 
     public function toDatabase($notifiable)
     {
+        $labels = [
+            'new' => 'Novo',
+            'preparing' => 'Em Preparo',
+            'ready' => 'Pronto',
+            'waiting_motoboy' => 'Aguardando Motoboy',
+            'motoboy_accepted' => 'Motoboy a Caminho',
+            'out_for_delivery' => 'Saiu para Entrega',
+            'delivered' => 'Entregue',
+            'cancelled' => 'Cancelado',
+        ];
+        $statusLabel = $labels[$this->newStatus] ?? $this->newStatus;
+
         return [
-            'title' => "Status Atualizado",
-            'message' => "Pedido #{$this->order->order_number} agora está {$this->newStatus}",
+            'title' => "Pedido #{$this->order->order_number} atualizado",
+            'message' => "Status: {$statusLabel}",
             'type' => 'order',
             'icon' => 'AlertCircle',
             'color' => '#f59e0b',
@@ -47,9 +59,21 @@ class OrderStatusChangedNotification extends Notification implements ShouldQueue
 
     public function toBroadcast($notifiable)
     {
+        $labels = [
+            'new' => 'Novo',
+            'preparing' => 'Em Preparo',
+            'ready' => 'Pronto',
+            'waiting_motoboy' => 'Aguardando Motoboy',
+            'motoboy_accepted' => 'Motoboy a Caminho',
+            'out_for_delivery' => 'Saiu para Entrega',
+            'delivered' => 'Entregue',
+            'cancelled' => 'Cancelado',
+        ];
+        $statusLabel = $labels[$this->newStatus] ?? $this->newStatus;
+
         return new BroadcastMessage([
-            'title' => "Status Atualizado",
-            'message' => "Pedido #{$this->order->order_number} agora está {$this->newStatus}",
+            'title' => "Pedido #{$this->order->order_number} atualizado",
+            'message' => "Status: {$statusLabel}",
             'type' => 'order',
             'order_id' => $this->order->id,
             'new_status' => $this->newStatus,
@@ -58,9 +82,21 @@ class OrderStatusChangedNotification extends Notification implements ShouldQueue
     }
     public function toOneSignal($notifiable)
     {
+        $labels = [
+            'new' => 'Novo',
+            'preparing' => 'Em Preparo',
+            'ready' => 'Pronto',
+            'waiting_motoboy' => 'Aguardando Motoboy',
+            'motoboy_accepted' => 'Motoboy a Caminho',
+            'out_for_delivery' => 'Saiu para Entrega',
+            'delivered' => 'Entregue',
+            'cancelled' => 'Cancelado',
+        ];
+        $statusLabel = $labels[$this->newStatus] ?? $this->newStatus;
+
         return [
-            'title' => "Status Atualizado",
-            'message' => "Pedido #{$this->order->order_number} agora está {$this->newStatus}",
+            'title' => "Pedido #{$this->order->order_number} atualizado",
+            'message' => "Status: {$statusLabel}",
             'url' => "/orders/{$this->order->id}",
             'data' => [
                 'order_id' => $this->order->id,
