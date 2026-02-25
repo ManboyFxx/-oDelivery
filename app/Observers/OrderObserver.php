@@ -73,16 +73,16 @@ class OrderObserver
             switch ($newStatus) {
                 case 'preparing': // Confirmed
                     $order->decrementIngredientsStock();
-                    $this->ooBotService->sendOrderConfirmation($order);
+                    \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'order_confirmed');
                     break;
                 case 'ready':
-                    $this->ooBotService->sendOrderReady($order);
+                    \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'order_ready');
                     break;
                 case 'out_for_delivery':
-                    $this->ooBotService->sendOrderOutForDelivery($order);
+                    \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'order_out_for_delivery');
                     break;
                 case 'delivered':
-                    $this->ooBotService->sendOrderDelivered($order);
+                    \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'order_delivered');
 
                     // Award loyalty points
                     if ($order->customer && !$order->loyalty_points_earned) {
