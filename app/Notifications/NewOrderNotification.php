@@ -21,7 +21,7 @@ class NewOrderNotification extends Notification implements ShouldQueue
 
     public function via($notifiable)
     {
-        return ['database', 'broadcast', OneSignalChannel::class];
+        return [\App\Channels\DatabaseChannel::class, 'broadcast', OneSignalChannel::class];
     }
 
     public function toArray($notifiable)

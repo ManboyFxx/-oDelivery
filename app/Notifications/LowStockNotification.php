@@ -30,7 +30,7 @@ class LowStockNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['database', \App\Channels\OneSignalChannel::class];
+        return [\App\Channels\DatabaseChannel::class, \App\Channels\OneSignalChannel::class];
     }
 
     /**

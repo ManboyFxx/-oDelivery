@@ -25,7 +25,7 @@ class OrderStatusChangedNotification extends Notification implements ShouldQueue
 
     public function via($notifiable)
     {
-        return ['database', 'broadcast', \App\Channels\OneSignalChannel::class];
+        return [\App\Channels\DatabaseChannel::class, 'broadcast', \App\Channels\OneSignalChannel::class];
     }
 
     public function toDatabase($notifiable)
