@@ -160,6 +160,12 @@ class AdminWhatsAppController extends Controller
             return response()->json(['error' => 'Instância não encontrada'], 404);
 
         try {
+            // First check if it's already connected to prevent 404s on the QR code endpoint
+            $apiStatus = $this->evolutionApi->getInstanceStatus($instance->instance_name);
+            if (isset($apiStatus['instance']['state']) && $apiStatus['instance']['state'] === 'open') {
+                $instance->markAsConnected($apiStatus['instance']['owner'] ?? '');
+                return response()->json(['already_connected' => true, 'status' => 'connected']);
+            }
             $qrCode = $this->evolutionApi->getQrCode($instance->instance_name);
 
             if ($qrCode) {

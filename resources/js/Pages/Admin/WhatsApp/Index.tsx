@@ -88,6 +88,17 @@ export default function AdminWhatsAppIndex({ instance, logs, currentConfig, enab
                 return;
             }
             const data = await response.json();
+            
+            if (data.already_connected) {
+                setLocalStatus('connected');
+                setQrCode(null);
+                setQrCodeLoading(false);
+                if (instance?.status !== 'connected') {
+                    router.reload();
+                }
+                return;
+            }
+            
             if (data.qr_code) {
                 setQrCode(data.qr_code);
             }
