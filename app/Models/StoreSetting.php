@@ -83,6 +83,7 @@ class StoreSetting extends Model
         'enable_quick_login',
         'enable_checkout_security',
         'phone_digits_required',
+        'whatsapp_auto_messages_enabled',
     ];
 
     protected $casts = [
@@ -126,6 +127,7 @@ class StoreSetting extends Model
         'is_delivery_paused' => 'boolean',
         'paused_until' => 'datetime',
         'default_motoboy_id' => 'string',
+        'whatsapp_auto_messages_enabled' => 'boolean',
     ];
 
     public function getLogoUrlAttribute($value): ?string
