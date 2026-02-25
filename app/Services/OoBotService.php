@@ -105,11 +105,18 @@ class OoBotService
     {
         try {
             // Check if tenant has auto-messages enabled
-            if (!$order->tenant->settings?->whatsapp_auto_messages_enabled) {
-                Log::info('ÓoBot - Auto-messages disabled for tenant', [
+            // Note: null means not configured yet - we treat it as enabled to not silently block messages
+            $autoEnabled = $order->tenant->settings?->whatsapp_auto_messages_enabled;
+            if ($autoEnabled === false) {
+                Log::info('ÓoBot - Auto-messages explicitly disabled for tenant', [
                     'tenant_id' => $order->tenant_id,
                 ]);
                 return false;
+            }
+            if ($autoEnabled === null) {
+                Log::warning('ÓoBot - whatsapp_auto_messages_enabled is NULL (not configured), proceeding anyway', [
+                    'tenant_id' => $order->tenant_id,
+                ]);
             }
 
             // Get WhatsApp instance (shared for Basic/Pro, custom for Personalizado)
@@ -268,7 +275,7 @@ class OoBotService
             'payment_method' => $order->payment_method ?? '',
             'delivery_fee' => 'R$ ' . number_format($order->delivery_fee ?? 0, 2, ',', '.'),
             'order_items' => $order->items->map(function ($item) {
-                return "{$item->quantity}x {$item->name}";
+                return "{$item->quantity}x {$item->product_name}";
             })->implode("\n"),
         ];
     }
