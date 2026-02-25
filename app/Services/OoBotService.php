@@ -51,6 +51,14 @@ class OoBotService
     }
 
     /**
+     * Send order cancelled message
+     */
+    public function sendOrderCancelled(Order $order): bool
+    {
+        return $this->sendOrderNotification($order, 'order_cancelled');
+    }
+
+    /**
      * Send auto-reply message
      */
     public function sendAutoReply(string $phone, int $tenantId): bool

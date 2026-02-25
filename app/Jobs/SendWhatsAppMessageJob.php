@@ -67,11 +67,12 @@ class SendWhatsAppMessageJob implements ShouldQueue
             }
 
             // Send notification based on template key
-            $result = match($this->templateKey) {
+            $result = match ($this->templateKey) {
                 'order_confirmed' => $ooBotService->sendOrderConfirmation($order),
                 'order_ready' => $ooBotService->sendOrderReady($order),
                 'order_out_for_delivery' => $ooBotService->sendOrderOutForDelivery($order),
                 'order_delivered' => $ooBotService->sendOrderDelivered($order),
+                'order_cancelled' => $ooBotService->sendOrderCancelled($order),
                 default => false,
             };
 

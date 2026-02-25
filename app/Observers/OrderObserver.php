@@ -89,6 +89,9 @@ class OrderObserver
                         $this->loyaltyService->awardPointsForOrder($order);
                     }
                     break;
+                case 'cancelled':
+                    \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'order_cancelled');
+                    break;
             }
         }
     }
