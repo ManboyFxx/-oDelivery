@@ -183,10 +183,16 @@ class OrderController extends Controller
             'motoboy_id' => 'required|exists:users,id'
         ]);
 
-        $order->update([
-            'motoboy_id' => $validated['motoboy_id'],
-            'status' => 'waiting_motoboy' // Automatically move to waiting list
-        ]);
+        $updates = ['motoboy_id' => $validated['motoboy_id']];
+
+        // Only move to "waiting_motoboy" if the order is still in early stages
+        // Don't demote an order that has already moved past this point
+        $earlyStatuses = ['new', 'preparing', 'ready'];
+        if (in_array($order->status, $earlyStatuses)) {
+            $updates['status'] = 'waiting_motoboy';
+        }
+
+        $order->update($updates);
 
         return back()->with('success', 'Entregador atribuído!');
     }
