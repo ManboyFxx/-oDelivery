@@ -138,16 +138,9 @@ class WhatsAppController extends Controller
 
         $tenant = auth()->user()->tenant;
 
-        // Determine instance (Shared or Custom) logic from OoBotService
-        // Ideally we should reuse OoBotService logic, but for simplicity/direct test:
-        // We need to know which instance to use.
-
-        // Let's instantiate OoBotService to reuse logic
-        $ooBot = app(\App\Services\OoBotService::class);
-        // Reflection/Accessibility is hard, so let's replicate logic simply:
-
+        // Determine instance (Shared or Custom)
         $instance = null;
-        if ($tenant->plan === 'personalizado') {
+        if ($tenant && $tenant->plan === 'personalizado') {
             $instance = \App\Models\WhatsAppInstance::where('tenant_id', $tenant->id)
                 ->where('instance_type', 'custom')
                 ->where('status', 'connected')
@@ -158,8 +151,19 @@ class WhatsAppController extends Controller
             $instance = \App\Models\WhatsAppInstance::getSharedInstance();
         }
 
+        // Log for diagnostic purposes
+        \Illuminate\Support\Facades\Log::info('WhatsApp TestSend - Debug', [
+            'tenant_id' => $tenant?->id,
+            'plan' => $tenant?->plan,
+            'instance_found' => $instance ? $instance->instance_name : 'NULL',
+            'instance_status' => $instance?->status,
+            'evolution_url' => config('services.evolution.url'),
+            'has_api_key' => !empty(config('services.evolution.api_key')),
+        ]);
+
         if (!$instance) {
-            return back()->withErrors(['error' => 'Nenhuma instância do WhatsApp conectada.']);
+            \Illuminate\Support\Facades\Log::warning('WhatsApp TestSend - No instance found');
+            return back()->withErrors(['error' => 'Nenhuma instância do WhatsApp conectada. Verifique a aba Master no painel admin.']);
         }
 
         $result = $this->evolutionApi->sendTextMessage(
@@ -167,6 +171,12 @@ class WhatsAppController extends Controller
             $request->phone,
             $request->message
         );
+
+        \Illuminate\Support\Facades\Log::info('WhatsApp TestSend - Result', [
+            'success' => $result['success'],
+            'error' => $result['error'] ?? null,
+            'data' => $result['data'] ?? null,
+        ]);
 
         if ($result['success']) {
             return back()->with('success', 'Mensagem de teste enviada!');
