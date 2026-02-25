@@ -148,12 +148,16 @@ class OoBotService
             // Replace variables in template
             $message = $template->replaceVariables($variables);
 
-            // Get customer phone
-            $phone = $order->customer_phone ?? $order->customer?->phone;
+            // Get customer phone - robustly, in order of priority
+            $phone = $this->resolveCustomerPhone($order);
 
             if (!$phone) {
-                Log::warning('ÓoBot - No customer phone', [
+                Log::warning('ÓoBot - No customer phone found', [
                     'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'customer_id' => $order->customer_id,
+                    'customer_phone_field' => $order->customer_phone,
+                    'customer_model_phone' => $order->customer?->phone,
                 ]);
                 return false;
             }
@@ -213,6 +217,36 @@ class OoBotService
 
         // For Basic/Pro plans, use shared instance
         return WhatsAppInstance::getSharedInstance();
+    }
+
+    /**
+     * Resolve the customer's phone number from the order.
+     * Checks multiple sources and decrypts if necessary.
+     */
+    private function resolveCustomerPhone(Order $order): ?string
+    {
+        // 1. First try the order's own customer_phone field (plain text snapshot)
+        $phone = $order->customer_phone;
+
+        // 2. Fall back to the customer model's phone (auto-decrypts via Attribute)
+        if (!$phone && $order->customer_id) {
+            $phone = $order->customer?->phone;
+        }
+
+        // 3. Last resort: try the customer's default address phone
+        if (!$phone && $order->customer_id) {
+            $phone = $order->customer?->defaultAddress?->phone;
+        }
+
+        Log::info('ÓoBot - Phone Resolution', [
+            'order_id' => $order->id,
+            'order_number' => $order->order_number,
+            'customer_phone_raw' => $order->customer_phone ? '(set)' : '(empty)',
+            'customer_model_phone' => $order->customer?->phone ? '(set)' : '(empty)',
+            'resolved_phone' => $phone ? substr($phone, 0, 5) . '***' : 'NULL',
+        ]);
+
+        return $phone ?: null;
     }
 
     /**
