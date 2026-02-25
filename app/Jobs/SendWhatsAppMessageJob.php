@@ -56,8 +56,8 @@ class SendWhatsAppMessageJob implements ShouldQueue
         ]);
 
         try {
-            // Reload order to ensure fresh data
-            $order = Order::find($this->order->id);
+            // Reload order with necessary relations to ensure fresh data and prevent lazy loading issues
+            $order = Order::with(['tenant.settings', 'items', 'customer'])->find($this->order->id);
 
             if (!$order) {
                 Log::warning('WhatsApp Message Job - Order not found', [

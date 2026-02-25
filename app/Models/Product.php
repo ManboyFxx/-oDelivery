@@ -159,7 +159,7 @@ class Product extends Model
             'type' => $type,
             'description' => $description,
             'order_id' => $orderId,
-            'user_id' => auth()->id() ?? User::where('tenant_id', $this->tenant_id)->first()->id,
+            'user_id' => auth()->id() ?? User::where('tenant_id', $this->tenant_id)->first()?->id,
         ]);
     }
 

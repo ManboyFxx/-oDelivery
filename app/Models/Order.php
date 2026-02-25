@@ -196,7 +196,7 @@ class Order extends Model
     {
         $this->update([
             'preparation_started_at' => now(),
-            'estimated_ready_at' => now()->addMinutes($this->preparation_time_minutes),
+            'estimated_ready_at' => now()->addMinutes((int) ($this->preparation_time_minutes ?? 0)),
             'status' => 'preparing',
         ]);
     }
@@ -255,7 +255,7 @@ class Order extends Model
         $this->load(['items.product.ingredients']);
 
         foreach ($this->items as $item) {
-            if (!$item->product || $item->product->ingredients->isEmpty()) {
+            if (!$item->product || !$item->product->ingredients || $item->product->ingredients->isEmpty()) {
                 continue;
             }
 

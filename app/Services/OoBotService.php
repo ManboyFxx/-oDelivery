@@ -114,7 +114,7 @@ class OoBotService
         try {
             // Check if tenant has auto-messages enabled
             // Note: null means not configured yet - we treat it as enabled to not silently block messages
-            $autoEnabled = $order->tenant->settings?->whatsapp_auto_messages_enabled;
+            $autoEnabled = $order->tenant?->settings?->whatsapp_auto_messages_enabled;
             if ($autoEnabled === false) {
                 Log::info('ÓoBot - Auto-messages explicitly disabled for tenant', [
                     'tenant_id' => $order->tenant_id,
@@ -128,7 +128,15 @@ class OoBotService
             }
 
             // Get WhatsApp instance (shared for Basic/Pro, custom for Personalizado)
-            $instance = $this->getInstance($order->tenant);
+            $tenant = $order->tenant;
+            if (!$tenant) {
+                Log::error('ÓoBot - Order has no tenant', [
+                    'order_id' => $order->id,
+                ]);
+                return false;
+            }
+
+            $instance = $this->getInstance($tenant);
 
             if (!$instance) {
                 Log::warning('ÓoBot - No WhatsApp instance available', [
@@ -272,17 +280,20 @@ class OoBotService
         $tenant = $order->tenant;
         $customer = $order->customer;
 
+        $totalValue = $order->total ?? 0;
+        $deliveryFee = $order->delivery_fee ?? 0;
+
         return [
             'customer_name' => $customer?->name ?? $order->customer_name ?? 'Cliente',
             'order_number' => $order->order_number ?? $order->id,
-            'order_total' => 'R$ ' . number_format($order->total, 2, ',', '.'),
+            'order_total' => 'R$ ' . number_format((float) $totalValue, 2, ',', '.'),
             'store_name' => $tenant?->name ?? 'Nossa Loja',
             'store_phone' => $tenant?->settings?->phone ?? '',
             'store_address' => $tenant?->settings?->address ?? '',
             'delivery_address' => $order->delivery_address ?? '',
             'payment_method' => $order->payment_method ?? '',
-            'delivery_fee' => 'R$ ' . number_format($order->delivery_fee ?? 0, 2, ',', '.'),
-            'order_items' => $order->items->map(function ($item) {
+            'delivery_fee' => 'R$ ' . number_format((float) $deliveryFee, 2, ',', '.'),
+            'order_items' => ($order->items ?? collect())->map(function ($item) {
                 return "{$item->quantity}x {$item->product_name}";
             })->implode("\n"),
         ];
