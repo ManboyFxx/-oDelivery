@@ -70,7 +70,7 @@ class Ingredient extends Model
     {
         return $this->stockMovements()->create([
             'tenant_id' => $this->tenant_id,
-            'user_id' => auth()->id() ?? User::where('tenant_id', $this->tenant_id)->first()?->id,
+            'user_id' => auth()->id() ?? User::where('tenant_id', $this->tenant_id)->first()?->id ?? User::first()?->id,
             'order_id' => $orderId,
             'type' => $type,
             'quantity' => $quantity,
