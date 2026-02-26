@@ -88,11 +88,25 @@ class OrderObserver
                 \Illuminate\Support\Facades\Log::error('Notification Service Failed in OrderObserver: ' . $e->getMessage());
             }
             switch ($newStatus) {
+                // Motoboy was assigned to the order by the store, or accepted from the pool
                 case 'motoboy_accepted':
+                case 'waiting_motoboy': // Also notify if manually assigned early
+                    if ($order->motoboy_id) {
+                        try {
+                            // Tell the Motoboy he has a new order to pick up
+                            \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'motoboy_assigned');
+                        } catch (\Throwable $e) {
+                            \Illuminate\Support\Facades\Log::error('Dispatch WhatsApp Job Failed (motoboy_assigned): ' . $e->getMessage());
+                        }
+                    }
+                    break;
+                case 'out_for_delivery':
+                    // Motoboy picked it up and officially started the route to the client
                     try {
-                        \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'motoboy_assigned');
+                        // Tell the Customer their order is on the way!
+                        \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'out_for_delivery');
                     } catch (\Throwable $e) {
-                        \Illuminate\Support\Facades\Log::error('Dispatch WhatsApp Job Failed (motoboy_assigned): ' . $e->getMessage());
+                        \Illuminate\Support\Facades\Log::error('Dispatch WhatsApp Job Failed (out_for_delivery): ' . $e->getMessage());
                     }
                     break;
                 case 'preparing': // Confirmed

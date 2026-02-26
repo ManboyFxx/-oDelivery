@@ -431,7 +431,7 @@ export default function OrderCard({ order, motoboys, onAction, onQuickView }: Pr
 
                 {order.status === 'waiting_motoboy' && order.motoboy && (
                     <button
-                        onClick={() => handleStatusUpdate('motoboy_accepted')}
+                        onClick={() => handleStatusUpdate('out_for_delivery')}
                         className="w-full py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold shadow-md shadow-blue-500/20 transition-all active:scale-95"
                     >
                         🚴 Motoboy Saiu para Entrega

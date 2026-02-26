@@ -73,7 +73,7 @@ export default function OrdersIndex({ orders, motoboys = [], products = [], esti
         {
             id: 'out_for_delivery',
             title: 'Em Entrega',
-            statuses: ['motoboy_accepted', 'out_for_delivery'],
+            statuses: ['out_for_delivery'],
             icon: Truck,
             iconColor: 'text-cyan-500',
             headerBg: 'bg-white',

@@ -41,15 +41,20 @@ class MotoboyOrderService
     public function getPendingOrders(string $userId)
     {
         return Order::where('motoboy_id', $userId)
-            ->whereIn('status', ['waiting_motoboy', 'motoboy_accepted', 'out_for_delivery'])
+            ->whereIn('status', ['new', 'preparing', 'ready', 'waiting_motoboy', 'motoboy_accepted', 'out_for_delivery'])
             ->with(['customer', 'items'])
             ->orderBy('motoboy_accepted_at', 'desc')
+            ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($order) {
+                // Return a friendly status message so the motoboy knows why they're waiting
                 $status = match ($order->status) {
-                    'waiting_motoboy' => 'Aguardando Aceitação',
-                    'motoboy_accepted' => 'Aceito - Coletando',
-                    'out_for_delivery' => 'Em Rota',
+                    'new' => 'Aguardando Restaurante',
+                    'preparing' => 'Em Preparo na Cozinha',
+                    'ready' => 'Pronto para Coleta',
+                    'waiting_motoboy' => 'Aguardando Coleta',
+                    'motoboy_accepted' => 'Coletando (Na Loja)', // Legacy fallback or temporary status if needed
+                    'out_for_delivery' => 'Em Rota para o Cliente',
                     default => $order->status,
                 };
 
@@ -103,7 +108,8 @@ class MotoboyOrderService
 
         $order->update([
             'motoboy_id' => $motoboyId,
-            'status' => 'motoboy_accepted',
+            // Do NOT change the order status. This prevents the store dashboard from prematurely moving it to "Out for Delivery".
+            // The status should remain 'new', 'preparing', or 'ready' until the motoboy officially starts the delivery.
             'motoboy_accepted_at' => now(),
         ]);
 
