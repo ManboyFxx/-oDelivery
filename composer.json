@@ -98,7 +98,6 @@
             "php": "8.2"
         },
         "disable-tls": true,
-        "secure-http": false,
         "cafile": "c:\\Users\\Vertinho\\Documents\\Sistemas\\OoDelivery\\-oDelivery\\cacert.pem"
     },
     "repositories": {

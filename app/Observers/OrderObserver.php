@@ -73,16 +73,32 @@ class OrderObserver
             switch ($newStatus) {
                 case 'preparing': // Confirmed
                     $order->decrementIngredientsStock();
-                    \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'order_confirmed');
+                    try {
+                        \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'order_confirmed');
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::error('Dispatch WhatsApp Job Failed (order_confirmed): ' . $e->getMessage());
+                    }
                     break;
                 case 'ready':
-                    \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'order_ready');
+                    try {
+                        \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'order_ready');
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::error('Dispatch WhatsApp Job Failed (order_ready): ' . $e->getMessage());
+                    }
                     break;
                 case 'out_for_delivery':
-                    \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'order_out_for_delivery');
+                    try {
+                        \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'order_out_for_delivery');
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::error('Dispatch WhatsApp Job Failed (order_out_for_delivery): ' . $e->getMessage());
+                    }
                     break;
                 case 'delivered':
-                    \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'order_delivered');
+                    try {
+                        \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'order_delivered');
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::error('Dispatch WhatsApp Job Failed (order_delivered): ' . $e->getMessage());
+                    }
 
                     // Award loyalty points
                     if ($order->customer && !$order->loyalty_points_earned) {
@@ -90,7 +106,11 @@ class OrderObserver
                     }
                     break;
                 case 'cancelled':
-                    \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'order_cancelled');
+                    try {
+                        \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'order_cancelled');
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::error('Dispatch WhatsApp Job Failed (order_cancelled): ' . $e->getMessage());
+                    }
                     break;
             }
         }
