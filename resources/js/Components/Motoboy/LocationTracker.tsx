@@ -68,22 +68,9 @@ export default function LocationTracker({
                 });
             },
             (error) => {
-                let message = 'Erro ao obter localização';
-
-                switch (error.code) {
-                    case error.PERMISSION_DENIED:
-                        message = 'Permissão de localização negada';
-                        break;
-                    case error.POSITION_UNAVAILABLE:
-                        message = 'Localização indisponível';
-                        break;
-                    case error.TIMEOUT:
-                        message = 'Timeout ao obter localização';
-                        break;
-                }
-
-                onError?.(message);
-                console.error('Geolocation error:', error);
+                // Silently log geolocation errors instead of throwing them to the UI,
+                // as many devices deny this by default and it shouldn't break the app.
+                console.warn('Geolocation warning: Motoboy denied or GPS unavailable.', error.message);
             },
             watchOptions
         );

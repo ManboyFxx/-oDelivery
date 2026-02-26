@@ -197,12 +197,9 @@ class OrderController extends Controller
 
         $updates = ['motoboy_id' => $validated['motoboy_id']];
 
-        // Only move to "waiting_motoboy" if the order is still in early stages
-        // Don't demote an order that has already moved past this point
-        $earlyStatuses = ['new', 'preparing', 'ready'];
-        if (in_array($order->status, $earlyStatuses)) {
-            $updates['status'] = 'waiting_motoboy';
-        }
+        // REMOVED: Do not bypass "new" or "preparing" stages when assigning a motoboy.
+        // It's common to assign the motoboy early, but the kitchen still needs to prepare it.
+        // The status changes to waiting_motoboy only when the kitchen clicks "Ready".
 
         $order->update($updates);
 

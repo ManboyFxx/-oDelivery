@@ -31,10 +31,11 @@ interface DeliverySettingsProps {
     openCreateZoneModal: () => void;
     openEditZoneModal: (zone: DeliveryZone) => void;
 
-    // Modal State
+    // Zone Modal State
     showZoneModal: boolean;
     setShowZoneModal: (show: boolean) => void;
     editingZone: DeliveryZone | null;
+    motoboys: any[];
 }
 
 export default function DeliverySettings({
@@ -53,7 +54,8 @@ export default function DeliverySettings({
     openEditZoneModal,
     showZoneModal,
     setShowZoneModal,
-    editingZone
+    editingZone,
+    motoboys
 }: DeliverySettingsProps) {
 
     const formatCurrency = (value: number) => {
@@ -159,6 +161,27 @@ export default function DeliverySettings({
                                 className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent bg-white dark:bg-premium-dark text-gray-900 dark:text-white"
                             />
                         </div>
+                    </div>
+
+                    <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Motoboy Padrão
+                        </label>
+                        <select
+                            value={data.default_motoboy_id || ''}
+                            onChange={(e) => setData('default_motoboy_id', e.target.value)}
+                            className="w-full px-4 py-3 border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-[#ff3d03] focus:border-transparent bg-white dark:bg-premium-dark text-gray-900 dark:text-white"
+                        >
+                            <option value="">Nenhum (Atribuição Manual)</option>
+                            {motoboys && motoboys.map((motoboy: any) => (
+                                <option key={motoboy.id} value={motoboy.id}>
+                                    {motoboy.name}
+                                </option>
+                            ))}
+                        </select>
+                        <p className="mt-1 text-xs text-gray-500">
+                            Este entregador será automaticamente atribuído a todos os novos pedidos com modo "Entrega".
+                        </p>
                     </div>
                 </div>
             </div>

@@ -32,6 +32,20 @@ class OrderObserver
     }
 
     /**
+     * Handle the Order "creating" event.
+     */
+    public function creating(Order $order): void
+    {
+        // If it's a delivery order and no motoboy is assigned yet
+        if ($order->mode === 'delivery' && empty($order->motoboy_id)) {
+            $settings = \App\Models\StoreSetting::where('tenant_id', $order->tenant_id)->first();
+            if ($settings && !empty($settings->default_motoboy_id)) {
+                $order->motoboy_id = $settings->default_motoboy_id;
+            }
+        }
+    }
+
+    /**
      * Handle the Order "created" event.
      */
     public function created(Order $order): void

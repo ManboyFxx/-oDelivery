@@ -359,6 +359,7 @@ export default function Settings({ auth, settings, deliveryZones: initialZones, 
                                         showZoneModal={showZoneModal}
                                         setShowZoneModal={setShowZoneModal}
                                         editingZone={editingZone}
+                                        motoboys={motoboys}
                                     />
                                 )}
 
