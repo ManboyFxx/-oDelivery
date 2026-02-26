@@ -43,7 +43,18 @@ export default function OrderShow({ order }: OrderShowProps) {
                     <div className="flex items-center gap-2">
                         <span className={`px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest ${order.status === 'delivered' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
                             }`}>
-                            {order.status}
+                            {
+                                ({
+                                    'new': 'Aguardando Restaurante',
+                                    'preparing': 'Em Preparo',
+                                    'ready': 'Aguardando Coleta',
+                                    'waiting_motoboy': 'Aguardando Coleta',
+                                    'motoboy_accepted': 'Coletando na Loja',
+                                    'out_for_delivery': 'Em Entrega',
+                                    'delivered': 'Entregue',
+                                    'cancelled': 'Cancelado',
+                                } as Record<string, string>)[order.status] || order.status
+                            }
                         </span>
                     </div>
                 </div>
@@ -100,7 +111,7 @@ export default function OrderShow({ order }: OrderShowProps) {
 
                 {/* Botões de Ação de Fluxo */}
                 <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/80 backdrop-blur-md border-t border-gray-200 lg:relative lg:bg-transparent lg:border-0 lg:p-0">
-                    {order.status === 'motoboy_accepted' && (
+                {['new', 'preparing', 'ready', 'waiting_motoboy', 'motoboy_accepted'].includes(order.status) && (
                         <button
                             onClick={() => handleAction('motoboy.orders.start-delivery')}
                             disabled={!!loading}
