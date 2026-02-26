@@ -80,7 +80,8 @@ interface Customer {
 }
 
 export default function PDV({ categories, allProducts, tables = [], customers = [] }: { categories: Category[], allProducts: Product[], tables: Table[], customers: Customer[] }) {
-    const { tenant } = usePage().props as any;
+    const { tenant, auth } = usePage().props as any;
+    const isImpersonating = auth?.is_impersonating;
     const [cart, setCart] = useState<CartItem[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string | 'all'>('all');
@@ -537,7 +538,10 @@ export default function PDV({ categories, allProducts, tables = [], customers = 
         <AuthenticatedLayout>
             <Head title="PDV" />
 
-            <div className="flex flex-col h-[calc(100vh-65px)] overflow-hidden bg-gray-50 dark:bg-[#0f1012]">
+            <div className={clsx(
+                "flex flex-col overflow-hidden bg-gray-50 dark:bg-[#0f1012]",
+                isImpersonating ? "h-[calc(100vh-192px)]" : "h-[calc(100vh-144px)]"
+            )}>
                 {/* Header & Tabs */}
                 <div className="bg-white dark:bg-[#1a1b1e] border-b border-gray-100 dark:border-white/5 px-4 py-3 flex items-center justify-between shrink-0 shadow-sm z-20">
                     <div className="flex items-center gap-4">
