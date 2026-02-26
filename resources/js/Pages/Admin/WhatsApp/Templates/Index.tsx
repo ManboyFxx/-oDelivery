@@ -45,12 +45,15 @@ export default function TemplatesIndex({ auth, templates: initialTemplates }: Pr
     };
 
     const getVariables = (key: string) => {
-        const common = ['{customer_name}', '{order_number}'];
+        const common = ['{customer_name}', '{order_number}', '{store_name}'];
         const specific: { [key: string]: string[] } = {
-            'order_confirmed': ['{order_total}'],
+            'order_confirmed': ['{order_total}', '{estimated_time}'],
             'order_ready': [],
-            'order_out_for_delivery': ['{delivery_address}'],
-            'order_delivered': []
+            'order_out_for_delivery': ['{delivery_address}', '{delivery_method}'],
+            'order_delivered': [],
+            'order_cancelled': ['{store_phone}'],
+            'motoboy_assigned': ['{motoboy_name}', '{delivery_address}'],
+            'order_approaching': []
         };
         return [...common, ...(specific[key] || [])];
     };

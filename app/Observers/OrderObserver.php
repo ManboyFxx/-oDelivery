@@ -74,6 +74,13 @@ class OrderObserver
                 \Illuminate\Support\Facades\Log::error('Notification Service Failed in OrderObserver: ' . $e->getMessage());
             }
             switch ($newStatus) {
+                case 'motoboy_accepted':
+                    try {
+                        \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'motoboy_assigned');
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::error('Dispatch WhatsApp Job Failed (motoboy_assigned): ' . $e->getMessage());
+                    }
+                    break;
                 case 'preparing': // Confirmed
                     $order->decrementIngredientsStock();
                     try {

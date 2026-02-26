@@ -59,6 +59,22 @@ class OoBotService
     }
 
     /**
+     * Send order assigned to motoboy message
+     */
+    public function sendMotoboyAssigned(Order $order): bool
+    {
+        return $this->sendOrderNotification($order, 'motoboy_assigned', 'motoboy');
+    }
+
+    /**
+     * Send order approaching message
+     */
+    public function sendOrderApproaching(Order $order): bool
+    {
+        return $this->sendOrderNotification($order, 'order_approaching', 'customer');
+    }
+
+    /**
      * Send auto-reply message
      */
     public function sendAutoReply(string $phone, int $tenantId): bool
@@ -109,7 +125,7 @@ class OoBotService
     /**
      * Core method to send order notifications
      */
-    private function sendOrderNotification(Order $order, string $templateKey): bool
+    private function sendOrderNotification(Order $order, string $templateKey, string $recipientType = 'customer'): bool
     {
         try {
             // Check if tenant has auto-messages enabled
@@ -171,18 +187,28 @@ class OoBotService
             // Replace variables in template
             $message = $template->replaceVariables($variables);
 
-            // Get customer phone - robustly, in order of priority
-            $phone = $this->resolveCustomerPhone($order);
-
-            if (!$phone) {
-                Log::warning('ÓoBot - No customer phone found', [
-                    'order_id' => $order->id,
-                    'order_number' => $order->order_number,
-                    'customer_id' => $order->customer_id,
-                    'customer_phone_field' => $order->customer_phone,
-                    'customer_model_phone' => $order->customer?->phone,
-                ]);
-                return false;
+            // Get phone based on recipient type
+            if ($recipientType === 'motoboy') {
+                $phone = $order->motoboy?->phone;
+                if (!$phone) {
+                    Log::warning('ÓoBot - No motoboy phone found', [
+                        'order_id' => $order->id,
+                        'motoboy_id' => $order->motoboy_id ?? 'null',
+                    ]);
+                    return false;
+                }
+            } else {
+                $phone = $this->resolveCustomerPhone($order);
+                if (!$phone) {
+                    Log::warning('ÓoBot - No customer phone found', [
+                        'order_id' => $order->id,
+                        'order_number' => $order->order_number,
+                        'customer_id' => $order->customer_id,
+                        'customer_phone_field' => $order->customer_phone,
+                        'customer_model_phone' => $order->customer?->phone,
+                    ]);
+                    return false;
+                }
             }
 
             // Create log entry
@@ -303,6 +329,7 @@ class OoBotService
 
         return [
             'customer_name' => $customer?->name ?? $order->customer_name ?? 'Cliente',
+            'motoboy_name' => $order->motoboy?->name ?? 'Entregador',
             'order_number' => $order->order_number ?? substr($order->id, 0, 8),
             'order_total' => 'R$ ' . number_format((float) $totalValue, 2, ',', '.'),
             'store_name' => $settings?->store_name ?? $tenant?->name ?? 'Nossa Loja',

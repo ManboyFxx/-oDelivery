@@ -45,20 +45,12 @@ export default function Dashboard({
         setToggleError(null);
 
         try {
-            const response = await fetch(route('motoboy.availability.toggle'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
-                    'Accept': 'application/json',
-                },
-            });
+            const response = await window.axios.post(route('motoboy.availability.toggle'));
+            
+            if (response.status !== 200) throw new Error('Falha ao atualizar status');
 
-            if (!response.ok) throw new Error('Falha ao atualizar status');
-
-            const data = await response.json();
             // Sync with server truth in case of race condition
-            setIsOnline(data.is_online);
+            setIsOnline(response.data.is_online);
         } catch (err) {
             // Rollback on failure
             setIsOnline(!newStatus);

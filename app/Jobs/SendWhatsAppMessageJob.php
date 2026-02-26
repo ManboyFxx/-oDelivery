@@ -73,6 +73,8 @@ class SendWhatsAppMessageJob implements ShouldQueue
                 'order_out_for_delivery' => $ooBotService->sendOrderOutForDelivery($order),
                 'order_delivered' => $ooBotService->sendOrderDelivered($order),
                 'order_cancelled' => $ooBotService->sendOrderCancelled($order),
+                'motoboy_assigned' => $ooBotService->sendMotoboyAssigned($order),
+                'order_approaching' => $ooBotService->sendOrderApproaching($order),
                 default => false,
             };
 

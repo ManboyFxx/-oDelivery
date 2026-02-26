@@ -76,6 +76,12 @@ class NotificationService
         }
 
         event(new ArrivedAtDestinationEvent($order, $motoboy));
+
+        try {
+            \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'order_approaching');
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Dispatch WhatsApp Job Failed (order_approaching): ' . $e->getMessage());
+        }
     }
 
     /**
