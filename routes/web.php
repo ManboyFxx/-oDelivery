@@ -266,6 +266,7 @@ Route::middleware('auth')->prefix('account')->name('account.')->group(function (
 Route::middleware(['auth', 'subscription', 'role:admin,employee'])->group(function () {
     // Orders Management
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::post('/orders/settings/time', [OrderController::class, 'updateTime'])->name('orders.update-time');
     Route::get('/orders/{order}/print', [OrderController::class, 'print'])->name('orders.print');
     Route::post('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
     Route::post('/orders/{order}/payment', [OrderController::class, 'updatePayment'])->name('orders.payment');

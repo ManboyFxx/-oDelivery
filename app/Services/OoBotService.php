@@ -279,22 +279,44 @@ class OoBotService
     {
         $tenant = $order->tenant;
         $customer = $order->customer;
+        $settings = $tenant?->settings;
 
         $totalValue = $order->total ?? 0;
         $deliveryFee = $order->delivery_fee ?? 0;
 
+        // Estimated Time Logic
+        $estimatedTime = '30-50 min'; // Default fallback
+        if ($order->estimated_time_minutes) {
+            $estimatedTime = $order->estimated_time_minutes . ' min';
+        } else {
+            $estimationService = app(\App\Services\TimeEstimationService::class);
+            $estimatedTime = $estimationService->getEstimateRange($order->tenant, $order->mode);
+        }
+
+        // Delivery Method Logic
+        $modes = [
+            'delivery' => 'Delivery 🛵',
+            'pickup' => 'Retirada 🥡',
+            'table' => 'Mesa 🍽️',
+        ];
+        $deliveryMethod = $modes[$order->mode] ?? ucfirst($order->mode);
+
         return [
             'customer_name' => $customer?->name ?? $order->customer_name ?? 'Cliente',
-            'order_number' => $order->order_number ?? $order->id,
+            'order_number' => $order->order_number ?? substr($order->id, 0, 8),
             'order_total' => 'R$ ' . number_format((float) $totalValue, 2, ',', '.'),
-            'store_name' => $tenant?->name ?? 'Nossa Loja',
-            'store_phone' => $tenant?->settings?->phone ?? '',
-            'store_address' => $tenant?->settings?->address ?? '',
-            'delivery_address' => $order->delivery_address ?? '',
-            'payment_method' => $order->payment_method ?? '',
+            'store_name' => $settings?->store_name ?? $tenant?->name ?? 'Nossa Loja',
+            'store_phone' => $settings?->phone ?? '',
+            'store_address' => $settings?->address ?? '',
+            'store_url' => config('app.url'),
+            'delivery_address' => $order->delivery_address ?? 'N/A',
+            'payment_method' => $order->payment_method ?? 'A consultar',
             'delivery_fee' => 'R$ ' . number_format((float) $deliveryFee, 2, ',', '.'),
+            'estimated_time' => $estimatedTime,
+            'delivery_method' => $deliveryMethod,
+            'delivery_person' => $order->motoboy?->name ?? 'Em breve',
             'order_items' => ($order->items ?? collect())->map(function ($item) {
-                return "{$item->quantity}x {$item->product_name}";
+                return "🔹 {$item->quantity}x {$item->product_name}";
             })->implode("\n"),
         ];
     }

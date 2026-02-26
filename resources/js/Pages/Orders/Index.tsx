@@ -16,7 +16,26 @@ import { useMemo, useCallback } from 'react';
 
 // ... imports
 
-export default function OrdersIndex({ orders, motoboys = [], products = [] }: { orders: Order[], motoboys: any[], products: any[] }) {
+export default function OrdersIndex({ orders, motoboys = [], products = [], estimatedTime = 40 }: { orders: Order[], motoboys: any[], products: any[], estimatedTime?: number }) {
+    const [baseTime, setBaseTime] = useState(estimatedTime);
+    const [isUpdatingTime, setIsUpdatingTime] = useState(false);
+
+    useEffect(() => {
+        setBaseTime(estimatedTime);
+    }, [estimatedTime]);
+
+    const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setBaseTime(parseInt(e.target.value) || 0);
+    };
+
+    const saveTime = () => {
+        setIsUpdatingTime(true);
+        router.post(route('orders.update-time'), { estimated_delivery_time: baseTime }, {
+            preserveScroll: true,
+            onFinish: () => setIsUpdatingTime(false)
+        });
+    };
+
     const columns = useMemo(() => [
         {
             id: 'new',
@@ -307,7 +326,34 @@ export default function OrdersIndex({ orders, motoboys = [], products = [] }: { 
                         Gerencie o fluxo da sua cozinha e entregas em tempo real
                     </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                    {/* Time Config */}
+                    <div className="flex items-center gap-2 bg-white dark:bg-[#1a1b1e] border border-gray-100 dark:border-white/5 pl-3 pr-1 py-1 rounded-2xl shadow-sm">
+                        <label className="text-xs font-bold text-gray-500 flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" /> Previsão:
+                        </label>
+                        <div className="flex items-center gap-1">
+                            <input 
+                                type="number" 
+                                min="5" max="180" step="5"
+                                value={baseTime}
+                                onChange={handleTimeChange}
+                                className="w-16 h-8 text-sm font-bold text-gray-900 dark:text-white border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/20 rounded-lg focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-center px-1"
+                            />
+                            <span className="text-xs font-bold text-gray-400 mr-1">min</span>
+                            {baseTime !== estimatedTime && (
+                                <button
+                                    onClick={saveTime}
+                                    disabled={isUpdatingTime}
+                                    className="bg-green-500 hover:bg-green-600 text-white p-1.5 rounded-lg transition-colors flex items-center justify-center disabled:opacity-50"
+                                    title="Salvar Tempo Base"
+                                >
+                                    <CheckCircle className="w-4 h-4" />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
                     {/* Filter Button */}
                     <button
                         onClick={() => setShowFilters(!showFilters)}

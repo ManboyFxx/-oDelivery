@@ -52,10 +52,15 @@ class OrderController extends Controller
             ->with(['complementGroups.options'])
             ->get();
 
+        // Fetch active settings for base time
+        $settings = \App\Models\StoreSetting::where('tenant_id', $tenantId)->first();
+        $estimatedTime = $settings ? $settings->estimated_delivery_time : 40;
+
         return Inertia::render('Orders/Index', [
             'orders' => $orders,
             'motoboys' => $motoboys,
-            'products' => $products
+            'products' => $products,
+            'estimatedTime' => $estimatedTime
         ]);
     }
 
@@ -269,5 +274,25 @@ class OrderController extends Controller
         $order->startPreparation();
 
         return back()->with('success', 'Preparo iniciado!');
+    }
+
+    public function updateTime(Request $request)
+    {
+        $validated = $request->validate([
+            'estimated_delivery_time' => 'required|integer|min:5|max:180'
+        ]);
+
+        $tenantId = auth()->user()->tenant_id;
+
+        $settings = \App\Models\StoreSetting::firstOrCreate(
+            ['tenant_id' => $tenantId],
+            ['estimated_delivery_time' => 40]
+        );
+
+        $settings->update([
+            'estimated_delivery_time' => $validated['estimated_delivery_time']
+        ]);
+
+        return back()->with('success', 'Tempo base de preparo atualizado!');
     }
 }
