@@ -26,10 +26,12 @@ class StorageController extends Controller
 
             // Try different possible paths for common shared hosting layouts
             $pathsToTry = [
+                public_path('uploads/' . $path),
                 storage_path('app/public/' . $path),
                 base_path('storage/app/public/' . $path),
                 public_path('storage/' . $path),
                 // Hostinger/Shared hosting specific candidates
+                realpath(base_path('../public_html/uploads/' . $path)),
                 realpath(base_path('../storage/app/public/' . $path)),
                 realpath(base_path('../public_html/storage/' . $path)),
             ];

@@ -80,8 +80,8 @@ class Product extends Model
             $cleanPath = substr($cleanPath, 8);
         }
 
-        // Retorna a URL completa simulando que a imagem está na `/uploads` pública
-        return '/uploads/' . ltrim($cleanPath, '/');
+        // Retorna a URL completa usando a rota /storage para maior robustez
+        return '/storage/' . ltrim($cleanPath, '/');
     }
 
 
