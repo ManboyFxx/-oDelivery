@@ -62,14 +62,17 @@ class OrderObserver
             $newStatus = $order->status;
 
             // Handle specific notifications vs generic status change
-            if ($newStatus === 'motoboy_accepted') {
-                $this->notificationService->sendOrderAccepted($order, $order->motoboy);
-            } elseif ($newStatus === 'delivered') {
-                $this->notificationService->sendOrderDelivered($order);
-            } else {
-                $this->notificationService->sendOrderStatusChanged($order, $oldStatus, $newStatus);
+            try {
+                if ($newStatus === 'motoboy_accepted') {
+                    $this->notificationService->sendOrderAccepted($order, $order->motoboy);
+                } elseif ($newStatus === 'delivered') {
+                    $this->notificationService->sendOrderDelivered($order);
+                } else {
+                    $this->notificationService->sendOrderStatusChanged($order, $oldStatus, $newStatus);
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Notification Service Failed in OrderObserver: ' . $e->getMessage());
             }
-
             switch ($newStatus) {
                 case 'preparing': // Confirmed
                     $order->decrementIngredientsStock();
