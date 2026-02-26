@@ -29,13 +29,12 @@ class StorageController extends Controller
                 public_path('uploads/' . $path),
                 storage_path('app/public/' . $path),
                 base_path('storage/app/public/' . $path),
-                public_path('storage/' . $path),
-                // Hostinger/Shared hosting specific candidates
+                public_path($path), // In case the second 'uploads' or 'storage' is already in $path
+                // Hostinger/Shared hosting specific candidates (traversing up)
                 realpath(base_path('../public_html/uploads/' . $path)),
-                realpath(base_path('../public_html/storage/' . $path)),
                 realpath(base_path('../public_html/storage/app/public/' . $path)),
                 realpath(base_path('../storage/app/public/' . $path)),
-                realpath(base_path('../public_html/storage/' . $path)),
+                realpath(dirname(public_path()) . '/uploads/' . $path),
             ];
 
             $fullPath = null;
@@ -47,40 +46,27 @@ class StorageController extends Controller
             }
 
             if (!$fullPath) {
-                \Log::error('File not found in any candidate path:', [
+                \Log::warning('File not found in any candidate path:', [
                     'requested_path' => $path,
-                    'tried_paths' => array_filter($pathsToTry),
-                    'storage_path' => storage_path(),
+                    'public_path' => public_path(),
                     'base_path' => base_path(),
-                    'public_path' => public_path()
                 ]);
-                abort(404, 'Arquivo não encontrado no servidor');
+                abort(404, 'Arquivo não encontrado');
             }
 
-            // Get file info
-            $file = file_get_contents($fullPath);
-            $mimeType = mime_content_type($fullPath);
-            $size = filesize($fullPath);
-
-            \Log::info('Serving file:', [
-                'path' => $path,
-                'mime' => $mimeType,
-                'size' => $size
-            ]);
-
-            return Response::make($file, 200, [
-                'Content-Type' => $mimeType,
-                'Content-Length' => $size,
+            return response()->file($fullPath, [
                 'Cache-Control' => 'public, max-age=31536000, immutable',
-                'Accept-Ranges' => 'bytes',
             ]);
         } catch (\Exception $e) {
             \Log::error('Storage serve error:', [
                 'path' => $path,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'error' => $e->getMessage()
             ]);
-            abort(500, 'Erro ao servir arquivo: ' . $e->getMessage());
+            // If it's already an 404 abort, let it pass
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpException) {
+                throw $e;
+            }
+            abort(500, 'Erro ao carregar imagem');
         }
     }
 }
