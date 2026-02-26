@@ -28,7 +28,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 // Storage file serving route (bypasses symlink issues on shared hosting)
-Route::get('/storage/{path}', [StorageController::class, 'serve'])->where('path', '.*')->name('storage.serve');
+Route::get('/uploads/{path}', [StorageController::class, 'serve'])->where('path', '.*')->name('storage.serve');
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [

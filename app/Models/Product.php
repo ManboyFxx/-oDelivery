@@ -80,8 +80,8 @@ class Product extends Model
             $cleanPath = substr($cleanPath, 8);
         }
 
-        // Retorna a URL completa usando a rota /storage para maior robustez
-        return '/storage/' . ltrim($cleanPath, '/');
+        // Retorna a URL completa usando /uploads (com fallback via StorageController em rotas.php)
+        return '/uploads/' . ltrim($cleanPath, '/');
     }
 
 

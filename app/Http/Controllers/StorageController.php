@@ -32,6 +32,8 @@ class StorageController extends Controller
                 public_path('storage/' . $path),
                 // Hostinger/Shared hosting specific candidates
                 realpath(base_path('../public_html/uploads/' . $path)),
+                realpath(base_path('../public_html/storage/' . $path)),
+                realpath(base_path('../public_html/storage/app/public/' . $path)),
                 realpath(base_path('../storage/app/public/' . $path)),
                 realpath(base_path('../public_html/storage/' . $path)),
             ];
