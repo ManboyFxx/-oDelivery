@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Modules\Delivery\Actions\CancelOrderAction;
+use App\Modules\Delivery\Actions\UpdateOrderStatusAction;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -169,7 +171,7 @@ class OrderController extends Controller
     }
 
 
-    public function updateStatus(Request $request, Order $order)
+    public function updateStatus(Request $request, Order $order, UpdateOrderStatusAction $action)
     {
         $this->authorizeOrder($order);
 
@@ -177,12 +179,7 @@ class OrderController extends Controller
             'status' => 'required|string|in:new,preparing,ready,waiting_motoboy,motoboy_accepted,out_for_delivery,delivered,cancelled'
         ]);
 
-        $oldStatus = $order->status;
-        $order->update($validated);
-
-        // Send WhatsApp notifications based on status change
-        // handled by OrderObserver
-
+        $action->execute($order, $validated['status'], auth()->user());
 
         return back()->with('success', 'Status atualizado!');
     }
@@ -238,7 +235,7 @@ class OrderController extends Controller
         return back()->with('success', 'Modo de entrega atualizado!');
     }
 
-    public function cancel(Request $request, Order $order)
+    public function cancel(Request $request, Order $order, CancelOrderAction $action)
     {
         $this->authorizeOrder($order);
 
@@ -246,11 +243,7 @@ class OrderController extends Controller
             'reason' => 'required|string|max:255'
         ]);
 
-        $order->update([
-            'status' => 'cancelled',
-            'cancellation_reason' => $validated['reason'],
-            'cancelled_at' => now()
-        ]);
+        $action->execute($order, $validated['reason'], auth()->user());
 
         return back()->with('success', 'Pedido cancelado.');
     }

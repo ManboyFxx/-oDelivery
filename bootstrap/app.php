@@ -38,6 +38,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'check_subscription' => \App\Http\Middleware\CheckSubscription::class,
             'role' => \App\Http\Middleware\RoleBasedAccessMiddleware::class,
             'printer' => \App\Http\Middleware\AuthPrinterToken::class,
+            // FASE 3 – PBAC
+            'permission' => \App\Http\Middleware\CheckPermission::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
