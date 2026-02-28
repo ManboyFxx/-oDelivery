@@ -12,7 +12,7 @@ return new class extends Migration {
     {
         Schema::create('tenant_role_permissions', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('tenant_id');
+            $table->char('tenant_id', 36); // UUID
             $table->string('role', 50);           // 'admin', 'employee'
             $table->string('permission', 100);    // 'orders.cancel', 'financial.view'
             $table->tinyInteger('enabled')->default(1);

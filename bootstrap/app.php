@@ -40,6 +40,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'printer' => \App\Http\Middleware\AuthPrinterToken::class,
             // FASE 3 – PBAC
             'permission' => \App\Http\Middleware\CheckPermission::class,
+            // FASE 3 – Multi-DB
+            'resolve-tenant-db' => \App\Http\Middleware\ResolveTenantDatabase::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

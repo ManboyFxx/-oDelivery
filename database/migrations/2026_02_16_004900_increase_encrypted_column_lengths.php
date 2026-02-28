@@ -23,14 +23,16 @@ return new class extends Migration {
         });
 
         Schema::table('customers', function (Blueprint $table) {
-            // Exact name found via tinker: customers_tenant_phone_index
-            if (Schema::hasIndex('customers', 'customers_tenant_phone_index')) {
-                $table->dropIndex('customers_tenant_phone_index');
-            }
-
-            // Other possible index found in earlier migration
-            if (Schema::hasIndex('customers', 'idx_customers_phone')) {
-                $table->dropIndex('idx_customers_phone');
+            // Drop todos os possíveis índices em phone antes de modificar para TEXT
+            $indexesToDrop = ['customers_tenant_id_phone_index', 'customers_tenant_phone_index', 'idx_customers_phone', 'customers_phone_index', 'customers_phone_unique'];
+            foreach ($indexesToDrop as $idx) {
+                try {
+                    if (Schema::hasIndex('customers', $idx)) {
+                        $table->dropIndex($idx);
+                    }
+                } catch (\Throwable $e) {
+                    // Ignora se não existir
+                }
             }
 
             $table->text('phone')->nullable()->change();
