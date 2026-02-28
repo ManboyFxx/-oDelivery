@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Head } from '@inertiajs/react';
-import { CheckCircle, Clock, ChefHat, Truck, Package, X } from 'lucide-react';
+import { Head, usePage } from '@inertiajs/react';
+import { CheckCircle, Clock, ChefHat, Truck, Package, X, MapPin } from 'lucide-react';
+import MapComponent from '@/Components/Motoboy/MapComponent';
 import axios from 'axios';
 import clsx from 'clsx';
 
@@ -34,9 +35,14 @@ interface OrderData {
         current?: boolean;
         timestamp?: string;
     }>;
+    tracking?: {
+        store: { lat: number | null; lng: number | null };
+        motoboy: { lat: number; lng: number; updated_at: string } | null;
+    };
 }
 
 export default function OrderTracking({ orderId, slug }: OrderTrackingProps) {
+    const { google_maps_api_key } = usePage().props as any;
     const [orderData, setOrderData] = useState<OrderData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -162,6 +168,32 @@ export default function OrderTracking({ orderId, slug }: OrderTrackingProps) {
                             </div>
                         </div>
                     </div>
+
+                    {/* Map Tracking */}
+                    {order.status === 'out_for_delivery' && orderData.tracking?.motoboy && (
+                        <div className="bg-white dark:bg-premium-card rounded-2xl shadow-lg p-6 mb-6 transition-colors duration-300">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <MapPin className="text-[#ff3d03]" /> Acompanhe seu pedido
+                                </h2>
+                                <span className="text-xs text-green-500 font-bold animate-pulse">
+                                    ● Ao vivo (Atualizado {orderData.tracking.motoboy.updated_at})
+                                </span>
+                            </div>
+                            
+                            <div className="rounded-xl overflow-hidden h-[300px] border-2 border-gray-100 dark:border-white/5">
+                                <MapComponent 
+                                    apiKey={google_maps_api_key}
+                                    currentLocation={orderData.tracking.motoboy}
+                                    destinationLocation={orderData.tracking.store ? { 
+                                        lat: orderData.tracking.store.lat!, 
+                                        lng: orderData.tracking.store.lng! 
+                                    } : undefined}
+                                    height="300px"
+                                />
+                            </div>
+                        </div>
+                    )}
 
                     {/* Order Details */}
                     <div className="bg-white dark:bg-premium-card rounded-2xl shadow-lg p-6 mb-6 transition-colors duration-300">

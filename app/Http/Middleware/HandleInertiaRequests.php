@@ -74,6 +74,7 @@ class HandleInertiaRequests extends Middleware
                 'flash_token' => fn() => $request->session()->get('flash_token'), // Explicitly share token
             ],
             'toast' => fn() => $request->session()->get('toast'),
+            'google_maps_api_key' => config('services.google_maps.api_key'),
         ];
     }
 }
