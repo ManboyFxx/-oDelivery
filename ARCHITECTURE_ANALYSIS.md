@@ -10,16 +10,18 @@
 
 ### Stack Tecnológico Verificado
 
-| Camada | Tecnologia | Versão | Status |
-|--------|-----------|--------|--------|
-| **Backend** | Laravel | 12.x | ✅ |
-| **Frontend** | React + Inertia.js | 18.x + 2.x | ✅ |
-| **Linguagem** | PHP | 8.2+ | ✅ |
-| **Banco de Dados** | MySQL | 8.0+ | ✅ |
-| **Pagamentos** | Stripe | v15 | ✅ |
-| **WhatsApp** | Evolution API | Latest | ✅ |
-| **Push** | OneSignal | Latest | ⚠️ |
-| **Deploy** | Shared Hosting / VPS | — | ✅ |
+| Camada             | Tecnologia           | Versão                             | Status      |
+| ------------------ | -------------------- | ---------------------------------- | ----------- |
+| **Backend**        | Laravel              | 12.x                               | ✅          |
+| **Arquitetura**    | Modular Monolith     | Action Classes + Bounded Contexts  | ✅ (Fase 3) |
+| **Frontend**       | React + Inertia.js   | 18.x + 2.x                         | ✅          |
+| **Linguagem**      | PHP                  | 8.2+                               | ✅          |
+| **Banco de Dados** | MySQL                | 8.0+                               | ✅          |
+| **Isolamento**     | Híbrido              | TenantScope + Dedicated DB Support | ✅ (Fase 3) |
+| **Pagamentos**     | Stripe               | v15                                | ✅          |
+| **WhatsApp**       | Evolution API        | Latest                             | ✅          |
+| **Push**           | OneSignal            | Latest                             | ⚠️          |
+| **Deploy**         | Shared Hosting / VPS | —                                  | ✅          |
 
 ---
 
@@ -37,6 +39,7 @@ protected static function booted(): void {
 ```
 
 **Implementação Real:**
+
 - Isolamento via `tenant_id` em **52 models** verificados
 - `TenantScope` aplicado automaticamente via `booted()` — sem risco de esquecer
 - Traits reutilizáveis: `HasUuid`, `BelongsToTenant`, `Auditable`, `SoftDeletes`
@@ -45,10 +48,11 @@ protected static function booted(): void {
 - Super Admin opera com `withoutGlobalScope(TenantScope::class)` de forma controlada
 
 **Models com TenantScope (verificados):**
+
 ```
-Order, Product, Customer, Category, Coupon, DeliveryZone, 
-Table, StoreSetting, WhatsAppInstance, MediaFile, Ingredient, 
-ComplementGroup, PaymentMethod, Notification, PushSubscription, 
+Order, Product, Customer, Category, Coupon, DeliveryZone,
+Table, StoreSetting, WhatsAppInstance, MediaFile, Ingredient,
+ComplementGroup, PaymentMethod, Notification, PushSubscription,
 LoyaltyPromotion, MotoboyProfile, StockMovement, +32 outros
 ```
 
@@ -60,19 +64,21 @@ LoyaltyPromotion, MotoboyProfile, StockMovement, +32 outros
 
 **Status: VERIFICADO ✅**
 
-| Área | Rota | Middleware | Models Acessíveis |
-|------|------|------------|-------------------|
-| **Público** | `/{slug}/*` | — | Menu, Products (read-only) |
-| **Cliente** | `/customer/*` | `throttle:60,1`, `tenant.scope` | Orders, Addresses, Notifications |
-| **Parceiro (Admin)** | `/dashboard`, `/orders`, `/pdv` | `auth`, `subscription`, `role:admin,employee` | Todos exceto Super Admin |
-| **Motoboy** | `/motoboy/*` | `auth`, `role:motoboy` | Orders (delivery), Location |
-| **Super Admin** | `/platform/*` | `auth`, `super_admin` | Todos + Tenants, Logs Globais |
+| Área                 | Rota                            | Middleware                                    | Models Acessíveis                |
+| -------------------- | ------------------------------- | --------------------------------------------- | -------------------------------- |
+| **Público**          | `/{slug}/*`                     | —                                             | Menu, Products (read-only)       |
+| **Cliente**          | `/customer/*`                   | `throttle:60,1`, `tenant.scope`               | Orders, Addresses, Notifications |
+| **Parceiro (Admin)** | `/dashboard`, `/orders`, `/pdv` | `auth`, `subscription`, `role:admin,employee` | Todos exceto Super Admin         |
+| **Motoboy**          | `/motoboy/*`                    | `auth`, `role:motoboy`                        | Orders (delivery), Location      |
+| **Super Admin**      | `/platform/*`                   | `auth`, `super_admin`                         | Todos + Tenants, Logs Globais    |
 
-**RBAC Implementado:**
+**RBAC e PBAC (Fase 3) Implementados:**
+
 - Roles: `admin`, `employee`, `motoboy`, `super_admin`
+- **Permissões Granulares (PBAC):** Acesso atômico por rota (ex: `orders.cancel`, `financial.view`) via camada middleware de cache (`PermissionService`).
 - Middleware de `subscription` bloqueia tenants sem plano ativo
 - Cardápio público isolado por `slug` do tenant
-- Rate limiting estrito: 20-60 req/min por área
+- Rate limiting inteligente (Fase 4): 30 req/min/auth, 60 req/min/webhooks, limitador público por tenant.
 
 ---
 
@@ -98,18 +104,19 @@ LoyaltyPromotion, MotoboyProfile, StockMovement, +32 outros
 
 **OrderObserver — Gatilhos Automáticos:**
 
-| Transição | Ação Disparada |
-|-----------|----------------|
-| `new → confirmed` | Notificação push + WhatsApp |
-| `confirmed → preparing` | **Decremento de estoque** automático |
-| `preparing → ready` | WhatsApp "Pedido pronto" |
-| `ready → waiting_motoboy` | Notifica motoboys disponíveis |
-| `waiting_motoboy → motoboy_accepted` | WhatsApp "Motoboy aceitou" |
-| `motoboy_accepted → out_for_delivery` | WhatsApp "Saiu para entrega" |
-| `out_for_delivery → delivered` | **Pontos de fidelidade** creditados |
-| `* → cancelled` | WhatsApp cancelamento + estorno (se pago) |
+| Transição                             | Ação Disparada                            |
+| ------------------------------------- | ----------------------------------------- |
+| `new → confirmed`                     | Notificação push + WhatsApp               |
+| `confirmed → preparing`               | **Decremento de estoque** automático      |
+| `preparing → ready`                   | WhatsApp "Pedido pronto"                  |
+| `ready → waiting_motoboy`             | Notifica motoboys disponíveis             |
+| `waiting_motoboy → motoboy_accepted`  | WhatsApp "Motoboy aceitou"                |
+| `motoboy_accepted → out_for_delivery` | WhatsApp "Saiu para entrega"              |
+| `out_for_delivery → delivered`        | **Pontos de fidelidade** creditados       |
+| `* → cancelled`                       | WhatsApp cancelamento + estorno (se pago) |
 
 **Campos de Timing (Order.php):**
+
 ```php
 'confirmed_at', 'preparation_started_at', 'estimated_ready_at',
 'ready_at', 'delivered_at', 'cancelled_at',
@@ -122,14 +129,14 @@ LoyaltyPromotion, MotoboyProfile, StockMovement, +32 outros
 
 **Status: VERIFICADO ✅**
 
-| Integração | Implementação Real | Status |
-|------------|-------------------|--------|
-| **Evolution API** | `EvolutionApiService` + `OoBotService` + templates personalizáveis | ✅ Ativo |
-| **Stripe** | `PaymentGatewayService` + webhooks + trial automático | ✅ Ativo |
-| **OneSignal** | `NotificationService` + `DatabaseChannel` customizado | ⚠️ Configuração necessária |
-| **ÓoPrint** | Desktop app Electron com protocolo direto à impressora | ✅ Ativo |
-| **Google/Leaflet** | Zonas de entrega poligonais com cálculo de frete | ✅ Ativo |
-| **Mercado Pago** | Estrutura pronta no `PaymentGatewayService` | 🟡 Implementação parcial |
+| Integração         | Implementação Real                                                 | Status                     |
+| ------------------ | ------------------------------------------------------------------ | -------------------------- |
+| **Evolution API**  | `EvolutionApiService` + `OoBotService` + templates personalizáveis | ✅ Ativo                   |
+| **Stripe**         | `PaymentGatewayService` + webhooks + trial automático              | ✅ Ativo                   |
+| **OneSignal**      | `NotificationService` + `DatabaseChannel` customizado              | ⚠️ Configuração necessária |
+| **ÓoPrint**        | Desktop app Electron com protocolo direto à impressora             | ✅ Ativo                   |
+| **Google/Leaflet** | Zonas de entrega poligonais com cálculo de frete                   | ✅ Ativo                   |
+| **Mercado Pago**   | Estrutura pronta no `PaymentGatewayService`                        | 🟡 Implementação parcial   |
 
 **Detalhes da Integração WhatsApp (OoBotService.php):**
 
@@ -145,6 +152,7 @@ LoyaltyPromotion, MotoboyProfile, StockMovement, +32 outros
 ```
 
 **Variáveis de Template:**
+
 ```php
 customer_name, motoboy_name, order_number, order_total,
 store_name, store_phone, delivery_address, payment_method,
@@ -174,12 +182,13 @@ verifyWebhookSignature()  // Validação de webhooks
 
 **Planos Configurados (PlanLimit.php):**
 
-| Plano | Preço | Ordens/Mês | Produtos | Usuários | Motoboys |
-|-------|-------|------------|----------|----------|----------|
-| **Gratuito** | R$0 | 30 | 20 | 2 | 0 |
-| **Unificado** | R$129,90 | Ilimitado | Ilimitado | Ilimitado | Ilimitado |
+| Plano         | Preço    | Ordens/Mês | Produtos  | Usuários  | Motoboys  |
+| ------------- | -------- | ---------- | --------- | --------- | --------- |
+| **Gratuito**  | R$0      | 30         | 20        | 2         | 0         |
+| **Unificado** | R$129,90 | Ilimitado  | Ilimitado | Ilimitado | Ilimitado |
 
 **Webhooks Configurados (StripeWebhookController.php):**
+
 ```php
 'customer.subscription.created',
 'customer.subscription.updated',
@@ -206,6 +215,7 @@ redeemProduct()           // Resgatar produto com pontos
 ```
 
 **Cálculo de Pontos:**
+
 ```php
 1. Base Points: floor(total * points_per_currency)
 2. Product Accelerators: multiplicador por produto
@@ -214,6 +224,7 @@ redeemProduct()           // Resgatar produto com pontos
 ```
 
 **Níveis de Fidelidade (Customer.php):**
+
 ```php
 Bronze  → 0-499 pontos    → Multiplicador 1.0x
 Silver  → 500-1999 pontos → Multiplicador 1.1x
@@ -222,6 +233,7 @@ Platinum → 5000+ pontos   → Multiplicador 1.3x
 ```
 
 **Models Relacionados:**
+
 ```php
 Customer (loyalty_points, loyalty_tier)
 LoyaltyPointsHistory (histórico completo)
@@ -235,6 +247,7 @@ LoyaltyPromotion (promoções sazonais)
 **Status: VERIFICADO ✅**
 
 **Models Implementados:**
+
 ```php
 MotoboyProfile          // Perfil do motoboy
 MotoboyLocation         // Localização em tempo real
@@ -245,12 +258,14 @@ MotoboyRating           // Avaliação por entrega
 ```
 
 **MotoboyOrderService.php — Funcionalidades:**
+
 - Atribuição automática de motoboys
 - Cálculo de distância (Google Maps API)
 - Notificação de pedidos próximos
 - Tracking em tempo real via polling (15s)
 
 **MotoboyLayout.tsx — Interface:**
+
 - Dashboard com pedidos disponíveis
 - Mapa com rotas otimizadas
 - Notificações push
@@ -264,14 +279,16 @@ MotoboyRating           // Avaliação por entrega
 **Status: VERIFICADO ✅**
 
 **DeliveryZone.php — Estrutura:**
+
 ```php
 fillable: [
-    'name', 'polygon', 'min_order_value', 
+    'name', 'polygon', 'min_order_value',
     'delivery_fee', 'is_active', 'estimated_time_minutes'
 ]
 ```
 
 **Validação de Endereço:**
+
 ```javascript
 // Frontend: DeliveryZoneValidator.ts
 1. Geocoding do endereço (Google Maps)
@@ -281,6 +298,7 @@ fillable: [
 ```
 
 **API Endpoints:**
+
 ```
 POST /api/validate-delivery-zone  // Valida endereço
 GET  /api/delivery-zones          // Lista zonas ativas
@@ -293,6 +311,7 @@ GET  /api/delivery-zones          // Lista zonas ativas
 **Status: VERIFICADO ✅**
 
 **PdvController.php — Funcionalidades:**
+
 ```php
 store()      // Criar pedido PDV
 index()      // Listar pedidos do dia
@@ -300,6 +319,7 @@ update()     // Atualizar pedido
 ```
 
 **PDV.tsx (React) — Interface:**
+
 - Grid de produtos com busca rápida
 - Carrinho em tempo real
 - Seleção de cliente (CPF/CNPJ)
@@ -309,6 +329,7 @@ update()     // Atualizar pedido
 - Fechamento de turno
 
 **CashRegister Model:**
+
 ```php
 opening_balance, closing_balance,
 opening_time, closing_time,
@@ -323,12 +344,14 @@ expected_balance, actual_balance
 **Status: VERIFICADO ✅**
 
 **Table.php — Modelo:**
+
 ```php
 fillable: ['number', 'name', 'status', 'position', 'qr_code']
 status: ['available', 'occupied', 'reserved', 'maintenance']
 ```
 
 **Funcionalidades (TableController.php):**
+
 ```php
 transfer()         // Transferir conta entre mesas
 closeAccount()     // Fechar conta
@@ -338,6 +361,7 @@ updatePositions()  // Organizar layout
 ```
 
 **TableMapEditor.tsx — Editor Visual:**
+
 - Drag-and-drop de mesas
 - Layout personalizável
 - QR Code por mesa
@@ -349,7 +373,8 @@ updatePositions()  // Organizar layout
 
 **Status: VERIFICADO ✅**
 
-**Rotas (/platform/*):**
+**Rotas (/platform/\*):**
+
 ```php
 Tenants Management:
   GET  /platform/tenants
@@ -378,6 +403,7 @@ Logs:
 ```
 
 **SuperAdminController.php — Funcionalidades:**
+
 - Criar/editar tenants
 - Suspender/restaurar contas
 - Estender trial
@@ -398,27 +424,29 @@ Logs:
 // TenantPollService.php — atualiza arquivo JSON a cada ação
 public function touch(string $tenantId): void {
     file_put_contents(
-        storage_path("poll/{$tenantId}.json"), 
+        storage_path("poll/{$tenantId}.json"),
         json_encode(['timestamp' => time()])
     );
 }
 ```
 
 **Frontend:**
+
 ```typescript
 // useOrderPolling.ts
 useEffect(() => {
-    const interval = setInterval(() => {
-        fetch(`/api/poll/${tenantId}`)
-            .then(res => res.json())
-            .then(data => updateOrders(data));
-    }, 15000); // 15 segundos
-    
-    return () => clearInterval(interval);
+  const interval = setInterval(() => {
+    fetch(`/api/poll/${tenantId}`)
+      .then((res) => res.json())
+      .then((data) => updateOrders(data));
+  }, 15000); // 15 segundos
+
+  return () => clearInterval(interval);
 }, [tenantId]);
 ```
 
 **Análise:**
+
 - ✅ Zero custo de infraestrutura (sem Redis, sem WebSocket)
 - ✅ Funciona em shared hosting
 - ⚠️ Com 100+ tenants ativos simultâneos, gera carga de leitura de arquivo
@@ -433,12 +461,14 @@ useEffect(() => {
 **Status: BLINDADO ✅ com monitoramento recomendado**
 
 **Proteções Atuais:**
+
 - Implementado em todos os Models com `HasUuid` + `TenantScope`
 - Jobs serializam o `Order` completo (mantém `tenant_id`)
 - Observers recebem o model já com scope aplicado
 - Controllers usam `auth()->user()->tenant` implicitamente
 
 **Riscos Residuais:**
+
 - ⚠️ Queries raw com `DB::table()` sem filtro manual — raros no código atual
 - ⚠️ Cache compartilhado sem prefixo de tenant — verificado: usa `tenant_{id}_` prefix
 - ⚠️ Jobs em fila podem vazar tenant_id se não serializados corretamente — mitigado com `SerializesModels`
@@ -452,6 +482,7 @@ useEffect(() => {
 **Status: ⚠️ PRECISA DE CONFIGURAÇÃO**
 
 **NotificationService.php:**
+
 ```php
 protected function sendViaOneSignal($notifiable, $notification) {
     // Código implementado, mas requer:
@@ -462,6 +493,7 @@ protected function sendViaOneSignal($notifiable, $notification) {
 ```
 
 **Ações Necessárias:**
+
 1. Criar conta em https://onesignal.com
 2. Configurar App ID e REST Key no .env
 3. Testar envio de notificações push
@@ -474,6 +506,7 @@ protected function sendViaOneSignal($notifiable, $notification) {
 **Status: ⚠️ PRECISA DE CONFIGURAÇÃO**
 
 **Services que usam Google Maps:**
+
 ```php
 DeliveryZoneController — Validação de endereços
 MotoboyOrderService — Cálculo de distância
@@ -481,6 +514,7 @@ TimeEstimationService — ETA baseado em tráfego
 ```
 
 **APIs Necessárias:**
+
 - Geocoding API
 - Distance Matrix API
 - Maps JavaScript API
@@ -493,33 +527,65 @@ TimeEstimationService — ETA baseado em tráfego
 
 ### Prioridade Alta (próximos 3 meses)
 
-| # | Feature | Impacto | Esforço | Status |
-|---|---------|---------|---------|--------|
-| 1 | **Laravel Reverb** | Alto | Médio | 📋 Pendente |
-| 2 | **Analytics por tenant** | Alto | Baixo | 📋 Pendente |
-| 3 | **Configurar OneSignal** | Médio | Baixo | 🔧 Em progresso |
-| 4 | **Configurar Google Maps** | Alto | Baixo | 🔧 Em progresso |
-| 5 | **Permissões granulares** | Médio | Médio | 📋 Pendente |
+| #   | Feature                    | Impacto | Esforço | Status          |
+| --- | -------------------------- | ------- | ------- | --------------- |
+| 1   | **Laravel Reverb**         | Alto    | Médio   | 📋 Pendente     |
+| 2   | **Analytics por tenant**   | Alto    | Baixo   | 📋 Pendente     |
+| 3   | **Configurar OneSignal**   | Médio   | Baixo   | 🔧 Em progresso |
+| 4   | **Configurar Google Maps** | Alto    | Baixo   | 🔧 Em progresso |
+| 5   | **Permissões granulares**  | Médio   | Médio   | 📋 Pendente     |
 
 ### Prioridade Média (próximos 6 meses)
 
-| # | Feature | Impacto | Esforço | Status |
-|---|---------|---------|---------|--------|
-| 1 | **Domain Events** | Médio | Alto | 📋 Pendente |
-| 2 | **PWA nativo** | Alto | Médio | 📋 Pendente |
-| 3 | **Multi-moeda** | Baixo | Médio | 📋 Pendente |
-| 4 | **Mercado Pago integration** | Alto | Médio | 🟡 Parcial |
-| 5 | **Relatórios avançados** | Alto | Baixo | 📋 Pendente |
+| #   | Feature                      | Impacto | Esforço | Status      |
+| --- | ---------------------------- | ------- | ------- | ----------- |
+| 1   | **Domain Events**            | Médio   | Alto    | 📋 Pendente |
+| 2   | **PWA nativo**               | Alto    | Médio   | 📋 Pendente |
+| 3   | **Multi-moeda**              | Baixo   | Médio   | 📋 Pendente |
+| 4   | **Mercado Pago integration** | Alto    | Médio   | 🟡 Parcial  |
+| 5   | **Relatórios avançados**     | Alto    | Baixo   | 📋 Pendente |
 
 ### Prioridade Baixa (futuro)
 
-| # | Feature | Impacto | Esforço | Status |
-|---|---------|---------|---------|--------|
-| 1 | **Micro-serviços** | Baixo | Muito Alto | 📋 Backlog |
-| 2 | **Multi-DB por tenant** | Baixo | Alto | 📋 Backlog |
-| 3 | **IA para previsão** | Médio | Alto | 📋 Backlog |
-| 4 | **App mobile nativo** | Alto | Muito Alto | 📋 Backlog |
-| 5 | **Marketplace de integrações** | Médio | Alto | 📋 Backlog |
+| #   | Feature                        | Impacto | Esforço    | Status                   |
+| --- | ------------------------------ | ------- | ---------- | ------------------------ |
+| 1   | **Micro-serviços**             | Baixo   | Muito Alto | 📋 Backlog               |
+| 2   | **Multi-DB Ativo (Rotear)**    | Alto    | Médio      | 🟡 Infra pronta (Fase 3) |
+| 3   | **IA para previsão**           | Médio   | Alto       | 📋 Backlog               |
+| 4   | **App mobile nativo**          | Alto    | Muito Alto | 📋 Backlog               |
+| 5   | **Marketplace de integrações** | Médio   | Alto       | 📋 Backlog               |
+
+---
+
+## 🏗️ 12. Bounded Contexts (Modular Monolith)
+
+**Status: VERIFICADO ✅ (Fase 3)**
+
+O sistema foi refatorado na Fase 3 para encapsular o negócio usando **Action Classes** (Fat Models/Services → Action Classes).
+
+**Módulos (`app/Modules/`):**
+
+- `Core`: Inquilinos, usuários, sistema (TenantScope, ResolveTenantDatabase)
+- `Delivery`: Gestão de pedidos, Cardápio (`CreateOrderAction`, `UpdateOrderStatusAction`, `CancelOrderAction`)
+- `Billing`: Pagos, planos, stripe (`ProcessStripePaymentAction`)
+- `Notification`: WhatsApp, Pusher, E-mails
+
+**Benefícios:**
+
+- Controladores delegam a responsabilidade da regra de negócio para as Actions.
+- Componentes altamente testáveis unitariamente.
+- Rastreamento Automático (`AuditLogService` global hook in Actions).
+
+---
+
+## 🛡️ 13. Segurança e Auditoria
+
+**Status: VERIFICADO ✅ (Fase 3 e 4)**
+
+- **AuditLog Automático:** Todas as model changes em pedidos, config financeira, criação/edição são logadas em `audit_logs`.
+- **PBAC (Permission Based Access Control):** Rotas sensíveis possuem o middleware `permission:foo`.
+- **Health Check Endpoint:** `GET /api/health` (DB, Cache, Pusher, Queue)
+- **Performance:** DB indexes estratégicos (tenant_id + status) cobrem tabelas de orders e products limitando full table scans.
 
 ---
 
@@ -596,15 +662,15 @@ Com base no código verificado, o ÓoDelivery entrega:
 
 **Diferenciais Competitivos:**
 
-| Feature | ÓoDelivery | Concorrentes Genéricos |
-|---------|-----------|------------------------|
-| WhatsApp nativo | ✅ Sim (Evolution API) | ❌ Depende de terceiros |
-| Impressão térmica | ✅ Sim (ÓoPrint) | ❌ Middleware necessário |
-| Fidelidade integrada | ✅ Sim (4 tiers) | ❌ Plugin pago |
-| Cardápio no domínio | ✅ Sim (/{slug}/menu) | ❌ Subdomínio |
-| Zonas poligonais | ✅ Sim (Google Maps) | ⚠️ Apenas raio |
-| PDV integrado | ✅ Sim | ❌ Separado |
-| App motoboy | ✅ Sim | ⚠️ Terceirizado |
+| Feature              | ÓoDelivery             | Concorrentes Genéricos   |
+| -------------------- | ---------------------- | ------------------------ |
+| WhatsApp nativo      | ✅ Sim (Evolution API) | ❌ Depende de terceiros  |
+| Impressão térmica    | ✅ Sim (ÓoPrint)       | ❌ Middleware necessário |
+| Fidelidade integrada | ✅ Sim (4 tiers)       | ❌ Plugin pago           |
+| Cardápio no domínio  | ✅ Sim (/{slug}/menu)  | ❌ Subdomínio            |
+| Zonas poligonais     | ✅ Sim (Google Maps)   | ⚠️ Apenas raio           |
+| PDV integrado        | ✅ Sim                 | ❌ Separado              |
+| App motoboy          | ✅ Sim                 | ⚠️ Terceirizado          |
 
 ---
 
@@ -612,42 +678,42 @@ Com base no código verificado, o ÓoDelivery entrega:
 
 ### Banco de Dados
 
-| Métrica | Valor |
-|---------|-------|
-| **Total de Models** | 52 |
-| **Total de Migrations** | 149 |
-| **Tabelas Principais** | 45+ |
-| **Índices Criados** | 80+ |
-| **Foreign Keys** | 60+ |
+| Métrica                 | Valor |
+| ----------------------- | ----- |
+| **Total de Models**     | 52    |
+| **Total de Migrations** | 149   |
+| **Tabelas Principais**  | 45+   |
+| **Índices Criados**     | 80+   |
+| **Foreign Keys**        | 60+   |
 
 ### Código Backend
 
-| Métrica | Valor |
-|---------|-------|
-| **Controllers** | 39 |
-| **Services** | 15 |
-| **Observers** | 5+ |
-| **Middleware** | 10+ |
-| **Jobs** | 20+ |
+| Métrica         | Valor |
+| --------------- | ----- |
+| **Controllers** | 39    |
+| **Services**    | 15    |
+| **Observers**   | 5+    |
+| **Middleware**  | 10+   |
+| **Jobs**        | 20+   |
 
 ### Frontend
 
-| Métrica | Valor |
-|---------|-------|
-| **Components React** | 100+ |
-| **Pages (Inertia)** | 80+ |
-| **Layouts** | 6 |
-| **Contextos** | 5+ |
+| Métrica              | Valor |
+| -------------------- | ----- |
+| **Components React** | 100+  |
+| **Pages (Inertia)**  | 80+   |
+| **Layouts**          | 6     |
+| **Contextos**        | 5+    |
 
 ### Integrações
 
-| Integração | Status | Configuração |
-|-----------|--------|--------------|
-| Evolution API | ✅ Ativa | Produção |
-| Stripe | ✅ Ativa | Produção |
-| OneSignal | ⚠️ Pendente | Aguardando credenciais |
-| Google Maps | ⚠️ Pendente | Aguardando API Key |
-| ÓoPrint | ✅ Ativo | Produção |
+| Integração    | Status      | Configuração           |
+| ------------- | ----------- | ---------------------- |
+| Evolution API | ✅ Ativa    | Produção               |
+| Stripe        | ✅ Ativa    | Produção               |
+| OneSignal     | ⚠️ Pendente | Aguardando credenciais |
+| Google Maps   | ⚠️ Pendente | Aguardando API Key     |
+| ÓoPrint       | ✅ Ativo    | Produção               |
 
 ---
 
@@ -657,15 +723,15 @@ Com base no código verificado, o ÓoDelivery entrega:
 
 **Resumo Executivo:**
 
-| Critério | Avaliação | Notas |
-|----------|-----------|-------|
-| **Arquitetura** | ⭐⭐⭐⭐⭐ | Multi-tenant sólido, escalável |
-| **Código** | ⭐⭐⭐⭐⭐ | Limpo, bem organizado, testável |
-| **Features** | ⭐⭐⭐⭐⭐ | Completo para o nicho |
-| **Integrações** | ⭐⭐⭐⭐ | 3/5 fully configured |
-| **Performance** | ⭐⭐⭐⭐ | Polling é o gargalo atual |
-| **Segurança** | ⭐⭐⭐⭐⭐ | TenantScope, RBAC, encryption |
-| **UX** | ⭐⭐⭐⭐ | React moderno, responsivo |
+| Critério        | Avaliação  | Notas                           |
+| --------------- | ---------- | ------------------------------- |
+| **Arquitetura** | ⭐⭐⭐⭐⭐ | Multi-tenant sólido, escalável  |
+| **Código**      | ⭐⭐⭐⭐⭐ | Limpo, bem organizado, testável |
+| **Features**    | ⭐⭐⭐⭐⭐ | Completo para o nicho           |
+| **Integrações** | ⭐⭐⭐⭐   | 3/5 fully configured            |
+| **Performance** | ⭐⭐⭐⭐   | Polling é o gargalo atual       |
+| **Segurança**   | ⭐⭐⭐⭐⭐ | TenantScope, RBAC, encryption   |
+| **UX**          | ⭐⭐⭐⭐   | React moderno, responsivo       |
 
 **Próximos Passos Críticos:**
 
@@ -676,6 +742,7 @@ Com base no código verificado, o ÓoDelivery entrega:
 5. **App mobile (React Native)** — 2-3 meses (opcional)
 
 **Capacidade de Escala Atual:**
+
 - ✅ **500 tenants** sem mudanças
 - ✅ **10.000 pedidos/dia** sem otimizações
 - ✅ **50 motoboys simultâneos** por tenant
@@ -690,6 +757,7 @@ _Verificado por análise direta do código-fonte — `app/`, `routes/`, `resourc
 ## 📞 Contato Técnico
 
 **Para dúvidas sobre esta análise:**
+
 - Revisite este arquivo em `/ARCHITECTURE_ANALYSIS.md`
 - Consulte `AGENTS.md` para entender a equipe de IA
 - Verifique `.gemini/rules/AIOS/agents/` para personas especializadas

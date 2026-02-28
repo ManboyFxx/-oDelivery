@@ -5,9 +5,10 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Api\AuthController;
 
-Route::get('/health', function () {
-    return response()->json(['status' => 'ok']);
-});
+use App\Http\Controllers\Api\HealthCheckController;
+
+// FASE 4 – Produção-Grade: Health Check
+Route::get('/health', [HealthCheckController::class, 'index']);
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -35,7 +36,7 @@ Route::middleware(['printer'])->prefix('printer')->group(function () {
 // ── FASE 1 BLINDAGEM: Webhooks Externos ────────────────────────────────────
 // Rotas públicas sem Sanctum — autenticação feita por HMAC dentro dos Controllers.
 // IMPORTANTE: manter fora de qualquer middleware de auth ou CSRF.
-Route::prefix('webhooks')->group(function () {
+Route::prefix('webhooks')->middleware('throttle:60,1')->group(function () {
     // Evolution API (WhatsApp): valida x-evolution-signature (HMAC-SHA256)
     Route::post('/evolution', [\App\Http\Controllers\Api\EvolutionWebhookController::class, 'handle'])
         ->name('webhooks.evolution');

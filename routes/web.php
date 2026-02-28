@@ -273,7 +273,8 @@ Route::middleware(['auth', 'subscription', 'role:admin,employee'])->group(functi
     Route::post('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
     Route::post('/orders/{order}/payment', [OrderController::class, 'updatePayment'])->name('orders.payment');
     Route::post('/orders/{order}/mode', [OrderController::class, 'updateMode'])->name('orders.mode');
-    Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
+    Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel')
+        ->middleware('permission:orders.cancel'); // FASE 4 – PBAC
     Route::put('/orders/{order}/items', [OrderController::class, 'updateItems'])->name('orders.update-items');
     Route::post('/orders/{order}/start-preparation', [OrderController::class, 'startPreparation'])->name('orders.start-preparation');
 
@@ -352,8 +353,9 @@ Route::middleware(['auth', 'subscription', 'role:admin,employee'])->group(functi
 // ROTAS EXCLUSIVAS ADMIN - Deletar produtos, categorias, complementos
 // ============================================================================
 Route::middleware(['auth', 'subscription', 'role:admin'])->group(function () {
-    // DELETE only - bloqueado para employee
-    Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
+    // DELETE only - bloqueado para employee + PBAC de permissão granular
+    Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy')
+        ->middleware('permission:products.delete'); // FASE 4 – PBAC
     Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
     Route::delete('/complements/{complement}', [ComplementController::class, 'destroy'])->name('complements.destroy');
     Route::delete('/ingredients/{ingredient}', [IngredientController::class, 'destroy'])->name('ingredients.destroy');
@@ -370,8 +372,9 @@ Route::middleware(['auth', 'subscription', 'role:admin'])->group(function () {
     Route::post('/fidelidade/settings', [LoyaltyController::class, 'updateSettings'])->name('loyalty.settings');
     Route::post('/fidelidade/adjust', [LoyaltyController::class, 'adjustPoints'])->name('loyalty.adjust');
 
-    // Financial Reports - Admin only
-    Route::get('/financeiro', [FinancialController::class, 'index'])->name('financial.index');
+    // Financial Reports - Admin only + PBAC
+    Route::get('/financeiro', [FinancialController::class, 'index'])->name('financial.index')
+        ->middleware('permission:financial.view'); // FASE 4 – PBAC
 
     // Customer Management - Admin only
     Route::resource('customers', CustomerController::class);
@@ -392,12 +395,13 @@ Route::middleware(['auth', 'subscription', 'role:admin'])->group(function () {
     Route::resource('delivery-zones', \App\Http\Controllers\DeliveryZoneController::class);
     Route::resource('payment-methods', \App\Http\Controllers\PaymentMethodController::class);
 
-    // Team Management - Admin only
-    Route::middleware(['plan.limit:users'])->group(function () {
+    // Team Management - Admin only + PBAC
+    Route::middleware(['plan.limit:users', 'permission:employees.manage'])->group(function () { // FASE 4 – PBAC
         Route::get('employees/create', [EmployeeController::class, 'create'])->name('employees.create');
         Route::post('employees', [EmployeeController::class, 'store'])->name('employees.store');
     });
-    Route::resource('employees', EmployeeController::class)->except(['create', 'store']);
+    Route::resource('employees', EmployeeController::class)->except(['create', 'store'])
+        ->middleware('permission:employees.manage'); // FASE 4 – PBAC
 
     // Motoboys - Only if plan has feature AND within limit
     Route::middleware(['plan.limit:motoboys'])->group(function () {
