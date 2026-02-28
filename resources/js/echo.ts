@@ -2,7 +2,9 @@ import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 
 // Configuração do Pusher (ou mude para 'ably' se usar Ably)
-const broadcastDriver = (import.meta.env.VITE_BROADCAST_DRIVER || 'log') as string;
+// Usa a chave import.meta.env.VITE_BROADCAST_DRIVER (que mapeia para BROADCAST_DRIVER no Laravel 11)
+// ou assume 'pusher' se as chaves PUSHER existirem
+const broadcastDriver = (import.meta.env.VITE_BROADCAST_DRIVER || (import.meta.env.VITE_PUSHER_APP_KEY ? 'pusher' : 'log')) as string;
 
 // Criar instância do Echo baseado no driver
 let echo: any;

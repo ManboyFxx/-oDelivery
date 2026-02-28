@@ -220,15 +220,17 @@ Route::post(config('platform.admin_path') . '/impersonate/leave', [\App\Http\Con
     ->middleware('auth')
     ->name('admin.impersonate.leave');
 
-// Public Menu Routes
-Route::get('/{slug}/menu', [\App\Http\Controllers\TenantMenuController::class, 'show'])->name('tenant.menu');
-Route::get('/{slug}/orders/{orderId}', function ($slug, $orderId) {
-    return Inertia::render('Tenant/Menu/OrderTracking', [
-        'slug' => $slug,
-        'orderId' => $orderId,
-    ]);
-})->name('tenant.order.track');
-Route::get('/{slug}/demo', [\App\Http\Controllers\TenantMenuController::class, 'demo'])->name('tenant.menu.demo');
+// Public Menu Routes - ✅ COM RATE LIMITING POR TENANT (FASE 2)
+Route::middleware(['throttle:tenant-public'])->group(function () {
+    Route::get('/{slug}/menu', [\App\Http\Controllers\TenantMenuController::class, 'show'])->name('tenant.menu');
+    Route::get('/{slug}/orders/{orderId}', function ($slug, $orderId) {
+        return Inertia::render('Tenant/Menu/OrderTracking', [
+            'slug' => $slug,
+            'orderId' => $orderId,
+        ]);
+    })->name('tenant.order.track');
+    Route::get('/{slug}/demo', [\App\Http\Controllers\TenantMenuController::class, 'demo'])->name('tenant.menu.demo');
+});
 
 Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])
     ->middleware(['auth', 'verified', 'subscription', 'role:admin,super_admin'])

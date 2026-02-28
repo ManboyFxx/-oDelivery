@@ -96,6 +96,10 @@ class PrinterController extends Controller
 
     /**
      * Mark an order as printed.
+     *
+     * FASE 1 – BLINDAGEM: Lock de reimpressão.
+     * Se o pedido já foi impresso (printed_at preenchido), retorna 409 Conflict
+     * em vez de reimprimir. Protege contra cliques duplos ou retries do ÓoPrint.
      */
     public function markAsPrinted(Request $request, $id)
     {
@@ -105,15 +109,33 @@ class PrinterController extends Controller
             ->where('id', $id)
             ->firstOrFail();
 
+        // ── LOCK DE REIMPRESSÃO ──────────────────────────────────────────────
+        if ($order->printed && $order->printed_at) {
+            \Log::warning('PrinterController: duplicate print attempt blocked', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'printed_at' => $order->printed_at,
+                'tenant_id' => $tenantId,
+            ]);
+            return response()->json([
+                'success' => true, // Retorna success=true para não travar o app ÓoPrint
+                'skipped' => true, // Flag para o ÓoPrint saber que foi ignorado
+                'order_number' => $order->order_number,
+                'message' => 'Pedido já foi impresso anteriormente.',
+            ], 200);
+        }
+        // ────────────────────────────────────────────────────────────────────
+
         $order->update([
             'printed' => true,
             'printed_at' => now(),
-            // Auto-confirm if still new/confirmed
-            'status' => in_array($order->status, ['new', 'confirmed']) ? 'preparing' : $order->status
+            // Auto-confirma se ainda estava como new/confirmed
+            'status' => in_array($order->status, ['new', 'confirmed']) ? 'preparing' : $order->status,
         ]);
 
         return response()->json(['success' => true, 'order_number' => $order->order_number]);
     }
+
 
     /**
      * Update order status from printer terminal.

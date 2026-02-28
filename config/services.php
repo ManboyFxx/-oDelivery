@@ -38,7 +38,9 @@ return [
     'evolution' => [
         'url' => env('EVOLUTION_API_URL', 'http://104.243.41.159:8080'),
         'api_key' => env('EVOLUTION_API_KEY'),
-        'webhook_url' => env('APP_URL') . '/webhooks/whatsapp',
+        'webhook_url' => env('APP_URL') . '/api/webhooks/evolution',
+        // FASE 1 – BLINDAGEM: Segredo HMAC para validar webhooks recebidos da Evolution API
+        'webhook_secret' => env('EVOLUTION_WEBHOOK_SECRET'),
     ],
 
     'stripe' => [

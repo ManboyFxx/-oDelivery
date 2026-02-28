@@ -56,9 +56,8 @@ _dev_tools/
 _dev_scripts/
 _dev_docs/
 
-# Electron Build
-óoprint/dist-electron/
-óoprint/dist/
+# Electron Build & App
+ooprint/
 
 # Environment & Secrets (AIOS)
 *.key

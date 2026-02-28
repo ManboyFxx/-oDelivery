@@ -2,41 +2,41 @@
 
 namespace App\Observers;
 
+use App\Events\NewOrderReceived;
+use App\Events\Orders\OrderStatusChanged;
 use App\Models\Order;
-use App\Services\OoBotService;
-use App\Services\LoyaltyService;
-use App\Services\TenantPollService;
-use App\Services\NotificationService;
-use App\Notifications\NewOrderNotification;
-use App\Notifications\OrderStatusChangedNotification;
 use App\Models\User;
+use App\Notifications\NewOrderNotification;
+use App\Services\NotificationService;
+use App\Services\TenantPollService;
+use Illuminate\Support\Facades\Log;
 
+/**
+ * FASE 2 – ESCALA REAL: OrderObserver refatorado com Domain Events.
+ *
+ * O switch/case de 80 linhas foi substituído por um único evento de domínio.
+ * Cada efeito colateral agora vive em seu próprio Listener independente:
+ *
+ *  - BroadcastOrderUpdate   → Reverb WebSocket
+ *  - SendWhatsAppNotification → WhatsApp Jobs (com idempotência da Fase 1)
+ *  - AwardLoyaltyOnDelivery  → Pontos de fidelidade
+ *  - TouchTenantPoll         → Backward compat com polling por arquivo
+ *
+ * Agente: @architect
+ */
 class OrderObserver
 {
-
-    protected $ooBotService;
-    protected $loyaltyService;
-    protected $tenantPollService;
-    protected $notificationService;
-
     public function __construct(
-        OoBotService $ooBotService,
-        LoyaltyService $loyaltyService,
-        TenantPollService $tenantPollService,
-        NotificationService $notificationService
+        private readonly TenantPollService $tenantPollService,
+        private readonly NotificationService $notificationService,
     ) {
-        $this->ooBotService = $ooBotService;
-        $this->loyaltyService = $loyaltyService;
-        $this->tenantPollService = $tenantPollService;
-        $this->notificationService = $notificationService;
     }
 
     /**
-     * Handle the Order "creating" event.
+     * Antes de criar: atribui motoboy padrão se delivery e vazio.
      */
     public function creating(Order $order): void
     {
-        // If it's a delivery order and no motoboy is assigned yet
         if ($order->mode === 'delivery' && empty($order->motoboy_id)) {
             $settings = \App\Models\StoreSetting::where('tenant_id', $order->tenant_id)->first();
             if ($settings && !empty($settings->default_motoboy_id)) {
@@ -46,13 +46,21 @@ class OrderObserver
     }
 
     /**
-     * Handle the Order "created" event.
+     * Pedido criado: notifica merchants + emite evento NewOrderReceived.
      */
     public function created(Order $order): void
     {
+        // Atualiza arquivo de polling (backward compat)
         $this->tenantPollService->touch($order->tenant_id);
 
-        // Notify Merchants (Admins/Employees) of the tenant
+        // Broadcast WebSocket para dashboards abertos
+        try {
+            broadcast(new NewOrderReceived($order));
+        } catch (\Throwable $e) {
+            Log::warning('OrderObserver: broadcast NewOrderReceived falhou', ['error' => $e->getMessage()]);
+        }
+
+        // Notificações Push (OneSignal) para admins do tenant
         $merchants = User::where('tenant_id', $order->tenant_id)
             ->whereIn('role', ['admin', 'employee'])
             ->get();
@@ -64,98 +72,49 @@ class OrderObserver
     }
 
     /**
-     * Handle the Order "updated" event.
+     * Pedido atualizado: decrementa estoque e dispara Domain Event.
+     *
+     * Todos os side effects (WhatsApp, Reverb, loyalty, poll) são
+     * delegados aos Listeners registrados no EventServiceProvider.
      */
     public function updated(Order $order): void
     {
-        // Always touch on update to notify frontend
-        $this->tenantPollService->touch($order->tenant_id);
-
-        if ($order->isDirty('status')) {
-            $oldStatus = $order->getOriginal('status');
-            $newStatus = $order->status;
-
-            // Handle specific notifications vs generic status change
-            try {
-                if ($newStatus === 'motoboy_accepted') {
-                    $this->notificationService->sendOrderAccepted($order, $order->motoboy);
-                } elseif ($newStatus === 'delivered') {
-                    $this->notificationService->sendOrderDelivered($order);
-                } else {
-                    $this->notificationService->sendOrderStatusChanged($order, $oldStatus, $newStatus);
-                }
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::error('Notification Service Failed in OrderObserver: ' . $e->getMessage());
-            }
-            switch ($newStatus) {
-                // Motoboy was assigned to the order by the store, or accepted from the pool
-                case 'motoboy_accepted':
-                case 'waiting_motoboy': // Also notify if manually assigned early
-                    if ($order->motoboy_id) {
-                        try {
-                            // Tell the Motoboy he has a new order to pick up
-                            \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'motoboy_assigned');
-                        } catch (\Throwable $e) {
-                            \Illuminate\Support\Facades\Log::error('Dispatch WhatsApp Job Failed (motoboy_assigned): ' . $e->getMessage());
-                        }
-                    }
-                    break;
-                case 'out_for_delivery':
-                    // Motoboy picked it up and officially started the route to the client
-                    try {
-                        // Tell the Customer their order is on the way!
-                        \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'out_for_delivery');
-                    } catch (\Throwable $e) {
-                        \Illuminate\Support\Facades\Log::error('Dispatch WhatsApp Job Failed (out_for_delivery): ' . $e->getMessage());
-                    }
-                    break;
-                case 'preparing': // Confirmed
-                    $order->decrementIngredientsStock();
-                    try {
-                        \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'order_confirmed');
-                    } catch (\Throwable $e) {
-                        \Illuminate\Support\Facades\Log::error('Dispatch WhatsApp Job Failed (order_confirmed): ' . $e->getMessage());
-                    }
-                    break;
-                case 'ready':
-                    try {
-                        \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'order_ready');
-                    } catch (\Throwable $e) {
-                        \Illuminate\Support\Facades\Log::error('Dispatch WhatsApp Job Failed (order_ready): ' . $e->getMessage());
-                    }
-                    break;
-                case 'out_for_delivery':
-                    try {
-                        \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'order_out_for_delivery');
-                    } catch (\Throwable $e) {
-                        \Illuminate\Support\Facades\Log::error('Dispatch WhatsApp Job Failed (order_out_for_delivery): ' . $e->getMessage());
-                    }
-                    break;
-                case 'delivered':
-                    try {
-                        \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'order_delivered');
-                    } catch (\Throwable $e) {
-                        \Illuminate\Support\Facades\Log::error('Dispatch WhatsApp Job Failed (order_delivered): ' . $e->getMessage());
-                    }
-
-                    // Award loyalty points
-                    if ($order->customer && !$order->loyalty_points_earned) {
-                        $this->loyaltyService->awardPointsForOrder($order);
-                    }
-                    break;
-                case 'cancelled':
-                    try {
-                        \App\Jobs\SendWhatsAppMessageJob::dispatch($order, 'order_cancelled');
-                    } catch (\Throwable $e) {
-                        \Illuminate\Support\Facades\Log::error('Dispatch WhatsApp Job Failed (order_cancelled): ' . $e->getMessage());
-                    }
-                    break;
-            }
+        if (!$order->isDirty('status')) {
+            // Não é mudança de status — apenas toca o poll e sai
+            $this->tenantPollService->touch($order->tenant_id);
+            return;
         }
+
+        $oldStatus = $order->getOriginal('status');
+        $newStatus = $order->status;
+
+        // Decrementa estoque ao iniciar preparo
+        if ($newStatus === 'preparing') {
+            $order->decrementIngredientsStock();
+        }
+
+        // Notificação de status ao parceiro (OneSignal/Database)
+        try {
+            if ($newStatus === 'motoboy_accepted') {
+                $this->notificationService->sendOrderAccepted($order, $order->motoboy);
+            } elseif ($newStatus === 'delivered') {
+                $this->notificationService->sendOrderDelivered($order);
+            } else {
+                $this->notificationService->sendOrderStatusChanged($order, $oldStatus, $newStatus);
+            }
+        } catch (\Throwable $e) {
+            Log::error('OrderObserver: NotificationService falhou', ['error' => $e->getMessage()]);
+        }
+
+        // ── DOMAIN EVENT ─────────────────────────────────────────────────────
+        // Um único dispatch substitui 80 linhas de switch/case.
+        // Os Listeners registrados no EventServiceProvider cuidam de tudo.
+        event(new OrderStatusChanged($order, $oldStatus, $newStatus));
+        // ─────────────────────────────────────────────────────────────────────
     }
 
     /**
-     * Handle the Order "deleted" event.
+     * Soft delete: toca o poll para o frontend remover o pedido da lista.
      */
     public function deleted(Order $order): void
     {

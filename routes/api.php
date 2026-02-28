@@ -32,3 +32,11 @@ Route::middleware(['printer'])->prefix('printer')->group(function () {
     Route::post('/orders/{id}/status', [\App\Http\Controllers\Api\PrinterController::class, 'updateStatus']); // Update order status
 });
 
+// ── FASE 1 BLINDAGEM: Webhooks Externos ────────────────────────────────────
+// Rotas públicas sem Sanctum — autenticação feita por HMAC dentro dos Controllers.
+// IMPORTANTE: manter fora de qualquer middleware de auth ou CSRF.
+Route::prefix('webhooks')->group(function () {
+    // Evolution API (WhatsApp): valida x-evolution-signature (HMAC-SHA256)
+    Route::post('/evolution', [\App\Http\Controllers\Api\EvolutionWebhookController::class, 'handle'])
+        ->name('webhooks.evolution');
+});

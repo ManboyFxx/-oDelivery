@@ -149,4 +149,38 @@ class LoyaltyService
             "Resgate: {$product->name}"
         );
     }
+
+    /**
+     * FASE 1 – BLINDAGEM: Revert loyalty points used in a cancelled order.
+     *
+     * Called by CancellationService when an order with loyalty_points_used > 0
+     * is cancelled. Returns the spent points back to the customer's balance.
+     */
+    public function revertPoints(
+        string $customerId,
+        string $tenantId,
+        int $points,
+        string $reason,
+        ?string $orderId = null
+    ): void {
+        if ($points <= 0) {
+            return;
+        }
+
+        $customer = Customer::find($customerId);
+
+        if (!$customer) {
+            return;
+        }
+
+        // addPoints uses the existing Customer method to credit points back
+        $customer->addPoints(
+            $points,
+            $orderId,
+            $reason
+        );
+
+        // Re-evaluate tier after points change
+        $customer->updateLoyaltyTier();
+    }
 }

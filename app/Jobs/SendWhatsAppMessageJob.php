@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Order;
+use App\Models\WhatsAppMessageLog;
 use App\Services\OoBotService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -11,53 +12,64 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * FASE 1 – BLINDAGEM: Idempotência adicionada.
+ *
+ * Antes de despachar a mensagem, o job verifica no WhatsAppMessageLog se já
+ * existe um registro com status='sent' para a combinação (order_id, template_key).
+ * Se existir, o job encerra silenciosamente sem re-envio — protegendo o cliente
+ * de receber a mesma mensagem duas vezes em caso de retry na fila.
+ */
 class SendWhatsAppMessageJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    /**
-     * The number of seconds the job can run before timing out.
-     *
-     * @var int
-     */
+    /** @var int Timeout do job em segundos */
     public $timeout = 30;
 
     /**
-     * The number of seconds to wait before retrying the job.
-     *
-     * @var int
+     * Backoff exponencial: aguarda 10s, depois 30s, depois 60s antes de cada retry.
+     * @var array<int>
      */
     public $backoff = [10, 30, 60];
 
-    /**
-     * The maximum number of unhandled exceptions to allow before failing.
-     *
-     * @var int
-     */
+    /** @var int Máximo de exceções antes de marcar como falha permanente */
     public $maxExceptions = 3;
 
-    /**
-     * Create a new job instance.
-     */
     public function __construct(
         public Order $order,
         public string $templateKey,
     ) {
     }
 
-    /**
-     * Execute the job.
-     */
     public function handle(OoBotService $ooBotService): void
     {
+        // ── IDEMPOTÊNCIA ────────────────────────────────────────────────────
+        // Verifica se essa combinação (order + template) já foi enviada com êxito.
+        // É seguro contra retries causados por falhas de rede ou restart do worker.
+        $alreadySent = WhatsAppMessageLog::where('order_id', $this->order->id)
+            ->where('template_key', $this->templateKey)
+            ->where('status', 'sent')
+            ->exists();
+
+        if ($alreadySent) {
+            Log::info('WhatsApp Job: skipped (already sent — idempotency guard)', [
+                'order_id' => $this->order->id,
+                'template_key' => $this->templateKey,
+            ]);
+            return;
+        }
+        // ────────────────────────────────────────────────────────────────────
+
         Log::info('WhatsApp Message Job Started', [
             'order_id' => $this->order->id,
             'template_key' => $this->templateKey,
         ]);
 
         try {
-            // Reload order with necessary relations to ensure fresh data and prevent lazy loading issues
-            $order = Order::with(['tenant.settings', 'items', 'customer'])->find($this->order->id);
+            // Recarrega o pedido com relações para garantir dados frescos
+            $order = Order::with(['tenant.settings', 'items', 'customer'])
+                ->find($this->order->id);
 
             if (!$order) {
                 Log::warning('WhatsApp Message Job - Order not found', [
@@ -66,7 +78,6 @@ class SendWhatsAppMessageJob implements ShouldQueue
                 return;
             }
 
-            // Send notification based on template key
             $result = match ($this->templateKey) {
                 'order_confirmed' => $ooBotService->sendOrderConfirmation($order),
                 'order_ready' => $ooBotService->sendOrderReady($order),
@@ -98,14 +109,11 @@ class SendWhatsAppMessageJob implements ShouldQueue
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            // Re-throw to trigger retry
+            // Re-lança para disparar o retry com backoff exponencial
             throw $e;
         }
     }
 
-    /**
-     * Handle a job failure.
-     */
     public function failed(\Throwable $exception): void
     {
         Log::error('WhatsApp Message Job Failed After Retries', [
@@ -113,7 +121,5 @@ class SendWhatsAppMessageJob implements ShouldQueue
             'template_key' => $this->templateKey,
             'error' => $exception->getMessage(),
         ]);
-
-        // Optionally: send alert to admins, update order status, etc.
     }
 }

@@ -21,6 +21,10 @@ class Kernel extends ConsoleKernel
 
         // Cleanup demo tenants hourly
         $schedule->command('demo:cleanup')->hourly();
+
+        // FASE 2 – ESCALA REAL: Agrega métricas do dia anterior por tenant (01:00h)
+        // Popula daily_tenant_revenues para dashboards instantâneos.
+        $schedule->command('analytics:aggregate')->dailyAt('01:00');
     }
 
     /**
