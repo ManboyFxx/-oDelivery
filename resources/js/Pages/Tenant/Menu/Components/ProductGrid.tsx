@@ -1,5 +1,6 @@
 import { Category, Product } from './types';
 import ProductCard from './ProductCard';
+import ProductCardSkeleton from './ProductCardSkeleton';
 import { ShoppingBag } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -8,9 +9,39 @@ interface ProductGridProps {
     onAdd: (product: Product) => void;
     viewMode?: 'grid' | 'list';
     isStoreOpen?: boolean;
+    isLoading?: boolean;
 }
 
-export default function ProductGrid({ categories, onAdd, viewMode = 'grid', isStoreOpen = true }: ProductGridProps) {
+export default function ProductGrid({ categories, onAdd, viewMode = 'grid', isStoreOpen = true, isLoading = false }: ProductGridProps) {
+    if (isLoading) {
+        // Fallback fake categories to loop skeletons
+        const skeletonCategories = categories.length > 0 ? categories : [{ id: 'skeleton', name: 'Carregando Produtos...', products: [1,2,3,4,5,6] }];
+        
+        return (
+            <div className="max-w-7xl mx-auto px-4 py-4 space-y-8 animate-pulse">
+                {skeletonCategories.map((cat, i) => (
+                    <div key={`skel-cat-${i}`}>
+                         <div className="flex items-center gap-3 mb-4 opacity-50">
+                            <h2 className="text-lg md:text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight bg-gray-200 dark:bg-white/10 text-transparent rounded">
+                                {cat.name}
+                            </h2>
+                            <div className="h-1 flex-1 bg-gray-100 dark:bg-white/5 rounded-full" />
+                        </div>
+                        <div className={clsx(
+                            viewMode === 'grid' 
+                                ? "grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-6"
+                                : "flex flex-col gap-4"
+                        )}>
+                            {[1, 2, 3, 4, 5, 6].map((i) => (
+                                <ProductCardSkeleton key={`skel-${i}`} viewMode={viewMode} />
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
     return (
         <div className="max-w-7xl mx-auto px-4 py-4 space-y-8">
             {categories.map((category) => {

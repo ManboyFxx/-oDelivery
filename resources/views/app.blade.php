@@ -19,7 +19,8 @@
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.bunny.net/css?family=outfit:400,500,600,700,900|inter:400,500,600,700,900&display=swap"
+        rel="stylesheet" />
 
     <!-- Scripts -->
     @routes
@@ -32,7 +33,7 @@
             document.documentElement.classList.add('dark');
         } else {
             document.documentElement.classList.remove('dark');
-    }
+        }
     </script>
 
     <!-- OneSignal SDK -->
@@ -47,7 +48,7 @@
                     enable: true,
                 },
             });
-    });
+        });
     </script>
 </head>
 

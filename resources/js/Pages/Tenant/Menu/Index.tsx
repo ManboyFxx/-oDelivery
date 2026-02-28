@@ -37,6 +37,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
     usePushNotifications(authCustomer);
 
     // --- State ---
+    const [isInitialLoading, setIsInitialLoading] = useState(true);
     const [activeCategory, setActiveCategory] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [cart, setCart] = useState<any[]>([]);
@@ -65,6 +66,10 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                 // window.history.replaceState({}, '', newUrl);
             }
         }
+        
+        // Premium UI Loading Effect
+        const timer = setTimeout(() => setIsInitialLoading(false), 800);
+        return () => clearTimeout(timer);
     }, []);
 
     // Auth
@@ -363,6 +368,7 @@ export default function PublicMenu({ store, categories, slug, authCustomer, acti
                             onAdd={handleProductAdd}
                             viewMode={store.menu_view_mode || 'grid'}
                             isStoreOpen={store.is_open}
+                            isLoading={isInitialLoading}
                         />
                     </div>
                 </div>

@@ -56,7 +56,7 @@ export default function MenuNavbar({
             <motion.nav 
                 initial={{ y: 100, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                className="w-full bg-white/95 dark:bg-[#0f1012]/95 backdrop-blur-xl border-t border-gray-100 dark:border-white/5 shadow-[0_-8px_30px_rgb(0,0,0,0.04)] pointer-events-auto"
+                className="w-full bg-white/70 dark:bg-[#0f1012]/70 backdrop-blur-2xl border-t border-gray-100/50 dark:border-white/10 shadow-[0_-8px_30px_rgb(0,0,0,0.08)] pointer-events-auto"
             >
                 <div className="max-w-lg mx-auto flex items-center justify-around py-3 px-2">
                     {items.map((item) => {

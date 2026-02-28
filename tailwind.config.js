@@ -32,7 +32,7 @@ export default {
                 'light-card': '#0B1228',
             },
             fontFamily: {
-                sans: ['Inter', ...defaultTheme.fontFamily.sans],
+                sans: ['Outfit', 'Inter', ...defaultTheme.fontFamily.sans],
             },
         },
     },
