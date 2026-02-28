@@ -5,6 +5,7 @@ import { X, MapPin, DollarSign, Wallet, CreditCard, Banknote, CheckCircle, Loade
 import axios from 'axios';
 import clsx from 'clsx';
 import { useToast } from '@/Hooks/useToast';
+import { usePushNotifications } from '@/Hooks/usePushNotifications';
 import AddressForm from './Components/AddressForm';
 import { Switch } from '@headlessui/react';
 import { toast } from 'sonner';
@@ -38,11 +39,12 @@ interface CheckoutModalProps {
     total: number;
     addresses: Address[];
     onSuccess: (orderId: string) => void;
+    activeTable?: any;
 }
 
-export default function CheckoutModal({ show, onClose, cart, store, customer, total, addresses: initialAddresses, onSuccess }: CheckoutModalProps) {
-    const [step, setStep] = useState<'delivery' | 'payment' | 'review'>('delivery');
-    const [mode, setMode] = useState<'delivery' | 'pickup'>('delivery');
+export default function CheckoutModal({ show, onClose, cart, store, customer, total, addresses: initialAddresses, onSuccess, activeTable }: CheckoutModalProps) {
+    const [step, setStep] = useState<'delivery' | 'payment' | 'review'>(activeTable ? 'review' : 'delivery');
+    const [mode, setMode] = useState<'delivery' | 'pickup' | 'table'>(activeTable ? 'table' : 'delivery');
     const [addresses, setAddresses] = useState<Address[]>(initialAddresses);
     const [selectedAddressId, setSelectedAddressId] = useState<string>('');
     const [isAddingAddress, setIsAddingAddress] = useState(false);
@@ -77,6 +79,7 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
     const [neighborhoodOverride, setNeighborhoodOverride] = useState('');
 
     const { success: showSuccess } = useToast();
+    const { requestPermission } = usePushNotifications(customer);
 
     useEffect(() => {
         setAddresses(initialAddresses);
@@ -90,10 +93,19 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
         }
         
         // Auto-open address form if delivery and no addresses
-        if (show && mode === 'delivery' && addresses.length === 0 && !isAddingAddress) {
+        if (show && mode === 'delivery' && addresses.length === 0 && !isAddingAddress && !activeTable) {
             setIsAddingAddress(true);
         }
-    }, [show, addresses, mode, isAddingAddress]);
+
+        if (show) {
+            if (activeTable) {
+                setStep('review');
+                setMode('table');
+            } else if (step === 'review') {
+                // If closed and reopened, could reset to delivery. Wait, let's keep current behavior.
+            }
+        }
+    }, [show, addresses, mode, isAddingAddress, activeTable]);
 
     // Fetch available delivery zones once
     useEffect(() => {
@@ -243,10 +255,11 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
             const payload = {
                 tenant_id: store.settings.tenant_id,
                 customer_id: customer.id,
-                mode,
-                address_id: mode === 'delivery' ? selectedAddressId : null,
-                payment_method: paymentMethod,
-                change_for: paymentMethod === 'cash' ? parseFloat(changeFor.replace(',', '.')) : null,
+                mode: activeTable ? 'table' : mode,
+                table_id: activeTable ? activeTable.id : null,
+                address_id: mode === 'delivery' && !activeTable ? selectedAddressId : null,
+                payment_method: activeTable ? null : paymentMethod,
+                change_for: paymentMethod === 'cash' && !activeTable ? parseFloat(changeFor.replace(',', '.')) : null,
                 coupon_id: appliedCoupon?.id || null,
                 loyalty_points_used: usePoints ? pointsToUse : 0,
                 items: cart.map(item => ({
@@ -271,11 +284,13 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                 setShowPointsAnimation(true);
                 setTimeout(() => {
                     showSuccess('Pedido Realizado!', 'Redirecionando para acompanhamento...');
+                    requestPermission();
                     window.location.href = trackingUrl;
                 }, 3500);
             } else {
                 showSuccess('Pedido Realizado!', 'Redirecionando para acompanhamento...');
                 setTimeout(() => {
+                    requestPermission();
                     window.location.href = trackingUrl;
                 }, 1500);
             }
@@ -388,11 +403,15 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                 );
             })}
             {/* Progress Bar Background */}
-            <div className="absolute top-[4.5rem] left-10 right-10 h-0.5 bg-gray-200 dark:bg-gray-700 -z-0 transition-colors duration-300" />
-            <div className={clsx(
-                "absolute top-[4.5rem] left-10 h-0.5 bg-green-500 transition-all duration-300 -z-0",
-                step === 'delivery' ? "w-0" : step === 'payment' ? "w-1/2" : "w-[calc(100%-5rem)]"
-            )} />
+            {!activeTable && (
+                <>
+                    <div className="absolute top-[4.5rem] left-10 right-10 h-0.5 bg-gray-200 dark:bg-gray-700 -z-0 transition-colors duration-300" />
+                    <div className={clsx(
+                        "absolute top-[4.5rem] left-10 h-0.5 bg-green-500 transition-all duration-300 -z-0",
+                        step === 'delivery' ? "w-0" : step === 'payment' ? "w-1/2" : "w-[calc(100%-5rem)]"
+                    )} />
+                </>
+            )}
         </div>
     );
 
@@ -407,7 +426,7 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
             <div className="p-6 min-h-[500px] flex flex-col bg-white dark:bg-premium-dark transition-colors duration-300">
                 {/* Header */}
                 <div className="flex justify-between items-center mb-4">
-                    {step !== 'delivery' ? (
+                    {step !== 'delivery' && !activeTable ? (
                         <button onClick={handleBackStep} className="p-1 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors duration-300">
                             <ArrowLeft className="h-6 w-6 text-gray-600 dark:text-gray-300" />
                         </button>
@@ -465,7 +484,7 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                     </div>
                 ) : (
                     <>
-                    {!isAddingAddress && renderStepper()}
+                    {!isAddingAddress && !activeTable && renderStepper()}
 
                 {/* Content Area */}
                 <div className="flex-1 overflow-y-auto max-h-[60vh] px-1 py-1">
@@ -820,16 +839,25 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                                     </div>
 
                                     {/* Delivery Info */}
-                                    <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-sm text-blue-800 dark:text-blue-300 transition-colors duration-300">
+                                    <div className={clsx("flex items-start gap-3 p-3 rounded-xl text-sm transition-colors duration-300", activeTable ? "bg-orange-50 dark:bg-orange-900/20 text-orange-800 dark:text-orange-300" : "bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300")}>
                                         <MapPin className="w-5 h-5 shrink-0 mt-0.5" />
                                         <div>
-                                            <p className="font-bold">{mode === 'delivery' ? 'Entrega em:' : 'Retirada em Loja'}</p>
-                                            {mode === 'delivery' && selectedAddressId ? (
-                                                <p className="opacity-90">
-                                                    {addresses.find(a => a.id === selectedAddressId)?.street}, {addresses.find(a => a.id === selectedAddressId)?.number}
-                                                </p>
+                                            {activeTable ? (
+                                                <>
+                                                    <p className="font-bold">Consumo na Mesa</p>
+                                                    <p className="opacity-90">Mesa {activeTable.number}</p>
+                                                </>
                                             ) : (
-                                                <p className="opacity-90">Retirar no balcão.</p>
+                                                <>
+                                                    <p className="font-bold">{mode === 'delivery' ? 'Entrega em:' : 'Retirada em Loja'}</p>
+                                                    {mode === 'delivery' && selectedAddressId ? (
+                                                        <p className="opacity-90">
+                                                            {addresses.find(a => a.id === selectedAddressId)?.street}, {addresses.find(a => a.id === selectedAddressId)?.number}
+                                                        </p>
+                                                    ) : (
+                                                        <p className="opacity-90">Retirar no balcão.</p>
+                                                    )}
+                                                </>
                                             )}
                                         </div>
                                     </div>
@@ -880,7 +908,7 @@ export default function CheckoutModal({ show, onClose, cart, store, customer, to
                 {/* Footer Actions */}
                 {!isAddingAddress && (
                     <div className="mt-6 pt-4 border-t border-gray-100 dark:border-white/5 flex gap-3 transition-colors duration-300">
-                        {step !== 'delivery' ? (
+                        {step !== 'delivery' && !activeTable ? (
                             <button
                                 onClick={handleBackStep}
                                 className="flex-1 px-4 py-3 bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-white/20 transition-colors duration-300"

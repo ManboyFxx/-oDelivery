@@ -26,7 +26,7 @@ class Customer extends Model
         'loyalty_tier',
         'referral_code',
         'referred_by',
-        'push_subscription',
+        'onesignal_id',
         'phone_hash',
     ];
 

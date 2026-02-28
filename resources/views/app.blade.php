@@ -37,15 +37,16 @@
     </script>
 
     <!-- OneSignal SDK -->
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignal.js" async=""></script>
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
-        window.OneSignal = window.OneSignal || [];
-        OneSignal.push(function () {
-            OneSignal.init({
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        window.OneSignalDeferred.push(async function(OneSignal) {
+            await OneSignal.init({
                 appId: "{{ config('services.onesignal.app_id') }}",
                 safari_web_id: "{{ config('services.onesignal.safari_web_id') }}",
+                allowLocalhostAsSecureOrigin: true,
                 notifyButton: {
-                    enable: true,
+                    enable: false, // Desativado porque pedimos permissão no checkout
                 },
             });
         });

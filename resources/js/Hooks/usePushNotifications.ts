@@ -10,30 +10,26 @@ declare global {
 export const usePushNotifications = (user: any) => {
     useEffect(() => {
         if (typeof window !== 'undefined' && window.OneSignal && user) {
-            window.OneSignal.push(() => {
-                window.OneSignal.on('subscriptionChange', (isSubscribed: boolean) => {
-                    if (isSubscribed) {
-                        window.OneSignal.getUserId().then((userId: string) => {
-                            syncSubscription(userId);
-                        });
+            window.OneSignal.push(async () => {
+                // OneSignal v16 uses a different approach for subscription changes
+                window.OneSignal.User.PushSubscription.addEventListener('change', (event: any) => {
+                    if (event.current.token) {
+                        syncSubscription(window.OneSignal.User.PushSubscription.id);
                     }
                 });
 
                 // Check current status
-                window.OneSignal.isPushNotificationsEnabled((isEnabled: boolean) => {
-                    if (isEnabled) {
-                        window.OneSignal.getUserId().then((userId: string) => {
-                            syncSubscription(userId);
-                        });
-                    }
-                });
+                if (window.OneSignal.User.PushSubscription.id) {
+                    syncSubscription(window.OneSignal.User.PushSubscription.id);
+                }
             });
         }
     }, [user]);
 
     const syncSubscription = async (playerId: string) => {
+        if (!playerId) return;
         try {
-            await axios.post(route('push.subscribe'), {
+            await axios.post('/push/subscribe', {
                 player_id: playerId
             });
             console.log('✅ Push subscription synced with server');
@@ -45,7 +41,7 @@ export const usePushNotifications = (user: any) => {
     const requestPermission = () => {
         if (window.OneSignal) {
             window.OneSignal.push(() => {
-                window.OneSignal.showNativePrompt();
+                window.OneSignal.Notifications.requestPermission();
             });
         }
     };

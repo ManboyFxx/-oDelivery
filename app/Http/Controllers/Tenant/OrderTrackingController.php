@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\StoreSetting;
+use App\Models\MotoboyLocation;
 use Illuminate\Http\Request;
 
 class OrderTrackingController extends Controller
@@ -24,6 +26,15 @@ class OrderTrackingController extends Controller
 
         // Calculate estimated delivery time
         $estimatedTime = $this->calculateEstimatedTime($order);
+
+        // Get store settings for coordinates
+        $settings = StoreSetting::where('tenant_id', $order->tenant_id)->first();
+
+        // Get motoboy location if out for delivery
+        $motoboyLocation = null;
+        if ($order->status === 'out_for_delivery' && $order->motoboy_id) {
+            $motoboyLocation = MotoboyLocation::where('user_id', $order->motoboy_id)->first();
+        }
 
         return response()->json([
             'order' => [
@@ -46,6 +57,17 @@ class OrderTrackingController extends Controller
             'status' => $order->status,
             'estimated_time' => $estimatedTime,
             'timeline' => $timeline,
+            'tracking' => [
+                'store' => [
+                    'lat' => $settings->store_latitude ?? null,
+                    'lng' => $settings->store_longitude ?? null,
+                ],
+                'motoboy' => $motoboyLocation ? [
+                    'lat' => $motoboyLocation->latitude,
+                    'lng' => $motoboyLocation->longitude,
+                    'updated_at' => $motoboyLocation->updated_at->diffForHumans(),
+                ] : null,
+            ]
         ]);
     }
 
