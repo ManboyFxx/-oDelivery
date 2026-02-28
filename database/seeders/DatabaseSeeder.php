@@ -26,7 +26,7 @@ class DatabaseSeeder extends Seeder
             ['email' => 'contato@oodelivery.online'],
             [
                 'name' => 'Super Admin',
-                'password' => Hash::make('Bobela102030@'),
+                'password' => Hash::make('eljcqzderihuvnjsnple'),
                 'role' => 'super_admin',
                 'tenant_id' => null,
             ]
@@ -77,7 +77,7 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        $this->command->info('Super Admin: admin@happyplace.com / password');
+        $this->command->info('Super Admin: contato@oodelivery.online / eljcqzderihuvnjsnple');
         $this->command->info('Tenant Admin: ze@pizzariadoze.com / password');
     }
 }

@@ -521,43 +521,8 @@ Route::post('/webhooks/whatsapp', [\App\Http\Controllers\WhatsAppWebhookControll
 Route::post('/webhooks/stripe', [\App\Http\Controllers\StripeWebhookController::class, 'handleWebhook'])
     ->name('webhooks.stripe');
 
-// ============================================================================
-// ROTA DE RESGATE DE EMERGÊNCIA (Hostinger)
-// Permite recuperar o acesso caso o banco tenha sido apagado ou a senha perdida.
-// Acessar via: seudominio.com/rescue-admin
-// ============================================================================
-Route::get('/rescue-admin', function () {
-    $user = \App\Models\User::where('role', 'super_admin')->first();
-
-    if (!$user) {
-        $user = \App\Models\User::where('role', 'admin')->first();
-    }
-
-    if ($user) {
-        $user->update(['password' => \Illuminate\Support\Facades\Hash::make('12345678')]);
-        return "Senha do usuário [{$user->email}] resetada com sucesso para: 12345678";
-    }
-
-    // Se o banco estiver vazio, recria um admin temporário
-    try {
-        $tenant = \App\Models\Tenant::firstOrCreate(
-            ['slug' => 'default'],
-            ['name' => 'Default Tenant', 'email' => 'admin@oodelivery.online']
-        );
-        $user = \App\Models\User::create([
-            'name' => 'Admin Resgate',
-            'email' => 'admin@oodelivery.online',
-            'password' => \Illuminate\Support\Facades\Hash::make('12345678'),
-            'role' => 'super_admin',
-            'tenant_id' => $tenant->id,
-            'is_active' => true,
-        ]);
-        return "Banco parecia vazio. Administrador de resgate criado: [admin@oodelivery.online] / Senha: [12345678] — Delete essa rota após logar!";
-    } catch (\Throwable $e) {
-        return "Tentativa de criar admin de resgate falhou: " . $e->getMessage();
-    }
-});
-
+// ── FASE COMPLETA ──────────────────────────────────────────────
+// Requer autenticação
 require __DIR__ . '/auth.php';
 
 Route::middleware('auth')->group(function () {
